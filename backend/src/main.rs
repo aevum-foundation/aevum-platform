@@ -1,9 +1,19 @@
 //! Aevum Platform API — entry point.
 
-use actix_web::{App, HttpServer, middleware::Logger};
+use actix_web::{middleware::Logger, App, HttpServer};
 use env_logger::Env;
 
-use aevum_platform_api::{config::Config, state::AppState, storage::MockStorage};
+use aevum_platform_api::{
+    api::{self, health},
+    auth::{
+        middleware::AuthMiddleware,
+        service::AuthService,
+        storage::InMemoryAuthStorage,
+    },
+    config::Config,
+    state::AppState,
+    storage::MockStorage,
+};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -20,11 +30,20 @@ async fn main() -> std::io::Result<()> {
     let storage = std::sync::Arc::new(MockStorage::new());
     let app_state = AppState::new(config, storage);
 
+    // Auth service for middleware
+    let auth_storage = InMemoryAuthStorage::new();
+    let auth_service = AuthService::new(auth_storage);
+    let auth_service_data = actix_web::web::Data::new(auth_service);
+
     HttpServer::new(move || {
         App::new()
             .app_data(actix_web::web::Data::new(app_state.clone()))
+            .app_data(auth_service_data.clone())
             .wrap(Logger::default())
-            .configure(aevum_platform_api::api::health::configure)
+            .wrap(AuthMiddleware::new(auth_service_data.clone()))
+            .configure(health::configure)
+            .configure(api::auth::configure)
+            .configure(api::login::configure)
     })
     .bind((host.as_str(), port))?
     .run()

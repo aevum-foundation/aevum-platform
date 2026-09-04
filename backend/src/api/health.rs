@@ -2,7 +2,6 @@ use actix_web::{get, web, HttpResponse, Responder};
 use serde::Serialize;
 
 use crate::state::AppState;
-use crate::storage::StorageStatus;
 
 #[derive(Debug, Serialize)]
 struct ServiceInfo {
@@ -38,13 +37,6 @@ struct ReadinessResponse {
     storage: StorageInfo,
 }
 
-/// Liveness endpoint.
-///
-/// This answers one question only:
-/// "Is the Platform API process alive?"
-///
-/// Dependencies are intentionally not allowed to turn liveness
-/// into an application-level failure.
 #[get("/health")]
 async fn health(state: web::Data<AppState>) -> impl Responder {
     let storage_status = state.storage.health();
@@ -67,10 +59,6 @@ async fn health(state: web::Data<AppState>) -> impl Responder {
     HttpResponse::Ok().json(response)
 }
 
-/// Readiness endpoint.
-///
-/// This answers:
-/// "Can this API currently serve requests that depend on storage?"
 #[get("/ready")]
 async fn ready(state: web::Data<AppState>) -> impl Responder {
     let storage_status = state.storage.health();
@@ -93,7 +81,6 @@ async fn ready(state: web::Data<AppState>) -> impl Responder {
     }
 }
 
-/// Public API version information.
 #[get("/version")]
 async fn version() -> impl Responder {
     HttpResponse::Ok().json(VersionResponse {
@@ -117,6 +104,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::storage::StorageStatus;
 
     #[test]
     fn storage_status_is_stable() {
