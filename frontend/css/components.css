@@ -1,0 +1,239 @@
+/* ============================================
+   AEVUM COMPONENTS
+   Кнопки, карточки, бейджи, формы.
+   ============================================ */
+
+/* ---------- КНОПКИ ---------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: 12px 28px;
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-full);
+    transition: all var(--transition-base);
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    line-height: 1;
+}
+
+/* Основная кнопка (золото) */
+.btn-primary {
+    background: var(--color-gold-primary);
+    color: var(--color-bg-deep);
+}
+
+.btn-primary:hover {
+    background: var(--color-gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(245, 197, 66, 0.25);
+}
+
+/* Вторичная кнопка (обводка) */
+.btn-secondary {
+    background: transparent;
+    color: var(--color-gold-primary);
+    border: 1px solid var(--color-border-gold);
+}
+
+.btn-secondary:hover {
+    background: rgba(245, 197, 66, 0.06);
+    border-color: var(--color-gold-primary);
+    transform: translateY(-2px);
+}
+
+/* Техническая кнопка (циан) */
+.btn-cyan {
+    background: var(--color-cyan-primary);
+    color: var(--color-bg-deep);
+}
+
+.btn-cyan:hover {
+    background: var(--color-cyan-light);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(32, 217, 255, 0.2);
+}
+
+/* Маленькая кнопка */
+.btn-sm {
+    padding: 8px 18px;
+    font-size: var(--font-size-xs);
+}
+
+/* Большая кнопка */
+.btn-lg {
+    padding: 16px 36px;
+    font-size: var(--font-size-base);
+}
+
+/* ---------- КАРТОЧКИ ---------- */
+.card {
+    background: var(--color-bg-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    border: 1px solid var(--color-border);
+    transition: all var(--transition-base);
+}
+
+.card:hover {
+    border-color: var(--color-border-gold);
+    transform: translateY(-4px);
+}
+
+.card-gold {
+    border-color: var(--color-border-gold);
+}
+
+.card-gold:hover {
+    border-color: var(--color-gold-primary);
+    box-shadow: var(--shadow-glow-gold);
+}
+
+/* ---------- БЕЙДЖИ ---------- */
+.badge {
+    display: inline-block;
+    padding: 4px 14px;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    border-radius: var(--radius-full);
+    letter-spacing: 0.3px;
+}
+
+.badge-gold {
+    background: rgba(245, 197, 66, 0.12);
+    color: var(--color-gold-primary);
+    border: 1px solid var(--color-border-gold);
+}
+
+.badge-cyan {
+    background: rgba(32, 217, 255, 0.1);
+    color: var(--color-cyan-primary);
+    border: 1px solid var(--color-border-cyan);
+}
+
+.badge-dark {
+    background: var(--color-bg-deep);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+}
+
+/* ---------- ИКОНКИ ---------- */
+.icon {
+    font-size: 2em;
+    line-height: 1;
+    display: inline-block;
+}
+
+.icon-sm { font-size: 1.2em; }
+.icon-lg { font-size: 3em; }
+.icon-xl { font-size: 4em; }
+
+/* ---------- РАЗДЕЛИТЕЛИ ---------- */
+.divider {
+    width: 100%;
+    height: 1px;
+    background: var(--color-border);
+    margin: var(--space-xl) 0;
+}
+
+.divider-gold {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--color-gold-primary), transparent);
+    opacity: 0.3;
+}
+
+.divider-cyan {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--color-cyan-primary), transparent);
+    opacity: 0.2;
+}
+
+/* ---------- ССЫЛКИ ---------- */
+.link-gold {
+    color: var(--color-gold-primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.link-gold:hover {
+    color: var(--color-gold-light);
+    text-decoration: underline;
+}
+
+.link-cyan {
+    color: var(--color-cyan-primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.link-cyan:hover {
+    color: var(--color-cyan-light);
+    text-decoration: underline;
+}
+
+/* ---------- ПРОГРЕСС ---------- */
+.progress {
+    width: 100%;
+    height: 4px;
+    background: var(--color-bg-surface);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: var(--color-gold-primary);
+    border-radius: var(--radius-full);
+    transition: width var(--transition-slow);
+}
+
+/* ---------- СТАТУС ---------- */
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    margin-right: var(--space-sm);
+}
+
+.status-dot.gold { background: var(--color-gold-primary); }
+.status-dot.cyan { background: var(--color-cyan-primary); }
+.status-dot.green { background: #10B981; }
+.status-dot.red { background: #EF4444; }
+.status-dot.yellow { background: #F59E0B; }
+
+.status-dot.pulse {
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.8); }
+}
+
+/* ---------- ПАРЯЩАЯ КАРТОЧКА ---------- */
+.float-card {
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+}
+
+/* ---------- ЗАГРУЗКА ---------- */
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-gold-primary);
+    border-radius: var(--radius-full);
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

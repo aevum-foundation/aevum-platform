@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Aevum Explorer — inspect epochs, network activity, transactions and addresses.">
+    <meta name="theme-color" content="#061426">
+    <meta name="color-scheme" content="dark light">
+    <title>Aevum — Explorer</title>
+
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/app-shell.css">
+    <link rel="stylesheet" href="/css/components.css">
+
+    <script src="/js/theme.js"></script>
+
+    <style>
+        .explorer-page {
+            min-height: calc(100svh - var(--header-height, 72px));
+            padding: 48px 0 72px;
+        }
+
+        .explorer-header { margin-bottom: 28px; }
+
+        .explorer-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            color: var(--color-accent-cyan);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+        }
+
+        .explorer-kicker::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+            box-shadow: 0 0 10px rgba(32, 217, 255, 0.45);
+        }
+
+        .explorer-header h1 {
+            margin: 0 0 8px;
+            color: var(--color-text-primary);
+            font-size: clamp(30px, 4vw, 40px);
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+        }
+
+        .explorer-header p {
+            max-width: 680px;
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .explorer-search {
+            display: flex;
+            align-items: stretch;
+            gap: 10px;
+            margin-bottom: 36px;
+        }
+
+        .explorer-search-field {
+            position: relative;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .explorer-search-icon {
+            position: absolute;
+            top: 50%;
+            left: 16px;
+            width: 18px;
+            height: 18px;
+            color: var(--color-text-muted);
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .explorer-search input {
+            width: 100%;
+            min-height: 50px;
+            padding: 13px 18px 13px 46px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg-surface);
+            color: var(--color-text-primary);
+            font: inherit;
+            font-size: 15px;
+            line-height: 1.4;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .explorer-search input:focus {
+            outline: none;
+            border-color: var(--color-accent-cyan);
+            box-shadow: 0 0 0 3px var(--color-accent-cyan-dim);
+        }
+
+        .explorer-search input::placeholder {
+            color: var(--color-text-muted);
+        }
+
+        .explorer-search .btn {
+            min-width: 108px;
+            min-height: 50px;
+        }
+
+        .explorer-search-status {
+            min-height: 20px;
+            margin-top: -24px;
+            margin-bottom: 20px;
+            color: var(--color-text-muted);
+            font-size: 13px;
+        }
+
+        .explorer-overview { margin-bottom: 40px; }
+
+        .explorer-section-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .explorer-section-heading h2 {
+            margin: 0;
+            color: var(--color-text-primary);
+            font-size: 18px;
+            font-weight: 650;
+            line-height: 1.3;
+        }
+
+        .explorer-section-meta {
+            color: var(--color-text-muted);
+            font-size: 12px;
+        }
+
+        .explorer-stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin: 0;
+        }
+
+        .explorer-stat {
+            min-width: 0;
+            padding: 22px 22px 20px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            transition: border-color 0.15s ease, transform 0.15s ease;
+        }
+
+        .explorer-stat:hover {
+            border-color: var(--color-border-gold);
+            transform: translateY(-2px);
+        }
+
+        .explorer-stat-value {
+            display: block;
+            margin: 0 0 7px;
+            overflow: hidden;
+            color: var(--color-accent-gold);
+            font-size: clamp(22px, 3vw, 28px);
+            font-weight: 700;
+            line-height: 1.1;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .explorer-stat-value.loading {
+            opacity: 0.4;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .source-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            margin-left: 8px;
+            vertical-align: middle;
+            border-radius: var(--radius-pill);
+            background: var(--color-bg-deep);
+            color: var(--color-text-muted);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .source-badge.mock {
+            color: var(--color-accent-cyan);
+            border: 1px solid var(--color-accent-cyan-dim);
+        }
+
+        .source-badge.network {
+            color: var(--color-accent-gold);
+            border: 1px solid var(--color-accent-gold-dim);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+        }
+
+        .explorer-stat-label {
+            display: block;
+            color: var(--color-text-muted);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .explorer-stat-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .explorer-stat-status::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .explorer-stat-status.live { color: var(--color-accent-cyan); }
+        .explorer-stat-status.demo { color: var(--color-accent-gold); }
+        .explorer-stat-status.offline {
+            color: var(--color-status-offline, #ff6b6b);
+        }
+
+        .explorer-recent {
+            overflow: hidden;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .explorer-recent-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .explorer-recent-header h2 {
+            margin: 0;
+            color: var(--color-text-primary);
+            font-size: 16px;
+            font-weight: 650;
+        }
+
+        .explorer-recent-header span {
+            color: var(--color-text-muted);
+            font-size: 12px;
+        }
+
+        .recent-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .recent-row {
+            display: grid;
+            grid-template-columns: minmax(140px, 1.3fr) minmax(100px, 1fr) auto auto;
+            align-items: center;
+            gap: 18px;
+            min-height: 58px;
+            padding: 10px 22px;
+            border-bottom: 1px solid var(--color-border);
+            background: transparent;
+            transition: background-color 0.15s ease;
+        }
+
+        .recent-row:last-child { border-bottom: 0; }
+
+        .recent-row[data-clickable="true"] {
+            cursor: pointer;
+        }
+
+        .recent-row[data-clickable="true"]:hover,
+        .recent-row[data-clickable="true"]:focus-visible {
+            background: var(--color-bg-surface-light);
+        }
+
+        .recent-row[data-clickable="true"]:focus-visible {
+            outline: 2px solid var(--color-accent-cyan);
+            outline-offset: -2px;
+        }
+
+        .recent-hash {
+            min-width: 0;
+            overflow: hidden;
+            color: var(--color-text-primary);
+            font-family: monospace;
+            font-size: 13px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .recent-epoch {
+            color: var(--color-text-secondary);
+            font-size: 13px;
+        }
+
+        .recent-time {
+            color: var(--color-text-muted);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .explorer-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 24px;
+            padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .explorer-badge-finalized {
+            background: var(--color-accent-gold-dim);
+            color: var(--color-accent-gold);
+        }
+
+        .explorer-badge-processing {
+            background: var(--color-accent-cyan-dim);
+            color: var(--color-accent-cyan);
+        }
+
+        .explorer-badge-loading {
+            background: var(--color-bg-surface-light);
+            color: var(--color-text-muted);
+        }
+
+        .detail-view {
+            display: none;
+            margin-bottom: 40px;
+            padding: 32px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border-gold);
+            border-radius: var(--radius-md);
+        }
+
+        .detail-view.active { display: block; }
+
+        .detail-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding: 0;
+            border: 0;
+            background: none;
+            color: var(--color-accent-cyan);
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .detail-back:hover,
+        .detail-back:focus-visible {
+            color: var(--color-accent-gold);
+        }
+
+        .detail-view h2 {
+            margin: 0 0 16px;
+            color: var(--color-text-primary);
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .detail-item {
+            padding: 12px 16px;
+            background: var(--color-bg-deep);
+            border-radius: var(--radius-sm);
+        }
+
+        .detail-item .label {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--color-text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .detail-item .value {
+            display: block;
+            color: var(--color-text-primary);
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+        }
+
+        .detail-item .value.cyan { color: var(--color-accent-cyan); }
+        .detail-item .value.gold { color: var(--color-accent-gold); }
+
+        .explorer-empty[hidden] { display: none; }
+
+        @media (max-width: 900px) {
+            .explorer-stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .recent-row {
+                grid-template-columns: minmax(140px, 1fr) auto;
+                gap: 8px 16px;
+            }
+
+            .recent-epoch { grid-column: 1; }
+            .explorer-badge {
+                grid-column: 2;
+                grid-row: 1;
+            }
+
+            .recent-time {
+                grid-column: 2;
+                grid-row: 2;
+                text-align: right;
+            }
+
+            .detail-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 640px) {
+            .explorer-search { flex-direction: column; }
+            .explorer-search .btn { width: 100%; }
+            .explorer-stats { gap: 10px; }
+            .explorer-stat { padding: 18px; }
+
+            .recent-row {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+                padding: 14px 18px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .explorer-stats { grid-template-columns: 1fr; }
+            .explorer-header h1 { font-size: 28px; }
+            .detail-view { padding: 20px; }
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="header-container" aria-busy="true"></div>
+
+<main class="explorer-page" id="main-content">
+    <div class="container">
+
+        <header class="explorer-header">
+            <div class="explorer-kicker">Network Explorer</div>
+            <h1>Explore the Aevum Network</h1>
+            <p>Inspect epochs, network activity, transactions and addresses across the Aevum protocol.</p>
+        </header>
+
+        <form class="explorer-search" id="explorer-search" role="search" novalidate>
+            <div class="explorer-search-field">
+                <svg class="explorer-search-icon" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2"
+                     aria-hidden="true">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <path d="m20 20-3.5-3.5"></path>
+                </svg>
+
+                <label class="sr-only" for="searchInput">
+                    Search the Aevum network
+                </label>
+
+                <input
+                    type="search"
+                    id="searchInput"
+                    name="q"
+                    placeholder="Search epoch, transaction or address..."
+                    autocomplete="off"
+                    spellcheck="false"
+                    enterkeyhint="search"
+                >
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="searchButton">
+                Search
+            </button>
+        </form>
+
+        <div
+            id="search-status"
+            class="explorer-search-status"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+        ></div>
+
+        <section class="explorer-overview" aria-labelledby="network-overview-title">
+            <div class="explorer-section-heading">
+                <h2 id="network-overview-title">Network Overview</h2>
+                <span class="explorer-section-meta" id="network-live-status">
+                    Connecting...
+                </span>
+            </div>
+
+            <dl class="explorer-stats" id="stats-container">
+
+                <div class="explorer-stat">
+                    <dt class="explorer-stat-label">Latest Epoch</dt>
+                    <dd class="explorer-stat-value loading" id="stat-epoch">—</dd>
+                </div>
+
+                <div class="explorer-stat">
+                    <dt class="explorer-stat-label">Current Supply</dt>
+                    <dd class="explorer-stat-value loading" id="stat-supply">—</dd>
+                </div>
+
+                <div class="explorer-stat">
+                    <dt class="explorer-stat-label">Active Participants</dt>
+                    <dd class="explorer-stat-value loading" id="stat-participants">—</dd>
+                </div>
+
+                <div class="explorer-stat">
+                    <dt class="explorer-stat-label">Network Status</dt>
+                    <dd class="explorer-stat-value explorer-stat-status" id="stat-status">
+                        Connecting...
+                    </dd>
+                </div>
+
+            </dl>
+        </section>
+
+        <section
+            class="detail-view"
+            id="detail-view"
+            aria-labelledby="detail-title"
+            aria-hidden="true"
+        >
+            <button class="detail-back" id="detail-back" type="button">
+                ← Back to overview
+            </button>
+
+            <div id="detail-content"></div>
+        </section>
+
+        <section class="explorer-recent" aria-labelledby="recent-activity-title">
+            <header class="explorer-recent-header">
+                <h2 id="recent-activity-title">Recent Activity</h2>
+                <span>Latest network activity</span>
+            </header>
+
+            <ul class="recent-list" id="activity-list"></ul>
+        </section>
+
+        <div class="explorer-empty" id="explorer-empty" hidden>
+            <div class="explorer-empty-content">
+                <h3>No matching network data</h3>
+                <p>The requested epoch, transaction or address could not be found.</p>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<div id="footer-container" aria-busy="true"></div>
+
+<script type="module">
+    import { Store } from '/js/api/store.js';
+
+    // ============================================================
+    // DOM
+    // ============================================================
+
+    const statEpoch = document.getElementById('stat-epoch');
+    const statSupply = document.getElementById('stat-supply');
+    const statParticipants = document.getElementById('stat-participants');
+    const statStatus = document.getElementById('stat-status');
+    const liveStatus = document.getElementById('network-live-status');
+
+    const activityList = document.getElementById('activity-list');
+
+    const searchForm = document.getElementById('explorer-search');
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const searchStatus = document.getElementById('search-status');
+
+    const detailView = document.getElementById('detail-view');
+    const detailContent = document.getElementById('detail-content');
+    const detailBack = document.getElementById('detail-back');
+
+    // ============================================================
+    // VALIDATION
+    // ============================================================
+
+    function validateEpochId(value) {
+        if (typeof value !== 'string' || !/^\d+$/.test(value.trim())) {
+            return null;
+        }
+
+        const number = Number(value.trim());
+
+        return Number.isSafeInteger(number) && number >= 1
+            ? number
+            : null;
+    }
+
+    function validateTxHash(value) {
+        if (
+            typeof value !== 'string' ||
+            !/^0x[a-f0-9]{64}$/i.test(value.trim())
+        ) {
+            return null;
+        }
+
+        return value.trim().toLowerCase();
+    }
+
+    function validateAddress(value) {
+        if (
+            typeof value !== 'string' ||
+            !/^0x[a-f0-9]{40}$/i.test(value.trim())
+        ) {
+            return null;
+        }
+
+        return value.trim().toLowerCase();
+    }
+
+    // ============================================================
+    // SAFE DOM RENDERING
+    // ============================================================
+
+    function createDetailItem(label, value, className = '') {
+        const item = document.createElement('div');
+        item.className = 'detail-item';
+
+        const labelEl = document.createElement('span');
+        labelEl.className = 'label';
+        labelEl.textContent = label;
+
+        const valueEl = document.createElement('span');
+        valueEl.className = `value${className ? ` ${className}` : ''}`;
+        valueEl.textContent = value == null ? '—' : String(value);
+
+        item.append(labelEl, valueEl);
+
+        return item;
+    }
+
+    function createDetailGrid(entries) {
+        const grid = document.createElement('div');
+        grid.className = 'detail-grid';
+
+        for (const [label, value, className] of entries) {
+            grid.appendChild(
+                createDetailItem(label, value, className)
+            );
+        }
+
+        return grid;
+    }
+
+    function safeDate(value, fallback = '—') {
+        if (!value) return fallback;
+
+        const date = new Date(value);
+
+        return Number.isNaN(date.getTime())
+            ? fallback
+            : date.toLocaleString();
+    }
+
+    function safeTime(value, fallback = '—') {
+        if (!value) return fallback;
+
+        const date = new Date(value);
+
+        return Number.isNaN(date.getTime())
+            ? fallback
+            : date.toLocaleTimeString();
+    }
+
+    function renderDetailEpoch(data) {
+        const title = document.createElement('h2');
+        title.id = 'detail-title';
+        title.textContent = `Epoch #${data.id}`;
+
+        const grid = createDetailGrid([
+            ['Slot Start', data.slotStart],
+            ['Slot End', data.slotEnd],
+            ['State Root', data.stateRoot],
+            ['Presence Root', data.presenceRoot],
+            ['Reward Root', data.rewardRoot],
+            ['Fee Root', data.feeRoot],
+            ['Emission Root', data.emissionRoot],
+            ['Snapshot Hash', data.snapshotHash],
+            ['Participants', data.participants ?? '—', 'gold'],
+            ['Transactions', data.transactions ?? '—', 'gold'],
+            ['Rewards', data.rewards ?? '—', 'gold'],
+            ['Finalized', safeDate(data.finalizedAt, 'Pending'), 'cyan'],
+        ]);
+
+        const container = document.createElement('div');
+        container.append(title, grid);
+
+        return container;
+    }
+
+    function renderDetailTransaction(data) {
+        const title = document.createElement('h2');
+        title.id = 'detail-title';
+        title.textContent = 'Transaction';
+
+        const grid = createDetailGrid([
+            ['Hash', data.hash],
+            ['Epoch', data.epoch == null ? '—' : `#${data.epoch}`, 'gold'],
+            ['Slot', data.slot],
+            ['Type', data.type, 'cyan'],
+            ['From', data.from],
+            ['To', data.to],
+            ['Amount', data.amount == null ? '—' : `${data.amount} AEV`, 'gold'],
+            ['Fee', data.fee == null ? '—' : `${data.fee} AEV`],
+            ['Status', data.status, 'cyan'],
+            ['Timestamp', safeDate(data.timestamp)],
+        ]);
+
+        const container = document.createElement('div');
+        container.append(title, grid);
+
+        return container;
+    }
+
+    function renderDetailAddress(data) {
+        const title = document.createElement('h2');
+        title.id = 'detail-title';
+        title.textContent = 'Address';
+
+        const grid = createDetailGrid([
+            ['Address', data.address],
+            ['Type', data.type, 'cyan'],
+            ['Status', data.status, 'gold'],
+            ['Presence', data.presence == null ? '—' : `${data.presence}%`],
+            ['Balance', data.balance == null ? '—' : `${data.balance} AEV`, 'gold'],
+            ['Transactions', data.transactions],
+            ['First Seen', safeDate(data.firstSeen)],
+            ['Last Seen', safeDate(data.lastSeen)],
+        ]);
+
+        const container = document.createElement('div');
+        container.append(title, grid);
+
+        return container;
+    }
+
+    function renderDetail(type, data) {
+        switch (type) {
+            case 'epoch':
+                return renderDetailEpoch(data);
+
+            case 'transaction':
+                return renderDetailTransaction(data);
+
+            case 'address':
+                return renderDetailAddress(data);
+
+            default: {
+                const p = document.createElement('p');
+                p.textContent = 'Unknown detail type';
+                return p;
+            }
+        }
+    }
+
+    function showDetail(type, data) {
+        detailContent.replaceChildren(
+            renderDetail(type, data)
+        );
+
+        detailView.classList.add('active');
+        detailView.setAttribute('aria-hidden', 'false');
+
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+        });
+    }
+
+    function hideDetail({ scroll = false } = {}) {
+        detailView.classList.remove('active');
+        detailView.setAttribute('aria-hidden', 'true');
+        detailContent.replaceChildren();
+
+        if (scroll) {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+            });
+        }
+    }
+
+    // ============================================================
+    // STATS
+    // ============================================================
+
+    function renderStats(network, supply) {
+        if (network) {
+            statEpoch.textContent =
+                network.epoch ?? '—';
+
+            statParticipants.textContent =
+                network.participants == null
+                    ? '—'
+                    : Number(network.participants).toLocaleString();
+
+            statEpoch.classList.remove('loading');
+            statParticipants.classList.remove('loading');
+
+            const state = network.state ?? 'unknown';
+            const source = network.source ?? 'unknown';
+
+            statStatus.className =
+                'explorer-stat-value explorer-stat-status';
+
+            if (source === 'mock') {
+                statStatus.classList.add('demo');
+            } else if (state === 'active') {
+                statStatus.classList.add('live');
+            } else {
+                statStatus.classList.add('offline');
+            }
+
+            const statusLabel =
+                state === 'active'
+                    ? 'Live'
+                    : state === 'finalizing'
+                        ? 'Finalizing'
+                        : state;
+
+            statStatus.replaceChildren();
+
+            const statusText = document.createTextNode(
+                statusLabel
+            );
+
+            const badge = document.createElement('span');
+            badge.className =
+                `source-badge ${
+                    source === 'mock'
+                        ? 'mock'
+                        : source === 'network'
+                            ? 'network'
+                            : ''
+                }`;
+
+            badge.textContent =
+                source === 'mock'
+                    ? 'DEMO'
+                    : source === 'network'
+                        ? 'LIVE'
+                        : source.toUpperCase();
+
+            statStatus.append(statusText, badge);
+
+            if (source === 'mock') {
+                liveStatus.textContent = 'Demo Mode';
+                liveStatus.style.color =
+                    'var(--color-accent-gold)';
+            } else if (source === 'network') {
+                liveStatus.textContent = 'Live';
+                liveStatus.style.color =
+                    'var(--color-accent-cyan)';
+            } else {
+                liveStatus.textContent = 'Unavailable';
+                liveStatus.style.color = '';
+            }
+        }
+
+        if (supply) {
+            const circulating = Number(supply.circulating);
+
+            statSupply.textContent =
+                Number.isFinite(circulating)
+                    ? `${(circulating / 1_000_000).toFixed(1)}M`
+                    : '—';
+
+            statSupply.classList.remove('loading');
+        }
+    }
+
+    // ============================================================
+    // ACTIVITY
+    // ============================================================
+
+    function getActivityRoute(item) {
+        switch (item?.type) {
+            case 'epoch':
+            case 'snapshot':
+                return {
+                    type: 'epoch',
+                    id: validateEpochId(String(item.epoch ?? '')),
+                };
+
+            case 'transaction':
+                return {
+                    type: 'transaction',
+                    id: validateTxHash(item.hash),
+                };
+
+            default:
+                return {
+                    type: null,
+                    id: null,
+                };
+        }
+    }
+
+    async function openActivity(item) {
+        const route = getActivityRoute(item);
+
+        if (!route.type || !route.id) {
+            return;
+        }
+
+        try {
+            if (route.type === 'epoch') {
+                const detail =
+                    await Store.getEpochDetail(route.id);
+
+                window.history.pushState(
+                    {},
+                    '',
+                    `?epoch=${route.id}`
+                );
+
+                showDetail('epoch', detail);
+                return;
+            }
+
+            if (route.type === 'transaction') {
+                const detail =
+                    await Store.getTransactionDetail(route.id);
+
+                window.history.pushState(
+                    {},
+                    '',
+                    `?tx=${route.id}`
+                );
+
+                showDetail('transaction', detail);
+            }
+        } catch (error) {
+            console.error(
+                '[Explorer] Failed to load activity detail:',
+                error
+            );
+
+            setSearchStatus(
+                'Failed to load the selected network record.'
+            );
+        }
+    }
+
+    function renderActivity(activity) {
+        activityList.replaceChildren();
+
+        if (
+            !activity ||
+            !Array.isArray(activity.items) ||
+            activity.items.length === 0
+        ) {
+            const li = document.createElement('li');
+
+            li.className = 'recent-row';
+            li.style.justifyContent = 'center';
+            li.style.color = 'var(--color-text-muted)';
+            li.style.padding = '24px';
+
+            li.textContent = 'No recent activity';
+
+            activityList.appendChild(li);
+            return;
+        }
+
+        for (const item of activity.items) {
+            const li = document.createElement('li');
+
+            const route = getActivityRoute(item);
+            const clickable =
+                Boolean(route.type && route.id);
+
+            li.className = 'recent-row';
+            li.dataset.type = item.type ?? 'unknown';
+            li.dataset.id = String(item.epoch ?? '');
+
+            if (clickable) {
+                li.dataset.clickable = 'true';
+                li.tabIndex = 0;
+                li.setAttribute(
+                    'role',
+                    'button'
+                );
+
+                li.addEventListener(
+                    'click',
+                    () => openActivity(item)
+                );
+
+                li.addEventListener(
+                    'keydown',
+                    event => {
+                        if (
+                            event.key === 'Enter' ||
+                            event.key === ' '
+                        ) {
+                            event.preventDefault();
+                            openActivity(item);
+                        }
+                    }
+                );
+            }
+
+            const hash = document.createElement('span');
+            hash.className = 'recent-hash';
+            hash.textContent = item.hash ?? '—';
+
+            const epoch = document.createElement('span');
+            epoch.className = 'recent-epoch';
+
+            if (item.epoch != null) {
+                epoch.textContent =
+                    `Epoch #${item.epoch}`;
+            } else {
+                epoch.textContent =
+                    item.type ?? 'Activity';
+            }
+
+            const badge = document.createElement('span');
+            badge.className = 'explorer-badge';
+            badge.textContent =
+                item.status ?? 'unknown';
+
+            if (item.status === 'finalized') {
+                badge.classList.add(
+                    'explorer-badge-finalized'
+                );
+            } else if (item.status === 'processing') {
+                badge.classList.add(
+                    'explorer-badge-processing'
+                );
+            } else {
+                badge.classList.add(
+                    'explorer-badge-loading'
+                );
+            }
+
+            const time = document.createElement('time');
+            time.className = 'recent-time';
+            time.textContent =
+                safeTime(item.timestamp);
+
+            if (item.timestamp) {
+                time.dateTime =
+                    new Date(item.timestamp).toISOString();
+            }
+
+            li.append(hash, epoch, badge, time);
+            activityList.appendChild(li);
+        }
+    }
+
+    function showActivityMessage(message) {
+        activityList.replaceChildren();
+
+        const li = document.createElement('li');
+
+        li.className = 'recent-row';
+        li.style.justifyContent = 'center';
+        li.style.color = 'var(--color-status-offline)';
+        li.style.padding = '24px';
+
+        li.textContent = message;
+
+        activityList.appendChild(li);
+    }
+
+    // ============================================================
+    // DATA
+    // ============================================================
+
+    async function loadData() {
+        try {
+            const [
+                network,
+                supply,
+                activity,
+            ] = await Promise.all([
+                Store.getNetworkStatus(),
+                Store.getSupply(),
+                Store.getRecentActivity(10),
+            ]);
+
+            renderStats(network, supply);
+            renderActivity(activity);
+        } catch (error) {
+            console.error(
+                '[Explorer] Failed to load data:',
+                error
+            );
+
+            showActivityMessage(
+                'Failed to load network data. Please try again later.'
+            );
+        }
+    }
+
+    // ============================================================
+    // URL DETAILS
+    // ============================================================
+
+    async function loadDetailFromUrl() {
+        const params =
+            new URLSearchParams(
+                window.location.search
+            );
+
+        const epochParam = params.get('epoch');
+
+        if (epochParam !== null) {
+            const id = validateEpochId(epochParam);
+
+            if (id !== null) {
+                try {
+                    const detail =
+                        await Store.getEpochDetail(id);
+
+                    showDetail('epoch', detail);
+                    return;
+                } catch (error) {
+                    console.error(
+                        '[Explorer] Failed to load epoch:',
+                        error
+                    );
+                }
+            }
+        }
+
+        const txParam = params.get('tx');
+
+        if (txParam !== null) {
+            const hash = validateTxHash(txParam);
+
+            if (hash !== null) {
+                try {
+                    const detail =
+                        await Store.getTransactionDetail(hash);
+
+                    showDetail('transaction', detail);
+                    return;
+                } catch (error) {
+                    console.error(
+                        '[Explorer] Failed to load transaction:',
+                        error
+                    );
+                }
+            }
+        }
+
+        const addressParam =
+            params.get('address');
+
+        if (addressParam !== null) {
+            const address =
+                validateAddress(addressParam);
+
+            if (address !== null) {
+                try {
+                    const detail =
+                        await Store.getAddressDetail(address);
+
+                    showDetail('address', detail);
+                    return;
+                } catch (error) {
+                    console.error(
+                        '[Explorer] Failed to load address:',
+                        error
+                    );
+                }
+            }
+        }
+
+        hideDetail();
+    }
+
+    // ============================================================
+    // SEARCH
+    // ============================================================
+
+    function setSearchStatus(message) {
+        searchStatus.textContent = message ?? '';
+    }
+
+    function setSearchLoading(loading) {
+        searchButton.disabled = loading;
+        searchInput.disabled = loading;
+
+        searchButton.textContent =
+            loading ? 'Searching…' : 'Search';
+    }
+
+    searchForm.addEventListener(
+        'submit',
+        async event => {
+            event.preventDefault();
+
+            const query =
+                searchInput.value.trim();
+
+            if (query.length < 2) {
+                setSearchStatus(
+                    'Enter at least 2 characters.'
+                );
+                return;
+            }
+
+            setSearchStatus('');
+            setSearchLoading(true);
+
+            try {
+                const result =
+                    await Store.search(query);
+
+                if (
+                    result &&
+                    result.type === 'epoch' &&
+                    result.data
+                ) {
+                    const id =
+                        validateEpochId(
+                            String(result.data.id)
+                        );
+
+                    if (id !== null) {
+                        window.history.pushState(
+                            {},
+                            '',
+                            `?epoch=${id}`
+                        );
+
+                        await loadDetailFromUrl();
+                        return;
+                    }
+                }
+
+                if (
+                    result &&
+                    result.type === 'transaction' &&
+                    result.data
+                ) {
+                    const hash =
+                        validateTxHash(
+                            result.data.hash
+                        );
+
+                    if (hash !== null) {
+                        window.history.pushState(
+                            {},
+                            '',
+                            `?tx=${hash}`
+                        );
+
+                        await loadDetailFromUrl();
+                        return;
+                    }
+                }
+
+                if (
+                    result &&
+                    result.type === 'address' &&
+                    result.data
+                ) {
+                    const address =
+                        validateAddress(
+                            result.data.address
+                        );
+
+                    if (address !== null) {
+                        window.history.pushState(
+                            {},
+                            '',
+                            `?address=${address}`
+                        );
+
+                        await loadDetailFromUrl();
+                        return;
+                    }
+                }
+
+                setSearchStatus(
+                    `No results found for "${query}".`
+                );
+            } catch (error) {
+                console.error(
+                    '[Explorer] Search failed:',
+                    error
+                );
+
+                setSearchStatus(
+                    'Search failed. Please try again.'
+                );
+            } finally {
+                setSearchLoading(false);
+            }
+        }
+    );
+
+    // ============================================================
+    // NAVIGATION
+    // ============================================================
+
+    detailBack.addEventListener(
+        'click',
+        () => {
+            window.history.pushState(
+                {},
+                '',
+                '/explorer.html'
+            );
+
+            hideDetail({
+                scroll: true,
+            });
+        }
+    );
+
+    window.addEventListener(
+        'popstate',
+        () => {
+            loadDetailFromUrl().catch(error => {
+                console.error(
+                    '[Explorer] Navigation failed:',
+                    error
+                );
+            });
+        }
+    );
+
+    // ============================================================
+    // BOOT
+    // ============================================================
+
+    await loadData();
+    await loadDetailFromUrl();
+
+    /*
+     * Store owns polling.
+     * Explorer does not create its own interval.
+     */
+    Store.startPolling(30_000);
+
+    console.log(
+        '[Explorer] Data layer initialized with Store'
+    );
+</script>
+
+<script>
+    (() => {
+        const componentCache = new Map();
+
+        async function loadComponent(id, url) {
+            const element =
+                document.getElementById(id);
+
+            if (!element) {
+                return false;
+            }
+
+            try {
+                let html =
+                    componentCache.get(url);
+
+                if (!html) {
+                    const response =
+                        await fetch(url, {
+                            cache: 'default',
+                        });
+
+                    if (!response.ok) {
+                        throw new Error(
+                            `Failed: ${response.status}`
+                        );
+                    }
+
+                    html = await response.text();
+                    componentCache.set(url, html);
+                }
+
+                element.innerHTML = html;
+                element.setAttribute(
+                    'aria-busy',
+                    'false'
+                );
+
+                return true;
+            } catch (error) {
+                console.error(
+                    `[Aevum] Failed: ${url}`,
+                    error
+                );
+
+                element.replaceChildren();
+                element.setAttribute(
+                    'aria-busy',
+                    'false'
+                );
+
+                return false;
+            }
+        }
+
+        function initNav() {
+            const burger =
+                document.getElementById('burger');
+
+            const overlay =
+                document.getElementById('overlay');
+
+            const sideNav =
+                document.getElementById('sideNav');
+
+            const closeNav =
+                document.getElementById('closeNav');
+
+            if (
+                !burger ||
+                !overlay ||
+                !sideNav ||
+                !closeNav
+            ) {
+                return;
+            }
+
+            let previousOverflow = '';
+
+            function open() {
+                previousOverflow =
+                    document.body.style.overflow;
+
+                sideNav.classList.add('active');
+                overlay.classList.add('active');
+                burger.classList.add('active');
+
+                burger.setAttribute(
+                    'aria-expanded',
+                    'true'
+                );
+
+                sideNav.setAttribute(
+                    'aria-hidden',
+                    'false'
+                );
+
+                document.body.style.overflow =
+                    'hidden';
+
+                closeNav.focus();
+            }
+
+            function close(
+                returnFocus = true
+            ) {
+                sideNav.classList.remove('active');
+                overlay.classList.remove('active');
+                burger.classList.remove('active');
+
+                burger.setAttribute(
+                    'aria-expanded',
+                    'false'
+                );
+
+                sideNav.setAttribute(
+                    'aria-hidden',
+                    'true'
+                );
+
+                document.body.style.overflow =
+                    previousOverflow;
+
+                if (returnFocus) {
+                    burger.focus();
+                }
+            }
+
+            burger.addEventListener(
+                'click',
+                () => {
+                    sideNav.classList.contains('active')
+                        ? close()
+                        : open();
+                }
+            );
+
+            overlay.addEventListener(
+                'click',
+                () => close()
+            );
+
+            closeNav.addEventListener(
+                'click',
+                () => close()
+            );
+
+            document.addEventListener(
+                'keydown',
+                event => {
+                    if (
+                        event.key === 'Escape' &&
+                        sideNav.classList.contains('active')
+                    ) {
+                        close();
+                    }
+                }
+            );
+        }
+
+        async function boot() {
+            const headerOk =
+                await loadComponent(
+                    'header-container',
+                    '/components/header.html'
+                );
+
+            if (headerOk) {
+                initNav();
+            }
+
+            await loadComponent(
+                'footer-container',
+                '/components/footer.html'
+            );
+        }
+
+        boot();
+    })();
+</script>
+
+</body>
+</html>

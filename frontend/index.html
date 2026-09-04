@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="Aevum — a privacy-first, post-quantum decentralized network built for useful computation and decentralized infrastructure."
+    >
+
+    <meta name="theme-color" content="#061426">
+
+    <title>Aevum — The Decentralized Supercomputer</title>
+
+    <!-- ========================================================
+         AEVUM DESIGN SYSTEM
+         ======================================================== -->
+
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/app-shell.css">
+    <link rel="stylesheet" href="/css/components.css">
+
+    <!-- ========================================================
+         PERFORMANCE
+         ======================================================== -->
+
+    <link
+        rel="preconnect"
+        href="https://cdnjs.cloudflare.com"
+        crossorigin
+    >
+
+    <!-- ========================================================
+         THEME
+         ======================================================== -->
+
+    <script src="/js/theme.js"></script>
+
+    <!-- ========================================================
+         THREE.JS
+         Deferred so HTML parsing is never blocked.
+         ======================================================== -->
+
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+        defer
+    ></script>
+
+
+    <!-- ========================================================
+         HOME PAGE STYLES
+
+         Global styles belong to:
+         theme.css
+         app-shell.css
+         components.css
+
+         This block contains Home-only composition.
+         ======================================================== -->
+
+    <style>
+
+        /* ====================================================
+           HOME
+           ==================================================== */
+
+        .home {
+            min-height: calc(100vh - var(--header-height, 72px));
+        }
+
+
+        /* ====================================================
+           HERO
+           ==================================================== */
+
+        .hero {
+            min-height: calc(100vh - var(--header-height, 72px));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 0 64px;
+            text-align: center;
+        }
+
+        .hero-content {
+            width: 100%;
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+
+        /* ====================================================
+           BADGE
+           ==================================================== */
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 32px;
+            margin-bottom: 20px;
+            padding: 6px 18px;
+
+            color: var(--color-accent-gold);
+            background: var(--color-accent-gold-dim);
+            border: 1px solid var(--color-border-gold);
+            border-radius: var(--radius-pill);
+
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.3;
+            letter-spacing: 0.04em;
+        }
+
+        .hero-badge::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            flex: 0 0 auto;
+
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+
+            box-shadow:
+                0 0 10px rgba(32, 217, 255, 0.45);
+        }
+
+
+        /* ====================================================
+           TITLE
+           ==================================================== */
+
+        .hero-content h1 {
+            margin: 0 0 18px;
+
+            color: var(--color-text-primary);
+
+            font-size: clamp(38px, 6vw, 64px);
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -0.035em;
+        }
+
+        .hero-content h1 span {
+            color: var(--color-accent-gold);
+        }
+
+
+        /* ====================================================
+           SUBTITLE
+           ==================================================== */
+
+        .hero-subtitle {
+            max-width: 600px;
+            margin: 0 auto 32px;
+
+            color: var(--color-text-secondary);
+
+            font-size: 18px;
+            line-height: 1.7;
+        }
+
+
+        /* ====================================================
+           3D BEE
+           ==================================================== */
+
+        #bee-container {
+            position: relative;
+
+            width: 100%;
+            max-width: 420px;
+            height: 320px;
+
+            margin: 0 auto 18px;
+
+            contain: layout paint;
+        }
+
+        #bee-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .bee-fallback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            width: 100%;
+            height: 100%;
+
+            color: var(--color-text-muted);
+
+            font-size: 13px;
+            letter-spacing: 0.08em;
+        }
+
+
+        /* ====================================================
+           HERO ACTIONS
+           ==================================================== */
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+
+            gap: 12px;
+
+            margin-bottom: 42px;
+        }
+
+
+        /* ====================================================
+           HERO STATS
+           ==================================================== */
+
+        .hero-stats {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .hero-stats .stat {
+            min-width: 130px;
+
+            padding: 0 24px;
+
+            color: var(--color-text-muted);
+
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .hero-stats .stat + .stat {
+            border-left: 1px solid var(--color-border);
+        }
+
+        .hero-stats .stat strong {
+            display: block;
+
+            margin-bottom: 2px;
+
+            color: var(--color-text-primary);
+
+            font-size: 23px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .hero-stats .status-mark {
+            color: var(--color-accent-cyan);
+            font-size: 14px;
+        }
+
+
+        /* ====================================================
+           RESPONSIVE
+           ==================================================== */
+
+        @media (max-width: 768px) {
+
+            .hero {
+                min-height: auto;
+                padding: 32px 0 48px;
+            }
+
+            .hero-subtitle {
+                font-size: 16px;
+            }
+
+            #bee-container {
+                height: 250px;
+            }
+
+            .hero-stats {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+
+                width: min(100%, 420px);
+
+                margin: 0 auto;
+            }
+
+            .hero-stats .stat {
+                min-width: 0;
+                padding: 12px;
+                border-top: 1px solid var(--color-border);
+            }
+
+            .hero-stats .stat + .stat {
+                border-left: 0;
+            }
+
+            .hero-stats .stat:nth-child(1),
+            .hero-stats .stat:nth-child(2) {
+                border-top: 0;
+            }
+
+            .hero-stats .stat:nth-child(2),
+            .hero-stats .stat:nth-child(4) {
+                border-left: 1px solid var(--color-border);
+            }
+        }
+
+
+        @media (max-width: 480px) {
+
+            .hero {
+                padding-top: 24px;
+            }
+
+            .hero-content h1 {
+                font-size: 34px;
+            }
+
+            .hero-subtitle {
+                font-size: 15px;
+                line-height: 1.65;
+            }
+
+            #bee-container {
+                height: 205px;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+            }
+
+            .hero-actions .btn {
+                width: min(100%, 300px);
+            }
+
+            .hero-stats .stat strong {
+                font-size: 19px;
+            }
+
+            .hero-stats .stat {
+                font-size: 12px;
+            }
+        }
+
+
+        /* ====================================================
+           REDUCED MOTION
+           ==================================================== */
+
+        @media (prefers-reduced-motion: reduce) {
+
+            #bee-container {
+                visibility: hidden;
+            }
+        }
+
+    </style>
+</head>
+
+
+<body>
+
+    <!-- ========================================================
+         GLOBAL HEADER
+         ======================================================== -->
+
+    <div
+        id="header-container"
+        aria-label="Site header"
+    ></div>
+
+
+    <!-- ========================================================
+         HOME
+         ======================================================== -->
+
+    <main
+        class="home"
+        id="main-content"
+    >
+
+        <section
+            class="hero"
+            aria-labelledby="hero-title"
+        >
+
+            <div class="container">
+
+                <div class="hero-content">
+
+
+                    <!-- ==================================================
+                         NETWORK POSITIONING
+                         ================================================== -->
+
+                    <div
+                        class="hero-badge"
+                        aria-label="Post-Quantum, Layer 1 and Layer 2"
+                    >
+                        Post-Quantum · L1 + L2
+                    </div>
+
+
+                    <!-- ==================================================
+                         AEVUM BEE
+                         ================================================== -->
+
+                    <div
+                        id="bee-container"
+                        aria-hidden="true"
+                    ></div>
+
+
+                    <!-- ==================================================
+                         PRIMARY MESSAGE
+                         ================================================== -->
+
+                    <h1 id="hero-title">
+                        The Decentralized<br>
+                        <span>Supercomputer</span>
+                    </h1>
+
+
+                    <p class="hero-subtitle">
+                        A privacy-first, post-quantum network powered by
+                        Proof of Presence, useful computation, epoch consensus
+                        and decentralized infrastructure.
+                    </p>
+
+
+                    <!-- ==================================================
+                         PRIMARY ACTIONS
+                         ================================================== -->
+
+                    <div class="hero-actions">
+
+                        <a
+                            href="/explorer.html"
+                            class="btn btn-primary"
+                        >
+                            Explore Network
+                        </a>
+
+                        <a
+                            href="/docs.html"
+                            class="btn btn-secondary"
+                        >
+                            Documentation
+                        </a>
+
+                    </div>
+
+
+                    <!-- ==================================================
+                         NETWORK STATS
+                         ================================================== -->
+
+                    <div
+                        class="hero-stats"
+                        aria-label="Aevum network statistics"
+                    >
+
+                        <span class="stat">
+                            <strong>371M</strong>
+                            Max Supply
+                        </span>
+
+                        <span class="stat">
+                            <strong>0.01%</strong>
+                            L2 Fee
+                        </span>
+
+                        <span class="stat">
+                            <strong>100k</strong>
+                            Epoch Participants
+                        </span>
+
+                        <span class="stat">
+                            <strong>
+                                <span
+                                    class="status-mark"
+                                    aria-hidden="true"
+                                >●</span>
+                                Live
+                            </strong>
+                            Network
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- ========================================================
+         GLOBAL FOOTER
+         ======================================================== -->
+
+    <div
+        id="footer-container"
+        aria-label="Site footer"
+    ></div>
+
+
+    <!-- ========================================================
+         AEVUM COMPONENT LOADER
+         ======================================================== -->
+
+    <script>
+        (() => {
+            "use strict";
+
+            const componentCache = new Map();
+
+
+            /* ====================================================
+               COMPONENT LOADER
+               ==================================================== */
+
+            async function loadComponent(id, url) {
+
+                const container =
+                    document.getElementById(id);
+
+                if (!container) {
+                    return false;
+                }
+
+                try {
+
+                    let html =
+                        componentCache.get(url);
+
+                    if (!html) {
+
+                        const response =
+                            await fetch(url, {
+                                cache: "no-cache"
+                            });
+
+                        if (!response.ok) {
+                            throw new Error(
+                                `Component load failed: ${response.status}`
+                            );
+                        }
+
+                        html =
+                            await response.text();
+
+                        if (!html.trim()) {
+                            throw new Error(
+                                "Component returned empty HTML"
+                            );
+                        }
+
+                        componentCache.set(
+                            url,
+                            html
+                        );
+                    }
+
+                    container.innerHTML = html;
+
+                    container.dispatchEvent(
+                        new CustomEvent(
+                            "aevum:component-loaded",
+                            {
+                                bubbles: true,
+                                detail: {
+                                    id,
+                                    url
+                                }
+                            }
+                        )
+                    );
+
+                    return true;
+
+                } catch (error) {
+
+                    console.error(
+                        `[Aevum] Failed to load component: ${url}`,
+                        error
+                    );
+
+                    container.innerHTML = "";
+
+                    container.dispatchEvent(
+                        new CustomEvent(
+                            "aevum:component-error",
+                            {
+                                bubbles: true,
+                                detail: {
+                                    id,
+                                    url,
+                                    error
+                                }
+                            }
+                        )
+                    );
+
+                    return false;
+                }
+            }
+
+
+            /* ====================================================
+               NAVIGATION
+               ==================================================== */
+
+            function initNavigation() {
+
+                const burger =
+                    document.getElementById("burger");
+
+                const overlay =
+                    document.getElementById("overlay");
+
+                const sideNav =
+                    document.getElementById("sideNav");
+
+                const closeNav =
+                    document.getElementById("closeNav");
+
+                if (
+                    !burger ||
+                    !overlay ||
+                    !sideNav ||
+                    !closeNav
+                ) {
+                    console.warn(
+                        "[Aevum] Navigation controls not found."
+                    );
+
+                    return false;
+                }
+
+
+                let previousOverflow = "";
+                let lastFocusedElement = null;
+
+
+                /* ==================================================
+                   INITIAL ARIA STATE
+                   ================================================== */
+
+                burger.setAttribute(
+                    "aria-expanded",
+                    "false"
+                );
+
+                sideNav.setAttribute(
+                    "aria-hidden",
+                    "true"
+                );
+
+
+                /* ==================================================
+                   OPEN
+                   ================================================== */
+
+                function openMenu() {
+
+                    lastFocusedElement =
+                        document.activeElement;
+
+                    previousOverflow =
+                        document.body.style.overflow;
+
+                    sideNav.classList.add("active");
+                    overlay.classList.add("active");
+                    burger.classList.add("active");
+
+                    burger.setAttribute(
+                        "aria-expanded",
+                        "true"
+                    );
+
+                    sideNav.setAttribute(
+                        "aria-hidden",
+                        "false"
+                    );
+
+                    document.body.style.overflow =
+                        "hidden";
+
+                    requestAnimationFrame(() => {
+                        closeNav.focus();
+                    });
+                }
+
+
+                /* ==================================================
+                   CLOSE
+                   ================================================== */
+
+                function closeMenu(
+                    returnFocus = true
+                ) {
+
+                    sideNav.classList.remove(
+                        "active"
+                    );
+
+                    overlay.classList.remove(
+                        "active"
+                    );
+
+                    burger.classList.remove(
+                        "active"
+                    );
+
+                    burger.setAttribute(
+                        "aria-expanded",
+                        "false"
+                    );
+
+                    sideNav.setAttribute(
+                        "aria-hidden",
+                        "true"
+                    );
+
+                    document.body.style.overflow =
+                        previousOverflow;
+
+                    if (
+                        returnFocus &&
+                        lastFocusedElement &&
+                        typeof lastFocusedElement.focus ===
+                            "function"
+                    ) {
+                        lastFocusedElement.focus();
+                    }
+                }
+
+
+                /* ==================================================
+                   BURGER
+                   ================================================== */
+
+                burger.addEventListener(
+                    "click",
+                    () => {
+
+                        if (
+                            sideNav.classList.contains(
+                                "active"
+                            )
+                        ) {
+                            closeMenu();
+                        } else {
+                            openMenu();
+                        }
+                    }
+                );
+
+
+                /* ==================================================
+                   OVERLAY
+                   ================================================== */
+
+                overlay.addEventListener(
+                    "click",
+                    () => closeMenu()
+                );
+
+
+                /* ==================================================
+                   CLOSE BUTTON
+                   ================================================== */
+
+                closeNav.addEventListener(
+                    "click",
+                    () => closeMenu()
+                );
+
+
+                /* ==================================================
+                   ESCAPE + FOCUS TRAP
+                   ================================================== */
+
+                document.addEventListener(
+                    "keydown",
+                    (event) => {
+
+                        if (
+                            !sideNav.classList.contains(
+                                "active"
+                            )
+                        ) {
+                            return;
+                        }
+
+
+                        if (
+                            event.key ===
+                            "Escape"
+                        ) {
+                            event.preventDefault();
+                            closeMenu();
+                            return;
+                        }
+
+
+                        if (
+                            event.key !==
+                            "Tab"
+                        ) {
+                            return;
+                        }
+
+
+                        const focusable =
+                            sideNav.querySelectorAll(
+                                'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                            );
+
+                        if (!focusable.length) {
+                            return;
+                        }
+
+                        const first =
+                            focusable[0];
+
+                        const last =
+                            focusable[
+                                focusable.length - 1
+                            ];
+
+
+                        if (
+                            event.shiftKey &&
+                            document.activeElement ===
+                                first
+                        ) {
+                            event.preventDefault();
+                            last.focus();
+
+                        } else if (
+                            !event.shiftKey &&
+                            document.activeElement ===
+                                last
+                        ) {
+                            event.preventDefault();
+                            first.focus();
+                        }
+                    }
+                );
+
+
+                return true;
+            }
+
+
+            /* ====================================================
+               THEME COLOR
+               ==================================================== */
+
+            function updateThemeColor() {
+
+                const meta =
+                    document.querySelector(
+                        'meta[name="theme-color"]'
+                    );
+
+                if (!meta) {
+                    return;
+                }
+
+                const isLight =
+                    document.documentElement
+                        .getAttribute("data-theme") ===
+                    "light";
+
+                meta.setAttribute(
+                    "content",
+                    isLight
+                        ? "#F0F4FA"
+                        : "#061426"
+                );
+            }
+
+
+            /* ====================================================
+               BOOT
+               ==================================================== */
+
+            async function bootShell() {
+
+                const headerLoaded =
+                    await loadComponent(
+                        "header-container",
+                        "/components/header.html"
+                    );
+
+                if (headerLoaded) {
+                    initNavigation();
+                }
+
+                await loadComponent(
+                    "footer-container",
+                    "/components/footer.html"
+                );
+
+                updateThemeColor();
+
+                document.addEventListener(
+                    "aevum:theme-changed",
+                    updateThemeColor
+                );
+            }
+
+
+            bootShell();
+
+        })();
+    </script>
+
+
+    <!-- ========================================================
+         AEVUM 3D BEE
+         ======================================================== -->
+
+    <script>
+        (() => {
+            "use strict";
+
+
+            /* ====================================================
+               BOOT AFTER DEFERRED SCRIPTS
+               ==================================================== */
+
+            document.addEventListener(
+                "DOMContentLoaded",
+                () => {
+
+                    const container =
+                        document.getElementById(
+                            "bee-container"
+                        );
+
+                    if (!container) {
+                        return;
+                    }
+
+
+                    /* ==============================================
+                       REDUCED MOTION
+                       ============================================== */
+
+                    const reducedMotion =
+                        window.matchMedia(
+                            "(prefers-reduced-motion: reduce)"
+                        );
+
+                    if (reducedMotion.matches) {
+                        return;
+                    }
+
+
+                    /* ==============================================
+                       FALLBACK
+                       ============================================== */
+
+                    function fallback() {
+
+                        container.innerHTML = "";
+
+                        const element =
+                            document.createElement(
+                                "div"
+                            );
+
+                        element.className =
+                            "bee-fallback";
+
+                        element.textContent =
+                            "AEVUM";
+
+                        container.appendChild(
+                            element
+                        );
+                    }
+
+
+                    /* ==============================================
+                       THREE.JS AVAILABILITY
+                       ============================================== */
+
+                    if (
+                        typeof THREE ===
+                        "undefined"
+                    ) {
+                        console.warn(
+                            "[Aevum] Three.js unavailable."
+                        );
+
+                        fallback();
+                        return;
+                    }
+
+
+                    /* ==============================================
+                       SCENE
+                       ============================================== */
+
+                    const scene =
+                        new THREE.Scene();
+
+
+                    /* ==============================================
+                       CAMERA
+                       ============================================== */
+
+                    const camera =
+                        new THREE.PerspectiveCamera(
+                            45,
+                            container.clientWidth /
+                                container.clientHeight,
+                            0.1,
+                            1000
+                        );
+
+                    camera.position.set(
+                        0,
+                        0,
+                        5
+                    );
+
+
+                    /* ==============================================
+                       RENDERER
+                       ============================================== */
+
+                    let renderer;
+
+                    try {
+
+                        renderer =
+                            new THREE.WebGLRenderer({
+                                antialias: true,
+                                alpha: true,
+                                powerPreference:
+                                    "high-performance"
+                            });
+
+                    } catch (error) {
+
+                        console.warn(
+                            "[Aevum] WebGL unavailable.",
+                            error
+                        );
+
+                        fallback();
+                        return;
+                    }
+
+
+                    renderer.setPixelRatio(
+                        Math.min(
+                            window.devicePixelRatio ||
+                                1,
+                            2
+                        )
+                    );
+
+                    renderer.setSize(
+                        container.clientWidth,
+                        container.clientHeight,
+                        false
+                    );
+
+                    if (
+                        "outputEncoding" in
+                        renderer
+                    ) {
+                        renderer.outputEncoding =
+                            THREE.sRGBEncoding;
+                    }
+
+                    container.appendChild(
+                        renderer.domElement
+                    );
+
+
+                    /* ==============================================
+                       LIGHTING
+                       ============================================== */
+
+                    const ambient =
+                        new THREE.AmbientLight(
+                            0x404060,
+                            1
+                        );
+
+                    scene.add(ambient);
+
+
+                    const goldLight =
+                        new THREE.PointLight(
+                            0xF5C542,
+                            1.2,
+                            20
+                        );
+
+                    goldLight.position.set(
+                        2,
+                        3,
+                        5
+                    );
+
+                    scene.add(goldLight);
+
+
+                    const cyanLight =
+                        new THREE.PointLight(
+                            0x20D9FF,
+                            0.6,
+                            20
+                        );
+
+                    cyanLight.position.set(
+                        -3,
+                        -1,
+                        4
+                    );
+
+                    scene.add(cyanLight);
+
+
+                    /* ==============================================
+                       AEVUM GROUP
+                       ============================================== */
+
+                    const group =
+                        new THREE.Group();
+
+                    scene.add(group);
+
+
+                    /* ==============================================
+                       BODY
+                       ============================================== */
+
+                    const bodyGeometry =
+                        new THREE.SphereGeometry(
+                            0.5,
+                            20,
+                            20
+                        );
+
+                    const bodyMaterial =
+                        new THREE.MeshStandardMaterial({
+                            color: 0xF5C542,
+                            emissive: 0xF5C542,
+                            emissiveIntensity: 0.12,
+                            metalness: 0.35,
+                            roughness: 0.48
+                        });
+
+                    const body =
+                        new THREE.Mesh(
+                            bodyGeometry,
+                            bodyMaterial
+                        );
+
+                    body.scale.set(
+                        1,
+                        0.7,
+                        1.2
+                    );
+
+                    group.add(body);
+
+
+                    /* ==============================================
+                       STRIPES
+                       ============================================== */
+
+                    const stripeGeometry =
+                        new THREE.BoxGeometry(
+                            0.04,
+                            0.5,
+                            0.5
+                        );
+
+                    const stripeMaterial =
+                        new THREE.MeshStandardMaterial({
+                            color: 0x8B5E00,
+                            metalness: 0.3,
+                            roughness: 0.5
+                        });
+
+                    for (
+                        let i = -2;
+                        i <= 2;
+                        i++
+                    ) {
+
+                        const stripe =
+                            new THREE.Mesh(
+                                stripeGeometry,
+                                stripeMaterial
+                            );
+
+                        stripe.position.z =
+                            i * 0.2;
+
+                        group.add(stripe);
+                    }
+
+
+                    /* ==============================================
+                       WINGS
+                       ============================================== */
+
+                    const wingGeometry =
+                        new THREE.PlaneGeometry(
+                            0.7,
+                            0.35
+                        );
+
+                    const wingMaterial =
+                        new THREE.MeshStandardMaterial({
+                            color: 0x20D9FF,
+                            transparent: true,
+                            opacity: 0.30,
+                            emissive: 0x20D9FF,
+                            emissiveIntensity: 0.15,
+                            side: THREE.DoubleSide
+                        });
+
+
+                    const wingLeft =
+                        new THREE.Mesh(
+                            wingGeometry,
+                            wingMaterial
+                        );
+
+                    wingLeft.position.set(
+                        -0.25,
+                        0.2,
+                        0
+                    );
+
+                    wingLeft.rotation.x =
+                        -0.2;
+
+                    wingLeft.rotation.z =
+                        -0.5;
+
+                    group.add(wingLeft);
+
+
+                    const wingRight =
+                        new THREE.Mesh(
+                            wingGeometry,
+                            wingMaterial
+                        );
+
+                    wingRight.position.set(
+                        0.25,
+                        0.2,
+                        0
+                    );
+
+                    wingRight.rotation.x =
+                        -0.2;
+
+                    wingRight.rotation.z =
+                        0.5;
+
+                    group.add(wingRight);
+
+
+                    /* ==============================================
+                       HEAD
+                       ============================================== */
+
+                    const headGeometry =
+                        new THREE.SphereGeometry(
+                            0.18,
+                            12,
+                            12
+                        );
+
+                    const headMaterial =
+                        new THREE.MeshStandardMaterial({
+                            color: 0xF5C542,
+                            metalness: 0.3,
+                            roughness: 0.5
+                        });
+
+                    const head =
+                        new THREE.Mesh(
+                            headGeometry,
+                            headMaterial
+                        );
+
+                    head.position.set(
+                        0,
+                        0.3,
+                        0.5
+                    );
+
+                    group.add(head);
+
+
+                    /* ==============================================
+                       EYES
+                       ============================================== */
+
+                    const eyeGeometry =
+                        new THREE.SphereGeometry(
+                            0.035,
+                            8,
+                            8
+                        );
+
+                    const eyeMaterial =
+                        new THREE.MeshStandardMaterial({
+                            color: 0x061426
+                        });
+
+
+                    const eyeLeft =
+                        new THREE.Mesh(
+                            eyeGeometry,
+                            eyeMaterial
+                        );
+
+                    eyeLeft.position.set(
+                        -0.08,
+                        0.35,
+                        0.6
+                    );
+
+                    group.add(eyeLeft);
+
+
+                    const eyeRight =
+                        new THREE.Mesh(
+                            eyeGeometry,
+                            eyeMaterial
+                        );
+
+                    eyeRight.position.set(
+                        0.08,
+                        0.35,
+                        0.6
+                    );
+
+                    group.add(eyeRight);
+
+
+                    /* ==============================================
+                       COIN
+                       ============================================== */
+
+                    const coinGroup =
+                        new THREE.Group();
+
+                    coinGroup.position.set(
+                        0,
+                        -0.55,
+                        0.15
+                    );
+
+                    group.add(coinGroup);
+
+
+                    const coinGeometry =
+                        new THREE.CylinderGeometry(
+                            0.35,
+                            0.35,
+                            0.05,
+                            32
+                        );
+
+                    const coinMaterial =
+                        new THREE.MeshStandardMaterial({
+                            color: 0xF5C542,
+                            metalness: 0.8,
+                            roughness: 0.2,
+                            emissive: 0xF5C542,
+                            emissiveIntensity: 0.08
+                        });
+
+                    const coin =
+                        new THREE.Mesh(
+                            coinGeometry,
+                            coinMaterial
+                        );
+
+                    coin.rotation.x =
+                        Math.PI / 2;
+
+                    coinGroup.add(coin);
+
+
+                    /* ==============================================
+                       COIN LETTERS
+                       ============================================== */
+
+                    function createLetterTexture(
+                        letter
+                    ) {
+
+                        const canvas =
+                            document.createElement(
+                                "canvas"
+                            );
+
+                        canvas.width = 128;
+                        canvas.height = 128;
+
+                        const context =
+                            canvas.getContext(
+                                "2d"
+                            );
+
+                        if (!context) {
+                            return null;
+                        }
+
+                        context.fillStyle =
+                            "#F5C542";
+
+                        context.fillRect(
+                            0,
+                            0,
+                            128,
+                            128
+                        );
+
+                        context.fillStyle =
+                            "#061426";
+
+                        context.font =
+                            "bold 64px Arial";
+
+                        context.textAlign =
+                            "center";
+
+                        context.textBaseline =
+                            "middle";
+
+                        context.fillText(
+                            letter,
+                            64,
+                            66
+                        );
+
+                        const texture =
+                            new THREE.CanvasTexture(
+                                canvas
+                            );
+
+                        texture.needsUpdate =
+                            true;
+
+                        return texture;
+                    }
+
+
+                    const textureA =
+                        createLetterTexture(
+                            "A"
+                        );
+
+                    const textureB =
+                        createLetterTexture(
+                            "B"
+                        );
+
+
+                    if (
+                        textureA &&
+                        textureB
+                    ) {
+
+                        const letterGeometry =
+                            new THREE.PlaneGeometry(
+                                0.28,
+                                0.28
+                            );
+
+
+                        const letterMaterialA =
+                            new THREE.MeshStandardMaterial({
+                                map: textureA,
+                                transparent: true,
+                                side: THREE.DoubleSide
+                            });
+
+                        const letterA =
+                            new THREE.Mesh(
+                                letterGeometry,
+                                letterMaterialA
+                            );
+
+                        letterA.position.z =
+                            0.035;
+
+                        coinGroup.add(
+                            letterA
+                        );
+
+
+                        const letterMaterialB =
+                            new THREE.MeshStandardMaterial({
+                                map: textureB,
+                                transparent: true,
+                                side: THREE.DoubleSide
+                            });
+
+                        const letterB =
+                            new THREE.Mesh(
+                                letterGeometry.clone(),
+                                letterMaterialB
+                            );
+
+                        letterB.position.z =
+                            -0.035;
+
+                        letterB.rotation.y =
+                            Math.PI;
+
+                        coinGroup.add(
+                            letterB
+                        );
+                    }
+
+
+                    /* ==============================================
+                       POINTER
+                       ============================================== */
+
+                    let targetMouseX = 0;
+                    let targetMouseY = 0;
+
+
+                    function pointerMove(
+                        event
+                    ) {
+
+                        const rect =
+                            container.getBoundingClientRect();
+
+                        if (
+                            !rect.width ||
+                            !rect.height
+                        ) {
+                            return;
+                        }
+
+                        targetMouseX =
+                            (
+                                (
+                                    event.clientX -
+                                    rect.left
+                                ) /
+                                rect.width
+                            ) * 2 - 1;
+
+                        targetMouseY =
+                            -(
+                                (
+                                    event.clientY -
+                                    rect.top
+                                ) /
+                                rect.height
+                            ) * 2 + 1;
+                    }
+
+
+                    function pointerLeave() {
+
+                        targetMouseX = 0;
+                        targetMouseY = 0;
+                    }
+
+
+                    container.addEventListener(
+                        "pointermove",
+                        pointerMove,
+                        { passive: true }
+                    );
+
+                    container.addEventListener(
+                        "pointerleave",
+                        pointerLeave,
+                        { passive: true }
+                    );
+
+
+                    /* ==============================================
+                       RESIZE
+                       ============================================== */
+
+                    function resize() {
+
+                        const width =
+                            container.clientWidth;
+
+                        const height =
+                            container.clientHeight;
+
+                        if (
+                            !width ||
+                            !height
+                        ) {
+                            return;
+                        }
+
+                        camera.aspect =
+                            width / height;
+
+                        camera.updateProjectionMatrix();
+
+                        renderer.setSize(
+                            width,
+                            height,
+                            false
+                        );
+                    }
+
+
+                    resize();
+
+
+                    const resizeObserver =
+                        new ResizeObserver(
+                            resize
+                        );
+
+                    resizeObserver.observe(
+                        container
+                    );
+
+
+                    /* ==============================================
+                       PAGE VISIBILITY
+                       ============================================== */
+
+                    let paused =
+                        document.hidden;
+
+
+                    function handleVisibility() {
+                        paused =
+                            document.hidden;
+                    }
+
+
+                    document.addEventListener(
+                        "visibilitychange",
+                        handleVisibility
+                    );
+
+
+                    /* ==============================================
+                       ANIMATION
+                       ============================================== */
+
+                    let animationFrame =
+                        null;
+
+                    let time = 0;
+
+                    let lastFrame =
+                        performance.now();
+
+
+                    function animate(
+                        now
+                    ) {
+
+                        animationFrame =
+                            requestAnimationFrame(
+                                animate
+                            );
+
+                        if (paused) {
+                            lastFrame = now;
+                            return;
+                        }
+
+
+                        const delta =
+                            Math.min(
+                                (
+                                    now -
+                                    lastFrame
+                                ) / 1000,
+                                0.05
+                            );
+
+                        lastFrame = now;
+
+                        time += delta;
+
+
+                        /* FLOAT */
+
+                        group.position.y =
+                            Math.sin(
+                                time * 0.8
+                            ) * 0.06;
+
+
+                        /* COIN */
+
+                        coinGroup.rotation.y +=
+                            delta * 0.9;
+
+
+                        /* POINTER */
+
+                        group.rotation.x +=
+                            (
+                                targetMouseY *
+                                0.05 -
+                                group.rotation.x
+                            ) * 0.02;
+
+                        group.rotation.y +=
+                            (
+                                targetMouseX *
+                                0.05 -
+                                group.rotation.y
+                            ) * 0.02;
+
+
+                        /* WINGS */
+
+                        const wingAngle =
+                            Math.sin(
+                                time * 10
+                            ) * 0.35;
+
+                        wingLeft.rotation.y =
+                            -0.5 +
+                            wingAngle * 0.5;
+
+                        wingRight.rotation.y =
+                            0.5 -
+                            wingAngle * 0.5;
+
+
+                        renderer.render(
+                            scene,
+                            camera
+                        );
+                    }
+
+
+                    animationFrame =
+                        requestAnimationFrame(
+                            animate
+                        );
+
+
+                    /* ==============================================
+                       CLEANUP
+                       ============================================== */
+
+                    function cleanup() {
+
+                        if (
+                            animationFrame !== null
+                        ) {
+                            cancelAnimationFrame(
+                                animationFrame
+                            );
+                        }
+
+                        resizeObserver.disconnect();
+
+                        document.removeEventListener(
+                            "visibilitychange",
+                            handleVisibility
+                        );
+
+                        container.removeEventListener(
+                            "pointermove",
+                            pointerMove
+                        );
+
+                        container.removeEventListener(
+                            "pointerleave",
+                            pointerLeave
+                        );
+
+
+                        scene.traverse(
+                            (object) => {
+
+                                if (
+                                    !object.isMesh
+                                ) {
+                                    return;
+                                }
+
+                                object.geometry?.dispose();
+
+                                if (
+                                    Array.isArray(
+                                        object.material
+                                    )
+                                ) {
+
+                                    object.material.forEach(
+                                        material => {
+                                            material.dispose();
+                                        }
+                                    );
+
+                                } else {
+
+                                    object.material?.dispose();
+                                }
+                            }
+                        );
+
+
+                        textureA?.dispose();
+                        textureB?.dispose();
+
+                        renderer.dispose();
+                    }
+
+
+                    window.addEventListener(
+                        "pagehide",
+                        cleanup,
+                        { once: true }
+                    );
+
+                }
+            );
+
+        })();
+    </script>
+
+</body>
+</html>

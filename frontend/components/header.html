@@ -1,0 +1,217 @@
+<header class="header" id="header">
+    <div class="header-inner">
+
+        <a href="/" class="brand" data-page="home" aria-label="Aevum Home">
+            <span class="brand-icon">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M50 10 L90 85 L10 85 L50 10Z"
+                          stroke="#F5C542"
+                          stroke-width="4"
+                          stroke-linejoin="round"
+                          fill="none"/>
+                    <path d="M50 30 L70 75 L30 75 L50 30Z"
+                          fill="#F5C542"
+                          fill-opacity="0.12"/>
+                    <circle cx="50" cy="85" r="5" fill="#20D9FF"/>
+                </svg>
+            </span>
+            <span class="brand-text">AEVUM</span>
+        </a>
+
+        <nav class="header-nav-desktop" aria-label="Primary Navigation">
+            <a href="/explorer.html" data-page="explorer">Explorer</a>
+            <a href="/docs.html" data-page="docs">Docs</a>
+            <a href="/wallet.html" data-page="wallet">Wallet</a>
+            <a href="/community.html?t=1" data-page="community">Community</a>
+            <a href="/support.html" data-page="support">Support</a>
+        </nav>
+
+        <div class="header-actions">
+
+            <button
+                type="button"
+                class="theme-toggle"
+                onclick="toggleTheme()"
+                aria-label="Toggle theme">
+
+                <svg width="20"
+                     height="20"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     aria-hidden="true">
+
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79Z"/>
+                </svg>
+
+            </button>
+
+            <button
+                type="button"
+                class="burger"
+                id="burger"
+                aria-label="Open navigation menu"
+                aria-controls="sideNav"
+                aria-expanded="false">
+
+                <span></span>
+                <span></span>
+                <span></span>
+
+            </button>
+
+        </div>
+
+    </div>
+</header>
+
+<div class="overlay" id="overlay" aria-hidden="true"></div>
+
+<nav
+    class="side-nav"
+    id="sideNav"
+    aria-label="Main Navigation">
+
+    <div class="side-nav-header">
+
+        <div class="brand">
+
+            <span class="brand-icon">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M50 10 L90 85 L10 85 L50 10Z"
+                          stroke="#F5C542"
+                          stroke-width="4"
+                          stroke-linejoin="round"
+                          fill="none"/>
+                    <path d="M50 30 L70 75 L30 75 L50 30Z"
+                          fill="#F5C542"
+                          fill-opacity="0.12"/>
+                    <circle cx="50" cy="85" r="5" fill="#20D9FF"/>
+                </svg>
+            </span>
+
+            <span class="brand-text">AEVUM</span>
+
+        </div>
+
+        <button
+            type="button"
+            class="side-nav-close"
+            id="closeNav"
+            aria-label="Close navigation menu">
+
+            <svg width="24"
+                 height="24"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 stroke-linecap="round"
+                 stroke-linejoin="round"
+                 aria-hidden="true">
+
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+
+            </svg>
+
+        </button>
+
+    </div>
+
+    <div class="side-nav-menu">
+
+        <div class="nav-group">
+            <div class="nav-group-title">Protocol</div>
+
+            <a href="/" data-page="home">Overview</a>
+            <a href="/docs.html#architecture" data-page="docs">Architecture</a>
+            <a href="/docs.html#consensus" data-page="docs">Consensus</a>
+            <a href="/docs.html#economics" data-page="docs">Economics</a>
+            <a href="/docs.html#security" data-page="docs">Security</a>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-group-title">Network</div>
+
+            <a href="/explorer.html" data-page="explorer">Explorer</a>
+            <a href="/status.html" data-page="status">Network Status</a>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-group-title">Ecosystem</div>
+
+            <a href="/wallet.html" data-page="wallet">Wallet</a>
+            <a href="/community.html?t=1" data-page="community">Community</a>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-group-title">Development</div>
+
+            <a href="/docs.html" data-page="docs">Documentation</a>
+
+            <a
+                href="https://github.com/aevum-foundation/aevum-public"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-page="github">
+
+                GitHub
+
+            </a>
+
+            <a href="/roadmap.html" data-page="roadmap">Roadmap</a>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-group-title">Support</div>
+
+            <a href="/support.html" data-page="support">
+                Support Aevum
+            </a>
+        </div>
+
+    </div>
+
+    <div class="side-nav-footer">
+
+        <div class="theme-row">
+
+            <span class="theme-label">
+                Theme
+            </span>
+
+            <button
+                type="button"
+                class="theme-toggle"
+                onclick="toggleTheme()"
+                aria-label="Toggle theme">
+
+                <svg width="20"
+                     height="20"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     aria-hidden="true">
+
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79Z"/>
+                </svg>
+
+            </button>
+
+        </div>
+
+        <div class="network-status">
+            <span class="dot"></span>
+            <span id="network-name">Mainnet</span>
+        </div>
+
+    </div>
+
+</nav>

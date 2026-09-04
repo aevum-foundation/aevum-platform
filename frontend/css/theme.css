@@ -1,0 +1,327 @@
+/* ============================================================
+   AEVUM THEME v2
+   Central visual design tokens
+   Dark / Light themes
+   ============================================================ */
+
+/* ============================================================
+   GLOBAL FOUNDATION
+   ============================================================ */
+
+:root {
+    color-scheme: dark;
+
+    /* ---------- LAYOUT ---------- */
+    --container-max: 1280px;
+    --container-padding: 24px;
+
+    /* ---------- TYPOGRAPHY ---------- */
+    --font-family-sans:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+
+    --font-family-mono:
+        "SFMono-Regular",
+        Consolas,
+        "Liberation Mono",
+        Menlo,
+        monospace;
+
+    /* ---------- RADIUS ---------- */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-pill: 999px;
+
+    /* ---------- MOTION ---------- */
+    --transition-fast: 150ms ease;
+    --transition-base: 250ms ease;
+    --transition-slow: 400ms ease;
+
+    /* ---------- FOCUS ---------- */
+    --focus-ring:
+        0 0 0 3px rgba(245, 197, 66, 0.22);
+
+    /* ---------- SELECTION ---------- */
+    --selection-background: rgba(245, 197, 66, 0.22);
+    --selection-text: #FFFFFF;
+}
+
+
+/* ============================================================
+   DARK THEME — DEFAULT
+   ============================================================ */
+
+:root,
+[data-theme="dark"] {
+    color-scheme: dark;
+
+    /* ---------- BACKGROUNDS ---------- */
+
+    --color-bg-primary: #061426;
+    --color-bg-deep: #020914;
+    --color-bg-surface: #0B1B30;
+    --color-bg-surface-light: #10243D;
+    --color-bg-glass: rgba(11, 27, 48, 0.60);
+    --color-bg-overlay: rgba(2, 9, 20, 0.62);
+
+    /* ---------- TEXT ---------- */
+
+    --color-text-primary: #FFFFFF;
+    --color-text-secondary: #B0C4DE;
+    --color-text-muted: #6B8FAF;
+    --color-text-disabled: #46627D;
+
+    /* ---------- GOLD — IDENTITY ---------- */
+
+    --color-accent-gold: #F5C542;
+    --color-accent-gold-light: #FFD76A;
+    --color-accent-gold-dark: #B88916;
+    --color-accent-gold-hover: #FFD76A;
+    --color-accent-gold-dim: rgba(245, 197, 66, 0.12);
+
+    /* ---------- CYAN — NETWORK ---------- */
+
+    --color-accent-cyan: #20D9FF;
+    --color-accent-cyan-light: #7DEBFF;
+    --color-accent-cyan-dark: #0A8CA8;
+    --color-accent-cyan-hover: #7DEBFF;
+    --color-accent-cyan-dim: rgba(32, 217, 255, 0.10);
+
+    /* ---------- BORDERS ---------- */
+
+    --color-border: rgba(255, 255, 255, 0.06);
+    --color-border-strong: rgba(255, 255, 255, 0.11);
+    --color-border-gold: rgba(245, 197, 66, 0.20);
+    --color-border-cyan: rgba(32, 217, 255, 0.15);
+
+    /* ---------- SHADOWS ---------- */
+
+    --shadow-sm:
+        0 2px 8px rgba(0, 0, 0, 0.20);
+
+    --shadow-md:
+        0 8px 32px rgba(0, 0, 0, 0.30);
+
+    --shadow-lg:
+        0 16px 64px rgba(0, 0, 0, 0.40);
+
+    --shadow-glow-gold:
+        0 0 60px rgba(245, 197, 66, 0.08);
+
+    --shadow-glow-cyan:
+        0 0 60px rgba(32, 217, 255, 0.06);
+
+    /* ---------- STATUS ---------- */
+    /*
+       Aevum intentionally does not use green as a brand color.
+       Network-online status therefore uses Cyan.
+    */
+
+    --color-status-online: #20D9FF;
+    --color-status-warning: #F59E0B;
+    --color-status-offline: #EF4444;
+
+    /* ---------- STATUS BACKGROUNDS ---------- */
+
+    --color-status-online-dim: rgba(32, 217, 255, 0.10);
+    --color-status-warning-dim: rgba(245, 158, 11, 0.10);
+    --color-status-offline-dim: rgba(239, 68, 68, 0.10);
+
+    /* ---------- CODE / TECHNICAL ---------- */
+
+    --color-code-bg: #030D1A;
+    --color-code-border: rgba(32, 217, 255, 0.12);
+
+    /* ---------- SCROLLBAR ---------- */
+
+    --scrollbar-track: #020914;
+    --scrollbar-thumb: #16324F;
+    --scrollbar-thumb-hover: #244B70;
+}
+
+
+/* ============================================================
+   LIGHT THEME
+   ============================================================ */
+
+[data-theme="light"] {
+    color-scheme: light;
+
+    /* ---------- BACKGROUNDS ---------- */
+
+    --color-bg-primary: #F0F4FA;
+    --color-bg-deep: #E2E8F0;
+    --color-bg-surface: #FFFFFF;
+    --color-bg-surface-light: #F8FAFC;
+    --color-bg-glass: rgba(255, 255, 255, 0.70);
+    --color-bg-overlay: rgba(15, 23, 42, 0.38);
+
+    /* ---------- TEXT ---------- */
+
+    --color-text-primary: #0A1628;
+    --color-text-secondary: #2D3748;
+    --color-text-muted: #4A5568;
+    --color-text-disabled: #94A3B8;
+
+    /* ---------- GOLD — IDENTITY ---------- */
+
+    --color-accent-gold: #B88916;
+    --color-accent-gold-light: #D4AF37;
+    --color-accent-gold-dark: #8B5E00;
+    --color-accent-gold-hover: #8B5E00;
+    --color-accent-gold-dim: rgba(184, 137, 22, 0.10);
+
+    /* ---------- CYAN — NETWORK ---------- */
+
+    --color-accent-cyan: #0A8CA8;
+    --color-accent-cyan-light: #20D9FF;
+    --color-accent-cyan-dark: #065A6E;
+    --color-accent-cyan-hover: #065A6E;
+    --color-accent-cyan-dim: rgba(10, 140, 168, 0.08);
+
+    /* ---------- BORDERS ---------- */
+
+    --color-border: rgba(0, 0, 0, 0.08);
+    --color-border-strong: rgba(0, 0, 0, 0.14);
+    --color-border-gold: rgba(184, 137, 22, 0.20);
+    --color-border-cyan: rgba(10, 140, 168, 0.15);
+
+    /* ---------- SHADOWS ---------- */
+
+    --shadow-sm:
+        0 2px 8px rgba(0, 0, 0, 0.06);
+
+    --shadow-md:
+        0 8px 32px rgba(0, 0, 0, 0.08);
+
+    --shadow-lg:
+        0 16px 64px rgba(0, 0, 0, 0.12);
+
+    --shadow-glow-gold:
+        0 0 60px rgba(184, 137, 22, 0.06);
+
+    --shadow-glow-cyan:
+        0 0 60px rgba(10, 140, 168, 0.04);
+
+    /* ---------- STATUS ---------- */
+
+    --color-status-online: #0A8CA8;
+    --color-status-warning: #D97706;
+    --color-status-offline: #DC2626;
+
+    /* ---------- STATUS BACKGROUNDS ---------- */
+
+    --color-status-online-dim: rgba(10, 140, 168, 0.08);
+    --color-status-warning-dim: rgba(217, 119, 6, 0.08);
+    --color-status-offline-dim: rgba(220, 38, 38, 0.08);
+
+    /* ---------- CODE / TECHNICAL ---------- */
+
+    --color-code-bg: #E8EEF6;
+    --color-code-border: rgba(10, 140, 168, 0.14);
+
+    /* ---------- SCROLLBAR ---------- */
+
+    --scrollbar-track: #E2E8F0;
+    --scrollbar-thumb: #B8C4D3;
+    --scrollbar-thumb-hover: #94A3B8;
+
+    /* ---------- FOCUS ---------- */
+
+    --focus-ring:
+        0 0 0 3px rgba(184, 137, 22, 0.20);
+
+    /* ---------- SELECTION ---------- */
+
+    --selection-background: rgba(184, 137, 22, 0.18);
+    --selection-text: #0A1628;
+}
+
+
+/* ============================================================
+   GLOBAL TOKEN APPLICATION
+   ============================================================ */
+
+html {
+    font-family: var(--font-family-sans);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    transition:
+        background-color var(--transition-base),
+        color var(--transition-base);
+}
+
+body {
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+}
+
+
+/* ============================================================
+   TEXT SELECTION
+   ============================================================ */
+
+::selection {
+    background: var(--selection-background);
+    color: var(--selection-text);
+}
+
+
+/* ============================================================
+   FOCUS
+   ============================================================ */
+
+:focus-visible {
+    outline: 2px solid var(--color-accent-gold);
+    outline-offset: 3px;
+}
+
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+html {
+    scrollbar-color:
+        var(--scrollbar-thumb)
+        var(--scrollbar-track);
+    scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    html,
+    body {
+        scroll-behavior: auto;
+    }
+}

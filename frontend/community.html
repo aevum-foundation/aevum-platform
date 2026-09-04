@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Aevum Community — connect with builders, contributors and supporters shaping the Aevum ecosystem.">
+    <meta name="theme-color" content="#061426">
+    <meta name="color-scheme" content="dark light">
+    <title>Aevum — Community</title>
+
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/app-shell.css">
+    <link rel="stylesheet" href="/css/components.css">
+
+    <script src="/js/theme.js"></script>
+
+    <style>
+        .community-page {
+            padding: 56px 0 88px;
+        }
+
+        .community-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: end;
+            gap: 40px;
+            margin-bottom: 44px;
+        }
+
+        .community-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 14px;
+            color: var(--color-accent-cyan);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+        }
+
+        .community-kicker::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+            box-shadow: 0 0 0 4px var(--color-accent-cyan-dim), 0 0 14px rgba(32, 217, 255, 0.35);
+        }
+
+        .community-header h1 {
+            margin: 0 0 12px;
+            color: var(--color-text-primary);
+            font-size: clamp(38px, 5vw, 58px);
+            font-weight: 700;
+            line-height: 1.02;
+            letter-spacing: -0.045em;
+        }
+
+        .community-header p {
+            max-width: 700px;
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 16px;
+            line-height: 1.7;
+        }
+
+        .community-orbit {
+            position: relative;
+            width: 128px;
+            height: 128px;
+            flex: 0 0 auto;
+            border: 1px solid var(--color-border-cyan);
+            border-radius: 50%;
+            opacity: 0.9;
+        }
+
+        .community-orbit::before,
+        .community-orbit::after {
+            content: "";
+            position: absolute;
+            inset: 18px;
+            border: 1px solid var(--color-border-cyan);
+            border-radius: 50%;
+        }
+
+        .community-orbit::after {
+            inset: 38px;
+            border-color: var(--color-border-gold);
+        }
+
+        .community-orbit-core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            transform: translate(-50%, -50%);
+            border: 2px solid var(--color-accent-gold);
+            border-radius: 50%;
+            background: var(--color-bg-primary);
+            box-shadow: 0 0 24px rgba(245, 197, 66, 0.2);
+        }
+
+        .community-orbit-node {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+            box-shadow: 0 0 12px rgba(32, 217, 255, 0.45);
+        }
+
+        .community-orbit-node:nth-child(2) { top: 8px; left: 50%; transform: translateX(-50%); }
+        .community-orbit-node:nth-child(3) { right: 10px; top: 50%; transform: translateY(-50%); }
+        .community-orbit-node:nth-child(4) { bottom: 10px; left: 50%; transform: translateX(-50%); }
+        .community-orbit-node:nth-child(5) { left: 10px; top: 50%; transform: translateY(-50%); }
+
+        .community-snapshot {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 48px;
+        }
+
+        .community-stat {
+            min-width: 0;
+            padding: 20px 22px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .community-stat-label {
+            display: block;
+            margin-bottom: 9px;
+            color: var(--color-text-muted);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.3px;
+            text-transform: uppercase;
+        }
+
+        .community-stat-value {
+            display: block;
+            color: var(--color-text-primary);
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .community-stat-value.cyan { color: var(--color-accent-cyan); }
+        .community-stat-value.gold { color: var(--color-accent-gold); }
+
+        .community-stat-note {
+            display: block;
+            margin-top: 6px;
+            color: var(--color-text-muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .community-section-heading {
+            margin-bottom: 20px;
+        }
+
+        .community-section-heading span {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--color-accent-gold);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .community-section-heading h2 {
+            margin: 0;
+            color: var(--color-text-primary);
+            font-size: 26px;
+            font-weight: 650;
+            letter-spacing: -0.025em;
+        }
+
+        .community-section-heading p {
+            max-width: 700px;
+            margin: 9px 0 0;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .community-connect { margin-bottom: 52px; }
+
+        .community-channels {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .community-channel {
+            position: relative;
+            overflow: hidden;
+            min-height: 250px;
+            padding: 30px;
+            background: linear-gradient(145deg, var(--color-bg-surface), var(--color-bg-surface-light));
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .community-channel::after {
+            content: "";
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            right: -70px;
+            bottom: -90px;
+            border: 1px solid var(--color-border-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .community-channel:hover {
+            transform: translateY(-3px);
+            border-color: var(--color-border-cyan);
+            box-shadow: var(--shadow-glow-cyan);
+        }
+
+        .community-channel-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            margin-bottom: 20px;
+            color: var(--color-accent-cyan);
+            border: 1px solid var(--color-border-cyan);
+            border-radius: 12px;
+            background: var(--color-accent-cyan-dim);
+        }
+
+        .community-channel-icon svg { width: 21px; height: 21px; }
+
+        .community-channel-meta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: var(--color-text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .community-channel-meta::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+        }
+
+        .community-channel h3 {
+            margin: 0 0 9px;
+            color: var(--color-text-primary);
+            font-size: 22px;
+            font-weight: 650;
+            letter-spacing: -0.02em;
+        }
+
+        .community-channel p {
+            max-width: 470px;
+            margin: 0 0 24px;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .community-overview {
+            display: grid;
+            grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+            gap: 20px;
+            margin-bottom: 52px;
+        }
+
+        .community-overview-card {
+            padding: 28px 30px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .community-overview-card.accent {
+            background: radial-gradient(circle at 100% 0%, var(--color-accent-cyan-dim), transparent 45%), var(--color-bg-surface);
+            border-color: var(--color-border-cyan);
+        }
+
+        .community-overview-card h2,
+        .community-overview-card h3 {
+            margin: 0 0 10px;
+            color: var(--color-text-primary);
+            font-weight: 650;
+            letter-spacing: -0.02em;
+        }
+
+        .community-overview-card h2 { font-size: 22px; }
+        .community-overview-card h3 { font-size: 18px; }
+
+        .community-overview-card p {
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .community-principles {
+            display: grid;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .community-principle {
+            display: grid;
+            grid-template-columns: 28px minmax(0, 1fr);
+            gap: 10px;
+            align-items: start;
+        }
+
+        .community-principle-number {
+            color: var(--color-accent-gold);
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .community-principle strong {
+            display: block;
+            margin-bottom: 3px;
+            color: var(--color-text-primary);
+            font-size: 13px;
+        }
+
+        .community-principle span {
+            display: block;
+            color: var(--color-text-secondary);
+            font-size: 12px;
+            line-height: 1.55;
+        }
+
+        .community-paths { margin-bottom: 52px; }
+
+        .community-path-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .community-path {
+            padding: 24px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .community-path-number {
+            display: block;
+            margin-bottom: 20px;
+            color: var(--color-accent-gold);
+            font-family: monospace;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+        }
+
+        .community-path h3 {
+            margin: 0 0 9px;
+            color: var(--color-text-primary);
+            font-size: 17px;
+            font-weight: 650;
+        }
+
+        .community-path p {
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 13px;
+            line-height: 1.65;
+        }
+
+        .community-path ul {
+            display: grid;
+            gap: 7px;
+            margin: 16px 0 0;
+            padding-left: 17px;
+            color: var(--color-text-muted);
+            font-size: 12px;
+            line-height: 1.55;
+        }
+
+        .community-rules { margin-bottom: 52px; }
+
+        .community-rules-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .community-rule {
+            padding: 22px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .community-rule-number {
+            display: block;
+            margin-bottom: 18px;
+            color: var(--color-accent-cyan);
+            font-family: monospace;
+            font-size: 11px;
+        }
+
+        .community-rule h3 {
+            margin: 0 0 7px;
+            color: var(--color-text-primary);
+            font-size: 15px;
+            font-weight: 650;
+        }
+
+        .community-rule p {
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .community-updates {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            padding: 28px 30px;
+            background: linear-gradient(135deg, var(--color-bg-surface), var(--color-bg-surface-light));
+            border: 1px solid var(--color-border-cyan);
+            border-radius: var(--radius-md);
+        }
+
+        .community-updates-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: var(--color-accent-cyan);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+        }
+
+        .community-updates-label::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+            box-shadow: 0 0 10px rgba(32, 217, 255, 0.3);
+        }
+
+        .community-updates h2 {
+            margin: 0 0 7px;
+            color: var(--color-text-primary);
+            font-size: 20px;
+            font-weight: 650;
+        }
+
+        .community-updates p {
+            max-width: 650px;
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .community-updates-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 36px;
+            padding: 0 14px;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 999px;
+            background: var(--color-bg-surface-light);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .community-future {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            padding: 28px 30px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border-gold);
+            border-radius: var(--radius-md);
+        }
+
+        .community-future-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 9px;
+            color: var(--color-accent-gold);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+        }
+
+        .community-future-label::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--color-accent-gold);
+            box-shadow: 0 0 10px rgba(245, 197, 66, 0.3);
+        }
+
+        .community-future h2 {
+            margin: 0 0 7px;
+            color: var(--color-text-primary);
+            font-size: 20px;
+            font-weight: 650;
+        }
+
+        .community-future p {
+            max-width: 650px;
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .community-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 18px 22px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg-surface);
+        }
+
+        .community-status-copy { min-width: 0; }
+
+        .community-status-label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--color-text-muted);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.3px;
+            text-transform: uppercase;
+        }
+
+        .community-status-copy strong {
+            color: var(--color-text-primary);
+            font-size: 14px;
+            font-weight: 650;
+        }
+
+        .community-status-copy p {
+            margin: 4px 0 0;
+            color: var(--color-text-muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .community-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            flex: 0 0 auto;
+            min-height: 34px;
+            padding: 0 12px;
+            color: var(--color-accent-cyan);
+            border: 1px solid var(--color-border-cyan);
+            border-radius: 999px;
+            background: var(--color-accent-cyan-dim);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.9px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .community-status-badge::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+        }
+
+        .community-join {
+            position: relative;
+            overflow: hidden;
+            padding: 46px 32px;
+            text-align: center;
+            background: radial-gradient(circle at 50% 0%, var(--color-accent-gold-dim), transparent 48%), var(--color-bg-surface);
+            border: 1px solid var(--color-border-gold);
+            border-radius: var(--radius-md);
+        }
+
+        .community-join::before,
+        .community-join::after {
+            content: "";
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            border: 1px solid var(--color-border-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .community-join::before { left: -150px; top: -110px; }
+        .community-join::after { right: -150px; bottom: -130px; }
+
+        .community-join-content { position: relative; z-index: 1; }
+
+        .community-join h2 {
+            margin: 0 0 9px;
+            color: var(--color-text-primary);
+            font-size: clamp(24px, 3vw, 30px);
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .community-join p {
+            max-width: 560px;
+            margin: 0 auto 24px;
+            color: var(--color-text-secondary);
+            font-size: 15px;
+            line-height: 1.65;
+        }
+
+        .community-join-actions {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        @media (max-width: 1000px) {
+            .community-rules-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .community-overview { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 900px) {
+            .community-header { grid-template-columns: 1fr; }
+            .community-orbit { display: none; }
+            .community-path-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .community-page { padding: 40px 0 64px; }
+            .community-header { margin-bottom: 36px; }
+            .community-snapshot { grid-template-columns: 1fr; margin-bottom: 40px; }
+            .community-channels { grid-template-columns: 1fr; }
+            .community-channel { min-height: auto; }
+            .community-overview-card { padding: 24px; }
+            .community-updates,
+            .community-future { grid-template-columns: 1fr; align-items: start; }
+            .community-updates-badge,
+            .community-future .btn { justify-self: start; }
+            .community-status { align-items: flex-start; flex-direction: column; }
+        }
+
+        @media (max-width: 560px) {
+            .community-rules-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .community-page { padding: 32px 0 52px; }
+            .community-header h1 { font-size: 34px; }
+            .community-channel,
+            .community-path,
+            .community-rule { padding: 22px; }
+            .community-overview-card { padding: 22px; }
+            .community-updates,
+            .community-future,
+            .community-status { padding: 22px; }
+            .community-join { padding: 36px 20px; }
+            .community-join-actions { flex-direction: column; }
+            .community-join-actions .btn { width: 100%; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .community-channel { transition: none; }
+            .community-channel:hover { transform: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="header-container" aria-busy="true"></div>
+
+    <main class="community-page" id="main-content">
+        <div class="container">
+
+            <header class="community-header">
+                <div>
+                    <div class="community-kicker">Ecosystem</div>
+                    <h1>Community</h1>
+                    <p>Aevum is built in the open. The community brings together people who want to understand the protocol, test the network, challenge ideas and help shape what comes next.</p>
+                </div>
+                <div class="community-orbit" aria-hidden="true">
+                    <span class="community-orbit-core"></span>
+                    <span class="community-orbit-node"></span>
+                    <span class="community-orbit-node"></span>
+                    <span class="community-orbit-node"></span>
+                    <span class="community-orbit-node"></span>
+                </div>
+            </header>
+
+            <section class="community-snapshot" aria-label="Community snapshot">
+                <article class="community-stat">
+                    <span class="community-stat-label">Public entry points</span>
+                    <span class="community-stat-value cyan">02</span>
+                    <span class="community-stat-note">Telegram and GitHub</span>
+                </article>
+                <article class="community-stat">
+                    <span class="community-stat-label">Forum</span>
+                    <span class="community-stat-value gold">Planned</span>
+                    <span class="community-stat-note">Dedicated discussion space</span>
+                </article>
+                <article class="community-stat">
+                    <span class="community-stat-label">Community</span>
+                    <span class="community-stat-value">Forming</span>
+                    <span class="community-stat-note">Growing around the protocol</span>
+                </article>
+            </section>
+
+            <section class="community-overview" aria-labelledby="community-overview-title">
+                <article class="community-overview-card">
+                    <h2 id="community-overview-title">A protocol community, not just a chat.</h2>
+                    <p>Aevum is an open protocol project. Community participation is part of the development process: people can inspect the implementation, discuss technical decisions, test ideas and contribute improvements.</p>
+                    <div class="community-principles">
+                        <div class="community-principle">
+                            <span class="community-principle-number">01</span>
+                            <div><strong>Understand</strong><span>Read the architecture and learn how the protocol is designed.</span></div>
+                        </div>
+                        <div class="community-principle">
+                            <span class="community-principle-number">02</span>
+                            <div><strong>Question</strong><span>Challenge assumptions and raise technical issues openly.</span></div>
+                        </div>
+                        <div class="community-principle">
+                            <span class="community-principle-number">03</span>
+                            <div><strong>Contribute</strong><span>Help improve code, documentation, testing and the wider ecosystem.</span></div>
+                        </div>
+                    </div>
+                </article>
+                <article class="community-overview-card accent">
+                    <h3>What kind of people belong here?</h3>
+                    <p>Developers, protocol researchers, testers, infrastructure builders, designers, writers and curious people who want to understand decentralized technology.</p>
+                </article>
+            </section>
+
+            <section class="community-connect" aria-labelledby="community-connect-title">
+                <div class="community-section-heading">
+                    <span>Connect</span>
+                    <h2 id="community-connect-title">Find the network.</h2>
+                    <p>These are the current public entry points for following Aevum and participating in development.</p>
+                </div>
+                <div class="community-channels">
+                    <article class="community-channel">
+                        <div class="community-channel-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21.5 4.5 18.3 19c-.24 1.03-.84 1.28-1.7.8l-4.7-3.47-2.27 2.19c-.25.25-.46.46-.94.46l.34-4.78 8.7-7.86c.38-.34-.08-.53-.59-.19L6.4 12.9 1.75 11.45c-1.01-.32-1.03-1.01.21-1.5L20.1 3.02c.86-.32 1.61.19 1.4 1.48Z"/>
+                            </svg>
+                        </div>
+                        <div class="community-channel-meta">Community chat</div>
+                        <h3>Telegram</h3>
+                        <p>Follow announcements, discuss the protocol, ask questions and connect with other members of the Aevum community.</p>
+                        <a href="https://t.me/aevumchain" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer" aria-label="Open Aevum Telegram community">Join Community</a>
+                    </article>
+                    <article class="community-channel">
+                        <div class="community-channel-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8.2 3.5 5.7 5 4 8.2v7.6l1.7 3.2 2.5 1.5 2-2.4h3.6l2 2.4 2.5-1.5 1.7-3.2V8.2L18.3 5l-2.5-1.5-1.6 1.3h-6l-1.6-1.3Z"/>
+                                <path d="M8.5 11.5v.01M15.5 11.5v.01"/>
+                                <path d="M8.5 15c1.9 1.2 5.1 1.2 7 0"/>
+                            </svg>
+                        </div>
+                        <div class="community-channel-meta">Open source</div>
+                        <h3>GitHub</h3>
+                        <p>Explore the public repository, inspect the protocol and contribute to the development of Aevum.</p>
+                        <a href="https://github.com/aevum-foundation/aevum-public" class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer" aria-label="Open Aevum GitHub repository">Explore Repository</a>
+                    </article>
+                </div>
+            </section>
+
+            <section class="community-paths" aria-labelledby="community-paths-title">
+                <div class="community-section-heading">
+                    <span>Participation</span>
+                    <h2 id="community-paths-title">Choose your path.</h2>
+                    <p>You do not need to be a core developer to contribute. Different forms of participation help strengthen the project.</p>
+                </div>
+                <div class="community-path-grid">
+                    <article class="community-path">
+                        <span class="community-path-number">01 / BUILD</span>
+                        <h3>Build</h3>
+                        <p>Work directly with the open-source codebase and help improve the protocol.</p>
+                        <ul><li>Inspect the implementation</li><li>Write or improve tests</li><li>Submit technical contributions</li></ul>
+                    </article>
+                    <article class="community-path">
+                        <span class="community-path-number">02 / DISCUSS</span>
+                        <h3>Discuss</h3>
+                        <p>Technical discussion helps expose weak assumptions before they become protocol problems.</p>
+                        <ul><li>Ask technical questions</li><li>Challenge design decisions</li><li>Share architecture ideas</li></ul>
+                    </article>
+                    <article class="community-path">
+                        <span class="community-path-number">03 / SUPPORT</span>
+                        <h3>Support</h3>
+                        <p>Help make the project easier to understand and easier for new contributors to enter.</p>
+                        <ul><li>Help answer questions</li><li>Improve documentation</li><li>Share useful knowledge</li></ul>
+                    </article>
+                </div>
+            </section>
+
+            <section class="community-rules" aria-labelledby="community-rules-title">
+                <div class="community-section-heading">
+                    <span>Community Rules</span>
+                    <h2 id="community-rules-title">Build with respect.</h2>
+                    <p>Simple principles for keeping technical discussion useful and the community welcoming.</p>
+                </div>
+                <div class="community-rules-grid">
+                    <article class="community-rule">
+                        <span class="community-rule-number">RULE / 01</span>
+                        <h3>Respect people</h3>
+                        <p>Debate ideas directly without attacking the people behind them.</p>
+                    </article>
+                    <article class="community-rule">
+                        <span class="community-rule-number">RULE / 02</span>
+                        <h3>Prefer evidence</h3>
+                        <p>When discussing protocol behavior, code, tests and reproducible evidence come first.</p>
+                    </article>
+                    <article class="community-rule">
+                        <span class="community-rule-number">RULE / 03</span>
+                        <h3>Keep it constructive</h3>
+                        <p>Report problems clearly and, when possible, help move the discussion toward a solution.</p>
+                    </article>
+                    <article class="community-rule">
+                        <span class="community-rule-number">RULE / 04</span>
+                        <h3>No false claims</h3>
+                        <p>Do not present planned features, experiments or unverified information as completed facts.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="community-updates" aria-labelledby="community-updates-title">
+                <div>
+                    <div class="community-updates-label">Updates</div>
+                    <h2 id="community-updates-title">Development updates</h2>
+                    <p>Public updates can be followed through the current community channels and the open-source repository. A dedicated news feed can be added here later without fabricating activity or release history.</p>
+                </div>
+                <span class="community-updates-badge">Community channels</span>
+            </section>
+
+            <section class="community-future" aria-labelledby="community-forum-title">
+                <div>
+                    <div class="community-future-label">Planned</div>
+                    <h2 id="community-forum-title">Aevum Forum</h2>
+                    <p>A dedicated space for proposals, long-form technical discussion and ecosystem coordination is planned for a future release.</p>
+                </div>
+                <span class="btn btn-secondary btn-sm" aria-disabled="true">Coming soon</span>
+            </section>
+
+            <section class="community-status" aria-label="Community status">
+                <div class="community-status-copy">
+                    <span class="community-status-label">Current status</span>
+                    <strong>Community forming around the protocol.</strong>
+                    <p>The public community is growing alongside Aevum's open development process.</p>
+                </div>
+                <span class="community-status-badge">Forming</span>
+            </section>
+
+            <section class="community-join" aria-labelledby="community-join-title">
+                <div class="community-join-content">
+                    <h2 id="community-join-title">Build the network.</h2>
+                    <p>Understand the protocol. Question it. Test it. Improve it. Take part in Aevum.</p>
+                    <div class="community-join-actions">
+                        <a href="https://t.me/aevumchain" class="btn btn-primary" target="_blank" rel="noopener noreferrer" aria-label="Join the Aevum Telegram community">Join Community</a>
+                        <a href="https://github.com/aevum-foundation/aevum-public" class="btn btn-secondary" target="_blank" rel="noopener noreferrer" aria-label="Explore the Aevum GitHub repository">View on GitHub</a>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <div id="footer-container" aria-busy="true"></div>
+
+    <script>
+        (() => {
+            'use strict';
+
+            const componentCache = new Map();
+
+            async function loadComponent(id, url) {
+                const el = document.getElementById(id);
+                if (!el) return false;
+
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+
+                try {
+                    let html = componentCache.get(url);
+                    if (!html) {
+                        const response = await fetch(url, {
+                            cache: 'default',
+                            signal: controller.signal
+                        });
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        html = await response.text();
+                        componentCache.set(url, html);
+                    }
+                    el.innerHTML = html;
+                    el.setAttribute('aria-busy', 'false');
+                    document.dispatchEvent(new CustomEvent('aevum:component-loaded', { detail: { id, url } }));
+                    return true;
+                } catch (error) {
+                    console.error(`[Aevum] Component failed: ${url}`, error);
+                    el.innerHTML = '';
+                    el.setAttribute('aria-busy', 'false');
+                    return false;
+                } finally {
+                    clearTimeout(timeout);
+                }
+            }
+
+            function initNav() {
+                const burger = document.getElementById('burger');
+                const overlay = document.getElementById('overlay');
+                const sideNav = document.getElementById('sideNav');
+                const closeNavButton = document.getElementById('closeNav');
+
+                if (!burger || !overlay || !sideNav || !closeNavButton) return;
+
+                let previousFocus = null;
+                let previousOverflow = '';
+
+                const getFocusable = () => [...sideNav.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')];
+
+                function openNav() {
+                    previousFocus = document.activeElement;
+                    previousOverflow = document.body.style.overflow;
+                    sideNav.classList.add('active');
+                    overlay.classList.add('active');
+                    burger.classList.add('active');
+                    burger.setAttribute('aria-expanded', 'true');
+                    sideNav.setAttribute('aria-hidden', 'false');
+                    document.body.style.overflow = 'hidden';
+                    closeNavButton.focus();
+                }
+
+                function closeNav(returnFocus = true) {
+                    sideNav.classList.remove('active');
+                    overlay.classList.remove('active');
+                    burger.classList.remove('active');
+                    burger.setAttribute('aria-expanded', 'false');
+                    sideNav.setAttribute('aria-hidden', 'true');
+                    document.body.style.overflow = previousOverflow;
+                    if (returnFocus && previousFocus && typeof previousFocus.focus === 'function') {
+                        previousFocus.focus();
+                    }
+                    previousFocus = null;
+                }
+
+                function trapFocus(event) {
+                    if (event.key !== 'Tab') return;
+                    const focusable = getFocusable();
+                    if (!focusable.length) { event.preventDefault(); closeNavButton.focus(); return; }
+                    const first = focusable[0];
+                    const last = focusable[focusable.length - 1];
+                    if (event.shiftKey && document.activeElement === first) {
+                        event.preventDefault();
+                        last.focus();
+                    } else if (!event.shiftKey && document.activeElement === last) {
+                        event.preventDefault();
+                        first.focus();
+                    }
+                }
+
+                burger.addEventListener('click', () => {
+                    if (sideNav.classList.contains('active')) closeNav();
+                    else openNav();
+                });
+
+                overlay.addEventListener('click', () => closeNav());
+                closeNavButton.addEventListener('click', () => closeNav());
+
+                document.addEventListener('keydown', event => {
+                    if (!sideNav.classList.contains('active')) return;
+                    if (event.key === 'Escape') { event.preventDefault(); closeNav(); return; }
+                    trapFocus(event);
+                });
+            }
+
+            async function boot() {
+                const headerLoaded = await loadComponent('header-container', '/components/header.html');
+                if (headerLoaded) initNav();
+                await loadComponent('footer-container', '/components/footer.html');
+            }
+
+            boot();
+        })();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,2369 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="Aevum Documentation — protocol architecture, slots, epochs, finality, monetary policy, cryptography, networking, L2, ecosystem and development."
+    >
+
+    <meta name="theme-color" content="#061426">
+    <meta name="color-scheme" content="dark light">
+
+    <title>Aevum — Documentation</title>
+
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/app-shell.css">
+    <link rel="stylesheet" href="/css/components.css">
+
+    <script src="/js/theme.js"></script>
+
+    <style>
+        /* ============================================================
+           DOCUMENTATION PAGE
+           ============================================================ */
+
+        .docs-page {
+            min-height: calc(100svh - var(--header-height, 72px));
+            padding: 48px 0 80px;
+        }
+
+        .docs-layout {
+            display: grid;
+            grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
+            gap: 48px;
+            align-items: start;
+        }
+
+        /* ============================================================
+           SIDEBAR
+           ============================================================ */
+
+        .docs-sidebar {
+            position: sticky;
+            top: calc(var(--header-height, 72px) + 24px);
+            max-height: calc(100svh - var(--header-height, 72px) - 48px);
+            min-width: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding-right: 16px;
+            border-right: 1px solid var(--color-border);
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-accent-gold-dim) transparent;
+        }
+
+        .docs-sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .docs-sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .docs-sidebar::-webkit-scrollbar-thumb {
+            background: var(--color-accent-gold-dim);
+            border-radius: var(--radius-pill);
+        }
+
+        .docs-sidebar .section {
+            min-width: 0;
+            margin: 0 0 24px;
+        }
+
+        .docs-sidebar .section:last-child {
+            margin-bottom: 0;
+        }
+
+        .docs-sidebar .section-title {
+            display: block;
+            margin: 0 0 8px;
+            color: var(--color-text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            line-height: 1.4;
+            text-transform: uppercase;
+        }
+
+        .docs-sidebar a {
+            display: block;
+            min-width: 0;
+            padding: 7px 12px;
+            overflow-wrap: anywhere;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            line-height: 1.4;
+            border-radius: var(--radius-sm);
+            transition:
+                color 150ms ease,
+                background 150ms ease;
+        }
+
+        .docs-sidebar a:hover {
+            color: var(--color-accent-gold);
+            background: var(--color-accent-gold-dim);
+        }
+
+        .docs-sidebar a:focus-visible {
+            outline: 2px solid var(--color-accent-cyan);
+            outline-offset: 2px;
+        }
+
+        .docs-sidebar a.active {
+            color: var(--color-accent-gold);
+            background: var(--color-accent-gold-dim);
+            font-weight: 600;
+        }
+
+        /* ============================================================
+           CONTENT
+           ============================================================ */
+
+        .docs-content {
+            min-width: 0;
+            max-width: 900px;
+        }
+
+        .docs-content section,
+        .docs-content h1[id],
+        .docs-content h3[id] {
+            scroll-margin-top: calc(var(--header-height, 72px) + 28px);
+        }
+
+        .docs-content h1,
+        .docs-content h2,
+        .docs-content h3 {
+            color: var(--color-text-primary);
+        }
+
+        .docs-content h1 {
+            margin: 0 0 12px;
+            font-size: clamp(28px, 4vw, 36px);
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+        }
+
+        .docs-content h2 {
+            margin: 52px 0 14px;
+            font-size: clamp(21px, 3vw, 26px);
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+        }
+
+        .docs-content h3 {
+            margin: 30px 0 10px;
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .docs-content p {
+            margin: 0 0 17px;
+            color: var(--color-text-secondary);
+            font-size: 15px;
+            line-height: 1.75;
+        }
+
+        .docs-content ul,
+        .docs-content ol {
+            margin: 0 0 18px;
+            padding-left: 24px;
+            color: var(--color-text-secondary);
+            font-size: 15px;
+            line-height: 1.75;
+        }
+
+        .docs-content li {
+            margin-bottom: 7px;
+        }
+
+        .docs-content li:last-child {
+            margin-bottom: 0;
+        }
+
+        .docs-content strong {
+            color: var(--color-text-primary);
+        }
+
+        .docs-content code {
+            display: inline-block;
+            max-width: 100%;
+            padding: 2px 7px;
+            overflow-wrap: anywhere;
+            color: var(--color-accent-cyan);
+            background: var(--color-bg-deep);
+            font-family:
+                ui-monospace,
+                SFMono-Regular,
+                Menlo,
+                Monaco,
+                Consolas,
+                "Liberation Mono",
+                monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            border-radius: var(--radius-sm);
+        }
+
+        .docs-content a {
+            color: var(--color-accent-cyan);
+        }
+
+        .docs-content a:hover {
+            color: var(--color-accent-cyan-light);
+        }
+
+        .docs-content a:focus-visible {
+            outline: 2px solid var(--color-accent-gold);
+            outline-offset: 3px;
+            border-radius: 2px;
+        }
+
+        /* ============================================================
+           KICKER
+           ============================================================ */
+
+        .docs-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            color: var(--color-accent-cyan);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.4px;
+            line-height: 1.4;
+            text-transform: uppercase;
+        }
+
+        .docs-kicker::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+            box-shadow: 0 0 10px rgba(32, 217, 255, 0.45);
+        }
+
+        /* ============================================================
+           STATUS / HIGHLIGHT
+           ============================================================ */
+
+        .docs-status {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin: 22px 0 30px;
+            padding: 16px 18px;
+            background: var(--color-bg-deep);
+            border: 1px solid var(--color-border);
+            border-left: 3px solid var(--color-accent-gold);
+            border-radius: var(--radius-md);
+        }
+
+        .docs-status-indicator {
+            width: 8px;
+            height: 8px;
+            flex: 0 0 auto;
+            margin-top: 6px;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+            box-shadow: 0 0 12px rgba(32, 217, 255, 0.45);
+        }
+
+        .docs-status strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .docs-status p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .docs-highlight {
+            margin: 20px 0 24px;
+            padding: 16px 20px;
+            background: var(--color-bg-deep);
+            border-left: 3px solid var(--color-accent-gold);
+            border-radius: var(--radius-md);
+        }
+
+        .docs-highlight p {
+            margin: 0;
+        }
+
+        /* ============================================================
+           DIAGRAMS
+           ============================================================ */
+
+        .docs-diagram {
+            margin: 20px 0 24px;
+            padding: 18px 20px;
+            overflow-x: auto;
+            background: var(--color-bg-deep);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-accent-cyan);
+            font-family:
+                ui-monospace,
+                SFMono-Regular,
+                Menlo,
+                Monaco,
+                Consolas,
+                "Liberation Mono",
+                monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            white-space: pre;
+            tab-size: 4;
+        }
+
+        .docs-ecosystem-diagram {
+            margin: 20px 0 24px;
+            padding: 18px 20px;
+            overflow-x: auto;
+            background: var(--color-bg-deep);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-accent-cyan);
+            font-family:
+                ui-monospace,
+                SFMono-Regular,
+                Menlo,
+                Monaco,
+                Consolas,
+                "Liberation Mono",
+                monospace;
+            font-size: 13px;
+            line-height: 1.65;
+            white-space: pre;
+        }
+
+        /* ============================================================
+           SPEC GRID
+           ============================================================ */
+
+        .docs-spec-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin: 20px 0 24px;
+        }
+
+        .docs-spec {
+            min-width: 0;
+            padding: 16px;
+            background: var(--color-bg-deep);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .docs-spec-label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--color-text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .docs-spec-value {
+            display: block;
+            color: var(--color-text-primary);
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+        }
+
+        /* ============================================================
+           FOOTNOTE
+           ============================================================ */
+
+        .docs-last-updated {
+            margin-top: 52px;
+            padding-top: 20px;
+            color: var(--color-text-muted);
+            font-size: 13px;
+            line-height: 1.6;
+            border-top: 1px solid var(--color-border);
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+
+        @media (max-width: 900px) {
+            .docs-page {
+                padding: 36px 0 64px;
+            }
+
+            .docs-layout {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .docs-sidebar {
+                position: relative;
+                top: auto;
+                max-height: none;
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding: 0 0 14px;
+                border-right: 0;
+                border-bottom: 1px solid var(--color-border);
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .docs-sidebar .section {
+                display: inline-flex;
+                flex-direction: column;
+                vertical-align: top;
+                margin: 0 20px 0 0;
+            }
+
+            .docs-sidebar .section-title {
+                display: block;
+                margin-bottom: 6px;
+            }
+
+            .docs-sidebar a {
+                display: block;
+                padding: 6px 10px;
+            }
+
+            .docs-content {
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .docs-page {
+                padding: 30px 0 52px;
+            }
+
+            .docs-content p,
+            .docs-content ul,
+            .docs-content ol {
+                font-size: 14px;
+                line-height: 1.7;
+            }
+
+            .docs-content h2 {
+                margin-top: 42px;
+            }
+
+            .docs-spec-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .docs-status {
+                padding: 14px 15px;
+            }
+
+            .docs-diagram,
+            .docs-ecosystem-diagram {
+                padding: 14px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .docs-content h1 {
+                font-size: 28px;
+            }
+
+            .docs-content h2 {
+                font-size: 20px;
+            }
+
+            .docs-content h3 {
+                font-size: 17px;
+            }
+
+            .docs-sidebar .section-title {
+                font-size: 10px;
+            }
+
+            .docs-sidebar a {
+                font-size: 12px;
+            }
+
+            .docs-highlight {
+                padding: 14px 15px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .docs-sidebar a {
+                transition: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="header-container" aria-busy="true"></div>
+
+    <main class="docs-page" id="main-content">
+        <div class="container">
+
+            <div class="docs-layout">
+
+                <nav
+                    class="docs-sidebar"
+                    aria-label="Documentation navigation"
+                    id="docs-navigation"
+                >
+
+                    <div class="section">
+                        <span class="section-title">Introduction</span>
+                        <a href="#intro" class="active" aria-current="true">What is Aevum</a>
+                        <a href="#why">Why Aevum</a>
+                        <a href="#architecture">Architecture Overview</a>
+                    </div>
+
+                    <div class="section">
+                        <span class="section-title">L1 Architecture</span>
+                        <a href="#slots">Slots</a>
+                        <a href="#epochs">Epochs</a>
+                        <a href="#presence">Presence</a>
+                        <a href="#snapshot">EpochSnapshot</a>
+                        <a href="#consensus">Consensus</a>
+                        <a href="#finality">Finality</a>
+                    </div>
+
+                    <div class="section">
+                        <span class="section-title">Monetary System</span>
+                        <a href="#genesis">Genesis Supply</a>
+                        <a href="#emission">Emission</a>
+                        <a href="#halvings">Halvings</a>
+                        <a href="#max-supply">Maximum Supply</a>
+                        <a href="#post-emission">Post-Emission Economy</a>
+                    </div>
+
+                    <div class="section">
+                        <span class="section-title">Cryptography</span>
+                        <a href="#addresses">Addresses</a>
+                        <a href="#transactions">Transactions</a>
+                        <a href="#state-roots">State Roots</a>
+                        <a href="#wallet-security">Wallet Security</a>
+                    </div>
+
+                    <div class="section">
+                        <span class="section-title">Network</span>
+                        <a href="#nodes">Nodes</a>
+                        <a href="#p2p">P2P</a>
+                        <a href="#sync">Synchronization</a>
+                        <a href="#recovery">Recovery</a>
+                    </div>
+
+                    <div class="section">
+                        <span class="section-title">L2</span>
+                        <a href="#l2-overview">Overview</a>
+                        <a href="#l2-tx">Transactions</a>
+                        <a href="#l2-contracts">Smart Contracts</a>
+                        <a href="#l2-finality">L1 Finality</a>
+                    </div>
+
+                    <div class="section">
+                        <span class="section-title">Ecosystem</span>
+                        <a href="#ecosystem">Overview</a>
+                        <a href="#nexa">Nexa</a>
+                        <a href="#nova">Nova</a>
+                        <a href="#vault">Vault</a>
+                    </div>
+
+                    <div class="section">
+                        <span class="section-title">Development</span>
+                        <a href="#repository">Repository</a>
+                        <a href="#local-dev">Local Development</a>
+                        <a href="#testing">Testing</a>
+                        <a href="#roadmap">Roadmap</a>
+                    </div>
+
+                </nav>
+
+                <article class="docs-content">
+
+                    <div class="docs-kicker">Aevum Protocol</div>
+
+                    <h1 id="intro">What is Aevum</h1>
+
+                    <p>
+                        Aevum is a decentralized blockchain protocol built around
+                        slot-based network operation, epoch-native coordination,
+                        cryptographic state commitments and modular execution.
+                    </p>
+
+                    <p>
+                        The current protocol is under active development.
+                        This documentation describes the current architectural
+                        direction and protocol concepts that have been defined
+                        or implemented. Features that are still being implemented
+                        or specified are explicitly marked as such.
+                    </p>
+
+                    <div class="docs-status" role="status">
+                        <span class="docs-status-indicator" aria-hidden="true"></span>
+
+                        <div>
+                            <strong>Development Network</strong>
+
+                            <p>
+                                Aevum L1 is currently under active development and
+                                testing. Mainnet has not yet launched. Explorer
+                                information may use deterministic development data
+                                until the live network API becomes available.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="docs-spec-grid">
+
+                        <div class="docs-spec">
+                            <span class="docs-spec-label">Slot</span>
+                            <span class="docs-spec-value">30 seconds</span>
+                        </div>
+
+                        <div class="docs-spec">
+                            <span class="docs-spec-label">Epoch</span>
+                            <span class="docs-spec-value">2,880 slots / 24 hours</span>
+                        </div>
+
+                        <div class="docs-spec">
+                            <span class="docs-spec-label">Genesis Supply</span>
+                            <span class="docs-spec-value">21,000,000 AEV</span>
+                        </div>
+
+                        <div class="docs-spec">
+                            <span class="docs-spec-label">Maximum Supply</span>
+                            <span class="docs-spec-value">371,000,000 AEV</span>
+                        </div>
+
+                    </div>
+
+                    <section id="why">
+
+                        <h2>Why Aevum</h2>
+
+                        <p>
+                            Aevum is designed around predictable coordination,
+                            cryptographic verification, long-term security and
+                            modular execution rather than a traditional
+                            block-centric architecture.
+                        </p>
+
+                        <p>
+                            The protocol separates continuous network activity
+                            from epoch-level finality. This allows the system to
+                            operate through deterministic slots while committing
+                            canonical state at epoch boundaries.
+                        </p>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Design principle:</strong>
+                                protocol rules should be deterministic,
+                                independently verifiable and explicit about
+                                which components are finalized, experimental
+                                or still under development.
+                            </p>
+                        </div>
+
+                    </section>
+
+                    <section id="architecture">
+
+                        <h2>Architecture Overview</h2>
+
+                        <p>
+                            Aevum L1 is organized around three primary
+                            protocol abstractions:
+                        </p>
+
+                        <ul>
+                            <li>
+                                <strong>Slots</strong> — 30-second units of
+                                protocol activity.
+                            </li>
+
+                            <li>
+                                <strong>Epochs</strong> — 2,880 slots forming
+                                a 24-hour coordination period.
+                            </li>
+
+                            <li>
+                                <strong>EpochSnapshots</strong> — canonical
+                                cryptographic commitments finalized at epoch
+                                boundaries.
+                            </li>
+                        </ul>
+
+                        <div class="docs-diagram">Slot
+  │
+  ├── transactions
+  ├── presence
+  └── state transitions
+  │
+  ▼
+Epoch
+  │
+  ├── state commitment
+  ├── presence commitment
+  ├── reward commitment
+  ├── fee commitment
+  └── emission commitment
+  │
+  ▼
+EpochSnapshot
+  │
+  ▼
+Canonical Finality</div>
+
+                        <p>
+                            The current L1 design is epoch-native rather than
+                            block-height-native. Block height is not the
+                            monetary coordination axis of the protocol.
+                        </p>
+
+                    </section>
+
+                    <section id="slots">
+
+                        <h2>Slots</h2>
+
+                        <p>
+                            A slot is the smallest canonical time unit used by
+                            the Aevum L1 architecture.
+                        </p>
+
+                        <p>
+                            Each slot has a fixed duration of
+                            <strong>30 seconds</strong>.
+                        </p>
+
+                        <p>
+                            Slot-based operation provides a deterministic
+                            temporal coordinate for network activity without
+                            making block height the primary monetary coordinate.
+                        </p>
+
+                        <ul>
+                            <li>Transaction processing</li>
+                            <li>Presence recording</li>
+                            <li>State transitions</li>
+                            <li>Fee accounting</li>
+                            <li>Scheduled emission</li>
+                        </ul>
+
+                    </section>
+
+                    <section id="epochs">
+
+                        <h2>Epochs</h2>
+
+                        <p>
+                            An epoch contains exactly
+                            <strong>2,880 slots</strong>.
+                        </p>
+
+                        <p>
+                            At 30 seconds per slot, one epoch represents
+                            exactly 24 hours of protocol time.
+                        </p>
+
+                        <p>
+                            Epochs provide the boundary at which accumulated
+                            protocol state can be committed into an
+                            <code>EpochSnapshot</code>.
+                        </p>
+
+                        <ul>
+                            <li>State commitment</li>
+                            <li>Presence commitment</li>
+                            <li>Reward accounting</li>
+                            <li>Fee accounting</li>
+                            <li>Emission accounting</li>
+                            <li>Epoch-level finality</li>
+                        </ul>
+
+                    </section>
+
+                    <section id="presence">
+
+                        <h2>Presence</h2>
+
+                        <p>
+                            Presence records participant activity within the
+                            protocol's epoch model.
+                        </p>
+
+                        <p>
+                            Presence is represented as protocol data that can
+                            be cryptographically committed into the
+                            <code>presence_root</code> of an epoch snapshot.
+                        </p>
+
+                        <p>
+                            The current Aevum architecture intentionally
+                            distinguishes participant presence from stake
+                            ownership. Participants are not represented by a
+                            capital-weighted staking model in the simplified
+                            L1 design.
+                        </p>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Important:</strong>
+                                presence semantics, participant selection and
+                                reward rules remain subject to the canonical
+                                protocol implementation and test suite.
+                                The website must not invent additional weighting
+                                rules that are not present in the protocol.
+                            </p>
+                        </div>
+
+                    </section>
+
+                    <section id="snapshot">
+
+                        <h2>EpochSnapshot</h2>
+
+                        <p>
+                            <code>EpochSnapshot</code> is the canonical L1
+                            finality structure for an epoch.
+                        </p>
+
+                        <p>
+                            It commits the important state dimensions of the
+                            completed epoch into a single cryptographically
+                            verifiable structure.
+                        </p>
+
+                        <ul>
+                            <li>
+                                <strong>State Root</strong> — canonical protocol
+                                state commitment.
+                            </li>
+
+                            <li>
+                                <strong>Presence Root</strong> — commitment to
+                                epoch presence data.
+                            </li>
+
+                            <li>
+                                <strong>Reward Root</strong> — commitment to
+                                reward accounting.
+                            </li>
+
+                            <li>
+                                <strong>Fee Root</strong> — commitment to
+                                fee accounting.
+                            </li>
+
+                            <li>
+                                <strong>Emission Root</strong> — commitment to
+                                monetary emission accounting.
+                            </li>
+
+                            <li>
+                                <strong>Snapshot Hash</strong> — cryptographic
+                                commitment to the snapshot itself.
+                            </li>
+                        </ul>
+
+                        <p>
+                            Snapshots are linked through the previous snapshot
+                            reference, creating a canonical epoch history that
+                            can be independently verified.
+                        </p>
+
+                    </section>
+
+                    <section id="consensus">
+
+                        <h2>Consensus</h2>
+
+                        <p>
+                            Aevum's current L1 architecture uses an
+                            equal-participant model rather than capital-weighted
+                            Proof of Stake. It is also not based on traditional
+                            Proof of Work mining.
+                        </p>
+
+                        <p>
+                            The simplified L1 architecture treats eligible
+                            participants as equal protocol participants.
+                            Participant selection and consensus behavior are
+                            determined by the canonical implementation and
+                            consensus rules.
+                        </p>
+
+                        <ul>
+                            <li>Deterministic protocol state transitions</li>
+                            <li>Epoch-native coordination</li>
+                            <li>Cryptographic state commitments</li>
+                            <li>Epoch-level finality</li>
+                        </ul>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Specification status:</strong>
+                                consensus details are still being validated
+                                through implementation and testing. This page
+                                intentionally avoids describing unverified
+                                staking, capital weighting or governance
+                                mechanics.
+                            </p>
+                        </div>
+
+                    </section>
+
+                    <section id="finality">
+
+                        <h2>Finality</h2>
+
+                        <p>
+                            Aevum finality is organized around
+                            <code>EpochSnapshot</code> commitments.
+                        </p>
+
+                        <p>
+                            Once the canonical snapshot for an epoch has been
+                            produced and accepted according to the protocol's
+                            consensus rules, the corresponding epoch state is
+                            treated as finalized.
+                        </p>
+
+                        <p>
+                            The important distinction is that slots provide
+                            continuous protocol activity, while the epoch
+                            snapshot provides the canonical finality boundary.
+                        </p>
+
+                    </section>
+
+                    <section id="genesis">
+
+                        <h2>Genesis Supply</h2>
+
+                        <p>
+                            The Aevum monetary constitution defines a genesis
+                            supply of <strong>21,000,000 AEV</strong>.
+                        </p>
+
+                        <p>
+                            This genesis amount forms the initial supply from
+                            which the protocol's subsequent emission budget
+                            is defined.
+                        </p>
+
+                        <ul>
+                            <li>Genesis supply: 21,000,000 AEV</li>
+                            <li>Emission budget: 350,000,000 AEV</li>
+                            <li>Maximum supply: 371,000,000 AEV</li>
+                        </ul>
+
+                    </section>
+
+                    <section id="emission">
+
+                        <h2>Emission</h2>
+
+                        <p>
+                            Aevum emission is slot-based. The scheduled emission
+                            is determined from the protocol's epoch-based
+                            monetary schedule and is bounded by the remaining
+                            emission budget.
+                        </p>
+
+                        <p>
+                            The initial scheduled emission is
+                            <strong>20 AEV per slot</strong>.
+                        </p>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Monetary invariant:</strong>
+                                actual emission cannot exceed the remaining
+                                emission budget. The maximum supply is therefore
+                                bounded by the genesis supply plus the fixed
+                                emission budget.
+                            </p>
+                        </div>
+
+                    </section>
+
+                    <section id="halvings">
+
+                        <h2>Halvings</h2>
+
+                        <p>
+                            The emission schedule changes at fixed epoch
+                            intervals.
+                        </p>
+
+                        <p>
+                            One halving interval contains
+                            <strong>1,461 epochs</strong>, equivalent to
+                            approximately four years in the protocol's
+                            24-hour epoch model.
+                        </p>
+
+                        <ul>
+                            <li>
+                                <strong>Initial schedule:</strong>
+                                20 AEV / slot
+                            </li>
+
+                            <li>
+                                <strong>After first halving:</strong>
+                                10 AEV / slot
+                            </li>
+
+                            <li>
+                                <strong>After second halving:</strong>
+                                5 AEV / slot
+                            </li>
+
+                            <li>
+                                <strong>After third halving:</strong>
+                                2.5 AEV / slot
+                            </li>
+
+                            <li>
+                                <strong>After fourth halving:</strong>
+                                1.25 AEV / slot, subject to the remaining
+                                emission budget.
+                            </li>
+                        </ul>
+
+                        <p>
+                            The emission budget, rather than an infinite
+                            continuation of any nominal per-slot rate, is the
+                            final monetary constraint. When the remaining
+                            emission budget reaches zero, scheduled emission
+                            terminates.
+                        </p>
+
+                    </section>
+
+                    <section id="max-supply">
+
+                        <h2>Maximum Supply</h2>
+
+                        <p>
+                            Aevum defines a maximum supply of
+                            <strong>371,000,000 AEV</strong>.
+                        </p>
+
+                        <div class="docs-diagram">Genesis Supply
+21,000,000 AEV
+
+        +
+
+Emission Budget
+350,000,000 AEV
+
+        =
+
+Maximum Supply
+371,000,000 AEV</div>
+
+                        <p>
+                            Once the emission budget has been exhausted,
+                            scheduled monetary emission terminates.
+                        </p>
+
+                    </section>
+
+                    <section id="post-emission">
+
+                        <h2>Post-Emission Economy</h2>
+
+                        <p>
+                            After the protocol's emission budget is exhausted,
+                            network economics are expected to rely primarily
+                            on protocol-generated fees and other explicitly
+                            implemented economic mechanisms.
+                        </p>
+
+                        <p>
+                            Planned economic areas may include:
+                        </p>
+
+                        <ul>
+                            <li>Transaction fees</li>
+                            <li>L2 settlement fees</li>
+                            <li>Useful-computation services</li>
+                        </ul>
+
+                        <p>
+                            These mechanisms remain subject to implementation,
+                            testing and final economic specification.
+                        </p>
+
+                    </section>
+
+                    <section id="addresses">
+
+                        <h2>Addresses</h2>
+
+                        <p>
+                            Aevum addresses are derived from the protocol's
+                            canonical cryptographic key and address derivation
+                            specification.
+                        </p>
+
+                        <p>
+                            The exact address encoding, key derivation and
+                            serialization rules must be treated as protocol
+                            specifications rather than assumptions made by
+                            the website.
+                        </p>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Security note:</strong>
+                                users should only rely on address formats
+                                published by the canonical Aevum wallet and
+                                protocol implementation.
+                            </p>
+                        </div>
+
+                    </section>
+
+                    <section id="transactions">
+
+                        <h2>Transactions</h2>
+
+                        <p>
+                            Transactions represent state-changing operations
+                            processed during protocol slots.
+                        </p>
+
+                        <p>
+                            A transaction may contain fields such as:
+                        </p>
+
+                        <ul>
+                            <li>Sender information</li>
+                            <li>Recipient information</li>
+                            <li>Amount</li>
+                            <li>Fee</li>
+                            <li>Nonce</li>
+                            <li>Cryptographic authorization</li>
+                        </ul>
+
+                        <p>
+                            The exact transaction schema is defined by the
+                            canonical protocol implementation and may evolve
+                            while the network remains under development.
+                        </p>
+
+                    </section>
+
+                    <section id="state-roots">
+
+                        <h2>State Roots</h2>
+
+                        <p>
+                            A state root is a cryptographic commitment to the
+                            canonical state represented by the protocol at a
+                            defined point in its state-transition history.
+                        </p>
+
+                        <p>
+                            In the epoch model, the state root is one of the
+                            canonical roots committed by an
+                            <code>EpochSnapshot</code>.
+                        </p>
+
+                        <ul>
+                            <li>State verification</li>
+                            <li>Snapshot validation</li>
+                            <li>Synchronization</li>
+                            <li>Deterministic state comparison</li>
+                        </ul>
+
+                    </section>
+
+                    <section id="wallet-security">
+
+                        <h2>Wallet Security</h2>
+
+                        <p>
+                            Aevum wallet security is being designed around
+                            local key ownership and cryptographic primitives
+                            selected by the canonical protocol and wallet
+                            implementations.
+                        </p>
+
+                        <p>
+                            The fundamental security rule is simple:
+                            <strong>private key material must remain under the
+                            user's control.</strong>
+                        </p>
+
+                        <ul>
+                            <li>
+                                Mnemonic material, when used, must never be
+                                uploaded to a website server.
+                            </li>
+                            <li>
+                                Private keys must never be transmitted to
+                                peers or application servers.
+                            </li>
+                            <li>
+                                Transaction authorization should occur locally.
+                            </li>
+                            <li>
+                                Public addresses may be shared when required.
+                            </li>
+                        </ul>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Wallet specification status:</strong>
+                                exact mnemonic standard, derivation paths and
+                                cryptographic key hierarchy will be documented
+                                here only after they are finalized by the
+                                protocol and wallet implementation.
+                            </p>
+                        </div>
+
+                    </section>
+
+                    <section id="nodes">
+
+                        <h2>Nodes</h2>
+
+                        <p>
+                            Aevum nodes maintain protocol state, participate in
+                            network communication and execute the canonical
+                            state-transition rules.
+                        </p>
+
+                        <p>
+                            Depending on the finalized node architecture,
+                            responsibilities include:
+                        </p>
+
+                        <ul>
+                            <li>Receiving and validating transactions</li>
+                            <li>Processing protocol slots</li>
+                            <li>Maintaining state</li>
+                            <li>Participating in consensus</li>
+                            <li>Creating and validating epoch commitments</li>
+                            <li>Serving synchronization data</li>
+                        </ul>
+
+                    </section>
+
+                    <section id="p2p">
+
+                        <h2>P2P Network</h2>
+
+                        <p>
+                            Aevum uses a peer-to-peer networking layer to
+                            distribute protocol data between participants.
+                        </p>
+
+                        <p>
+                            The implementation includes networking, peer
+                            discovery, synchronization and recovery components.
+                        </p>
+
+                        <p>
+                            Privacy-oriented networking components are part of
+                            the broader Aevum architecture, but individual
+                            protocol mechanisms remain subject to their
+                            implementation and security validation.
+                        </p>
+
+                    </section>
+
+                    <section id="sync">
+
+                        <h2>Synchronization</h2>
+
+                        <p>
+                            Synchronization is organized around the canonical
+                            epoch history and cryptographically verifiable
+                            state commitments.
+                        </p>
+
+                        <p>
+                            Epoch snapshots provide deterministic checkpoints
+                            from which a node can validate the canonical state
+                            before continuing protocol execution.
+                        </p>
+
+                        <ul>
+                            <li>Canonical epoch history</li>
+                            <li>Snapshot verification</li>
+                            <li>State-root verification</li>
+                            <li>Deterministic replay</li>
+                        </ul>
+
+                    </section>
+
+                    <section id="recovery">
+
+                        <h2>Recovery</h2>
+
+                        <p>
+                            Aevum includes recovery-oriented mechanisms for
+                            handling node failures, restarts and network
+                            interruptions.
+                        </p>
+
+                        <p>
+                            The architecture uses cryptographically verifiable
+                            state checkpoints and deterministic replay as core
+                            recovery primitives.
+                        </p>
+
+                        <ul>
+                            <li>Epoch snapshots as recovery points</li>
+                            <li>State verification</li>
+                            <li>Peer state exchange</li>
+                            <li>Deterministic recovery</li>
+                        </ul>
+
+                    </section>
+
+                    <section id="l2-overview">
+
+                        <h2>L2 Overview</h2>
+
+                        <p>
+                            Aevum L2 is intended as a modular execution layer
+                            operating above L1.
+                        </p>
+
+                        <p>
+                            Planned capabilities include:
+                        </p>
+
+                        <ul>
+                            <li>High-throughput transaction execution</li>
+                            <li>Smart-contract execution</li>
+                            <li>Application-specific workloads</li>
+                            <li>L1 settlement</li>
+                        </ul>
+
+                        <p>
+                            L2 specifications remain under active development
+                            and should not be treated as mainnet guarantees
+                            until the corresponding implementation is finalized.
+                        </p>
+
+                    </section>
+
+                    <section id="l2-tx">
+
+                        <h2>L2 Transactions</h2>
+
+                        <p>
+                            L2 transactions are expected to execute within the
+                            L2 environment and ultimately be represented by
+                            cryptographically verifiable commitments anchored
+                            to L1.
+                        </p>
+
+                        <p>
+                            The exact batching, settlement frequency, fee model
+                            and proof mechanism are implementation-dependent
+                            until the L2 specification is frozen.
+                        </p>
+
+                    </section>
+
+                    <section id="l2-contracts">
+
+                        <h2>Smart Contracts</h2>
+
+                        <p>
+                            Smart-contract execution is part of the planned
+                            Aevum L2 architecture.
+                        </p>
+
+                        <p>
+                            A Rust/WebAssembly execution environment is being
+                            considered for contract execution, subject to
+                            final VM specification, determinism requirements
+                            and security testing.
+                        </p>
+
+                        <ul>
+                            <li>Deterministic execution</li>
+                            <li>Resource accounting</li>
+                            <li>State isolation</li>
+                            <li>L1 settlement integration</li>
+                        </ul>
+
+                    </section>
+
+                    <section id="l2-finality">
+
+                        <h2>L1 Finality</h2>
+
+                        <p>
+                            The intended architecture is for L2 state
+                            commitments to be anchored to Aevum L1.
+                        </p>
+
+                        <p>
+                            Once the L2 settlement design is finalized,
+                            canonical L2 commitments can inherit the security
+                            properties provided by L1 finality.
+                        </p>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Status:</strong>
+                                L2 settlement and finality are under development.
+                                Exact commitment formats and settlement cadence
+                                will be documented after the specification is
+                                frozen.
+                            </p>
+                        </div>
+
+                    </section>
+
+                    <!-- ========================================================
+                         ECOSYSTEM
+                         ======================================================== -->
+
+                    <section id="ecosystem" aria-labelledby="ecosystem-title">
+
+                        <div class="docs-kicker">Aevum Ecosystem</div>
+
+                        <h2 id="ecosystem-title">Ecosystem</h2>
+
+                        <p>
+                            Aevum is designed as a foundational protocol for a
+                            broader decentralized application ecosystem.
+                            The protocol provides the underlying network,
+                            security model, identity primitives, settlement,
+                            finality and execution infrastructure that
+                            compatible applications can build upon.
+                        </p>
+
+                        <p>
+                            The Aevum protocol does not depend on any individual
+                            application. Ecosystem products may use Aevum
+                            infrastructure while remaining independently
+                            developed, deployed and operated.
+                        </p>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Architecture principle:</strong>
+                                Aevum is the protocol layer. Applications built
+                                on top of Aevum are separate products and are
+                                not required for the operation or security of
+                                the underlying network.
+                            </p>
+                        </div>
+
+                        <h3>Protocol → Ecosystem</h3>
+
+                        <div class="docs-ecosystem-diagram">Aevum Protocol
+        │
+        ├── L1 Consensus
+        ├── Presence
+        ├── EpochSnapshot
+        ├── Monetary System
+        ├── Wallet &amp; Identity Standards
+        ├── State &amp; Storage Infrastructure
+        ├── Messaging Infrastructure
+        ├── Smart Contract Infrastructure
+        └── L2 Execution
+        │
+        ▼
+Independent Ecosystem Applications
+        │
+        ├── Nexa       — Messaging
+        ├── Nova       — Video
+        ├── Vault      — Storage
+        ├── Marketplace
+        └── Future Applications</div>
+
+                        <h3>Planned Ecosystem Applications</h3>
+
+                        <p>
+                            The following products represent the current
+                            direction of the Aevum ecosystem. They are planned
+                            independently from the core protocol and may
+                            evolve as development progresses.
+                        </p>
+
+                        <h3 id="nexa">Nexa</h3>
+
+                        <p>
+                            <strong>Nexa</strong> is a planned decentralized
+                            communication platform designed around Aevum
+                            identity and compatible network infrastructure.
+                            The long-term architecture may support secure
+                            peer-to-peer communication, user-controlled
+                            identities and protocol-native services.
+                        </p>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Status:</strong>
+                                Planned. Nexa is not currently part of the
+                                Aevum L1 runtime and is not required for
+                                network operation.
+                            </p>
+                        </div>
+
+                        <h3 id="nova">Nova</h3>
+
+                        <p>
+                            <strong>Nova</strong> is a planned decentralized
+                            video and media platform. Its purpose is to provide
+                            an independent application layer for publishing,
+                            discovering and distributing video content using
+                            infrastructure compatible with the Aevum ecosystem.
+                        </p>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Status:</strong>
+                                Planned. Product architecture and protocol
+                                integration are subject to future development
+                                and testing.
+                            </p>
+                        </div>
+
+                        <h3 id="vault">Vault</h3>
+
+                        <p>
+                            <strong>Vault</strong> is a planned decentralized
+                            storage platform. The intended architecture is
+                            based on encrypted user-controlled data and
+                            distributed storage infrastructure rather than a
+                            single centralized storage provider.
+                        </p>
+
+                        <p>
+                            A future Vault implementation may use Aevum identity,
+                            payments, verification and settlement mechanisms
+                            while keeping application storage logic separate
+                            from the L1 protocol.
+                        </p>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Status:</strong>
+                                Planned. Storage architecture, availability
+                                guarantees and protocol integration have not
+                                yet been finalized.
+                            </p>
+                        </div>
+
+                        <h3>Marketplace</h3>
+
+                        <p>
+                            A future Aevum marketplace may connect users and
+                            providers of digital services and useful computation.
+                            Potential use cases include compute resources,
+                            storage, bandwidth and other decentralized services.
+                        </p>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Status:</strong>
+                                Conceptual. Exact marketplace mechanics will be
+                                defined separately from the Aevum L1 consensus
+                                protocol.
+                            </p>
+                        </div>
+
+                        <h3>Identity Across the Ecosystem</h3>
+
+                        <p>
+                            Aevum is intended to provide a protocol-level
+                            identity foundation that can be used across
+                            compatible ecosystem applications.
+                            Wallet ownership and application profiles are
+                            conceptually separate: the underlying cryptographic
+                            identity belongs to the user, while an application
+                            may optionally associate a profile, nickname or
+                            other public metadata with that identity.
+                        </p>
+
+                        <p>
+                            This separation allows a user to interact with
+                            multiple applications without requiring each
+                            application to create a separate blockchain identity.
+                        </p>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Design direction:</strong>
+                                wallet identity is intended to remain under
+                                user control. Application profiles are optional
+                                and should not replace the underlying
+                                cryptographic ownership model.
+                            </p>
+                        </div>
+
+                        <h3>Independent Products, Shared Foundation</h3>
+
+                        <p>
+                            The ecosystem follows a simple architectural
+                            principle: applications may share Aevum
+                            infrastructure without becoming components of the
+                            Aevum consensus layer.
+                        </p>
+
+                        <ul>
+                            <li>
+                                <strong>Aevum</strong> provides the protocol
+                                foundation, settlement and finality.
+                            </li>
+                            <li>
+                                <strong>Nexa</strong> focuses on communication.
+                            </li>
+                            <li>
+                                <strong>Nova</strong> focuses on video and media.
+                            </li>
+                            <li>
+                                <strong>Vault</strong> focuses on decentralized
+                                storage.
+                            </li>
+                            <li>
+                                <strong>Marketplace</strong> can connect users
+                                with decentralized services and resources.
+                            </li>
+                        </ul>
+
+                        <p>
+                            No ecosystem application is required for the Aevum
+                            network to function. The protocol remains an
+                            independent foundation on which applications can
+                            be built over time.
+                        </p>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Development status:</strong>
+                                Aevum is currently under active protocol
+                                development. The ecosystem applications
+                                described in this section are planned or
+                                conceptual and should not be interpreted as
+                                launched products, production services or
+                                guaranteed roadmap commitments.
+                            </p>
+                        </div>
+
+                    </section>
+
+                    <section id="repository">
+
+                        <h2>Repository</h2>
+
+                        <p>
+                            Aevum source code and public project material are
+                            maintained in the project's public repository.
+                        </p>
+
+                        <p>
+                            <a
+                                href="https://github.com/aevum-foundation/aevum-public"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                GitHub — Aevum Public
+                            </a>
+                        </p>
+
+                    </section>
+
+                    <section id="local-dev">
+
+                        <h2>Local Development</h2>
+
+                        <p>
+                            Local development instructions will follow the
+                            canonical repository configuration.
+                        </p>
+
+                        <ol>
+                            <li>Clone the repository.</li>
+                            <li>Install the required Rust toolchain.</li>
+                            <li>Install project dependencies.</li>
+                            <li>Build the workspace.</li>
+                            <li>Run the relevant test suites.</li>
+                        </ol>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Important:</strong>
+                                exact Rust versions, binaries, node commands
+                                and network configuration should be taken from
+                                the repository's current toolchain and build
+                                configuration rather than hard-coded here.
+                            </p>
+                        </div>
+
+                    </section>
+
+                    <section id="testing">
+
+                        <h2>Testing</h2>
+
+                        <p>
+                            Aevum development places strong emphasis on
+                            deterministic testing and recovery validation.
+                        </p>
+
+                        <p>
+                            The test architecture includes:
+                        </p>
+
+                        <ul>
+                            <li>Unit tests</li>
+                            <li>Integration tests</li>
+                            <li>Crash and recovery tests</li>
+                            <li>Network simulation</li>
+                            <li>Cryptographic validation</li>
+                            <li>State-transition invariants</li>
+                            <li>Emission and monetary-boundary tests</li>
+                        </ul>
+
+                        <p>
+                            The simulation environment is designed to make
+                            repeated runs deterministic for a given seed,
+                            allowing failures to be reproduced and investigated.
+                        </p>
+
+                    </section>
+
+                    <section id="roadmap">
+
+                        <h2>Roadmap</h2>
+
+                        <p>
+                            Aevum development is focused on protocol correctness,
+                            deterministic behavior, security and production
+                            readiness before mainnet activation.
+                        </p>
+
+                        <ul>
+                            <li>
+                                <strong>Current:</strong>
+                                Protocol development, testing and hardening.
+                            </li>
+
+                            <li>
+                                <strong>Next:</strong>
+                                Testnet preparation and public network testing.
+                            </li>
+
+                            <li>
+                                <strong>Later:</strong>
+                                Mainnet preparation following successful
+                                protocol validation.
+                            </li>
+                        </ul>
+
+                        <div class="docs-highlight">
+                            <p>
+                                <strong>Roadmap policy:</strong>
+                                dates are targets, not guarantees. Network
+                                launch timing depends on protocol stability,
+                                security audits, test results and operational
+                                readiness.
+                            </p>
+                        </div>
+
+                    </section>
+
+                    <p class="docs-last-updated">
+                        Aevum Documentation — Development specification.
+                        Protocol details may change until the corresponding
+                        implementation is frozen and released.
+                    </p>
+
+                </article>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-container" aria-busy="true"></div>
+
+    <script>
+        (() => {
+            "use strict";
+
+            const COMPONENT_TIMEOUT_MS = 10000;
+            const componentCache = new Map();
+            const initialized = new WeakSet();
+
+            const headerContainer =
+                document.getElementById("header-container");
+
+            const footerContainer =
+                document.getElementById("footer-container");
+
+            /* ========================================================
+               COMPONENT LOADING
+               ======================================================== */
+
+            async function fetchWithTimeout(url) {
+                const controller = new AbortController();
+
+                const timeoutId = window.setTimeout(() => {
+                    controller.abort();
+                }, COMPONENT_TIMEOUT_MS);
+
+                try {
+                    const response = await fetch(url, {
+                        cache: "default",
+                        credentials: "same-origin",
+                        signal: controller.signal
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(
+                            `Component request failed: ${response.status}`
+                        );
+                    }
+
+                    return await response.text();
+
+                } finally {
+                    window.clearTimeout(timeoutId);
+                }
+            }
+
+            async function loadComponent(id, url) {
+                const element = document.getElementById(id);
+
+                if (!element) {
+                    return false;
+                }
+
+                try {
+                    let html = componentCache.get(url);
+
+                    if (!html) {
+                        html = await fetchWithTimeout(url);
+
+                        if (!html.trim()) {
+                            throw new Error(
+                                `Component response was empty: ${url}`
+                            );
+                        }
+
+                        componentCache.set(url, html);
+                    }
+
+                    element.innerHTML = html;
+                    element.setAttribute("aria-busy", "false");
+
+                    document.dispatchEvent(
+                        new CustomEvent("aevum:component-loaded", {
+                            detail: {
+                                id,
+                                url
+                            }
+                        })
+                    );
+
+                    return true;
+
+                } catch (error) {
+                    console.error(
+                        "[Aevum] Component load failed:",
+                        url,
+                        error
+                    );
+
+                    element.innerHTML = "";
+                    element.setAttribute("aria-busy", "false");
+
+                    return false;
+                }
+            }
+
+            /* ========================================================
+               HEADER / DRAWER
+               ======================================================== */
+
+            function initNav() {
+                const burger = document.getElementById("burger");
+                const overlay = document.getElementById("overlay");
+                const sideNav = document.getElementById("sideNav");
+                const closeNav = document.getElementById("closeNav");
+
+                if (
+                    !burger ||
+                    !overlay ||
+                    !sideNav ||
+                    !closeNav ||
+                    initialized.has(sideNav)
+                ) {
+                    return;
+                }
+
+                initialized.add(sideNav);
+
+                let previousFocus = null;
+                let previousOverflow = "";
+
+                function getFocusableElements() {
+                    return [
+                        ...sideNav.querySelectorAll(
+                            [
+                                'a[href]',
+                                'button:not([disabled])',
+                                'input:not([disabled])',
+                                'select:not([disabled])',
+                                'textarea:not([disabled])',
+                                '[tabindex]:not([tabindex="-1"])'
+                            ].join(",")
+                        )
+                    ].filter(element => {
+                        return (
+                            element.offsetParent !== null &&
+                            !element.hasAttribute("aria-hidden")
+                        );
+                    });
+                }
+
+                function openNav() {
+                    if (sideNav.classList.contains("active")) {
+                        return;
+                    }
+
+                    previousFocus = document.activeElement;
+                    previousOverflow = document.body.style.overflow;
+
+                    sideNav.classList.add("active");
+                    overlay.classList.add("active");
+                    burger.classList.add("active");
+
+                    burger.setAttribute("aria-expanded", "true");
+                    sideNav.setAttribute("aria-hidden", "false");
+
+                    document.body.style.overflow = "hidden";
+
+                    window.requestAnimationFrame(() => {
+                        closeNav.focus();
+                    });
+                }
+
+                function closeNavMenu(restoreFocus = true) {
+                    if (!sideNav.classList.contains("active")) {
+                        return;
+                    }
+
+                    sideNav.classList.remove("active");
+                    overlay.classList.remove("active");
+                    burger.classList.remove("active");
+
+                    burger.setAttribute("aria-expanded", "false");
+                    sideNav.setAttribute("aria-hidden", "true");
+
+                    document.body.style.overflow = previousOverflow;
+
+                    if (
+                        restoreFocus &&
+                        previousFocus &&
+                        typeof previousFocus.focus === "function"
+                    ) {
+                        window.requestAnimationFrame(() => {
+                            previousFocus.focus();
+                        });
+                    }
+
+                    previousFocus = null;
+                }
+
+                burger.addEventListener("click", () => {
+                    if (sideNav.classList.contains("active")) {
+                        closeNavMenu();
+                    } else {
+                        openNav();
+                    }
+                });
+
+                overlay.addEventListener("click", () => {
+                    closeNavMenu();
+                });
+
+                closeNav.addEventListener("click", () => {
+                    closeNavMenu();
+                });
+
+                sideNav.addEventListener("click", event => {
+                    const link = event.target.closest("a");
+
+                    if (!link) {
+                        return;
+                    }
+
+                    closeNavMenu(false);
+                });
+
+                document.addEventListener("keydown", event => {
+                    if (!sideNav.classList.contains("active")) {
+                        return;
+                    }
+
+                    if (event.key === "Escape") {
+                        event.preventDefault();
+                        closeNavMenu();
+                        return;
+                    }
+
+                    if (event.key !== "Tab") {
+                        return;
+                    }
+
+                    const focusable = getFocusableElements();
+
+                    if (!focusable.length) {
+                        event.preventDefault();
+                        closeNav.focus();
+                        return;
+                    }
+
+                    const first = focusable[0];
+                    const last = focusable[focusable.length - 1];
+
+                    if (
+                        event.shiftKey &&
+                        document.activeElement === first
+                    ) {
+                        event.preventDefault();
+                        last.focus();
+
+                    } else if (
+                        !event.shiftKey &&
+                        document.activeElement === last
+                    ) {
+                        event.preventDefault();
+                        first.focus();
+                    }
+                });
+
+                sideNav.setAttribute("aria-hidden", "true");
+                burger.setAttribute("aria-expanded", "false");
+            }
+
+            /* ========================================================
+               HASH / DOCUMENTATION NAVIGATION
+               ======================================================== */
+
+            function getHeaderOffset() {
+                const rootStyle =
+                    getComputedStyle(document.documentElement);
+
+                const raw =
+                    rootStyle.getPropertyValue("--header-height");
+
+                const value = parseInt(raw, 10);
+
+                return Number.isFinite(value) ? value : 72;
+            }
+
+            function scrollToHash(hash, behavior = "auto") {
+                if (!hash || !hash.startsWith("#")) {
+                    return;
+                }
+
+                const target = document.getElementById(
+                    hash.slice(1)
+                );
+
+                if (!target) {
+                    return;
+                }
+
+                const reduceMotion =
+                    window.matchMedia(
+                        "(prefers-reduced-motion: reduce)"
+                    ).matches;
+
+                const finalBehavior =
+                    reduceMotion ? "auto" : behavior;
+
+                window.setTimeout(() => {
+                    target.scrollIntoView({
+                        behavior: finalBehavior,
+                        block: "start"
+                    });
+                }, 0);
+            }
+
+            function initDocumentationNavigation() {
+                const navigation =
+                    document.getElementById("docs-navigation");
+
+                if (!navigation || initialized.has(navigation)) {
+                    return;
+                }
+
+                initialized.add(navigation);
+
+                const links = [
+                    ...navigation.querySelectorAll(
+                        "a[href^='#']"
+                    )
+                ];
+
+                if (!links.length) {
+                    return;
+                }
+
+                const linkById = new Map();
+
+                links.forEach(link => {
+                    const href = link.getAttribute("href");
+
+                    if (href) {
+                        linkById.set(href, link);
+                    }
+                });
+
+                const targets = links
+                    .map(link => {
+                        const href =
+                            link.getAttribute("href");
+
+                        if (!href) {
+                            return null;
+                        }
+
+                        return document.getElementById(
+                            href.slice(1)
+                        );
+                    })
+                    .filter(Boolean);
+
+                if (!targets.length) {
+                    return;
+                }
+
+                let activeId =
+                    window.location.hash &&
+                    linkById.has(window.location.hash)
+                        ? window.location.hash
+                        : "#intro";
+
+                function setActive(id) {
+                    if (!linkById.has(id)) {
+                        return;
+                    }
+
+                    activeId = id;
+
+                    links.forEach(link => {
+                        const isActive =
+                            link.getAttribute("href") === id;
+
+                        link.classList.toggle(
+                            "active",
+                            isActive
+                        );
+
+                        if (isActive) {
+                            link.setAttribute(
+                                "aria-current",
+                                "true"
+                            );
+                        } else {
+                            link.removeAttribute(
+                                "aria-current"
+                            );
+                        }
+                    });
+                }
+
+                setActive(activeId);
+
+                const headerOffset =
+                    getHeaderOffset();
+
+                const observer =
+                    new IntersectionObserver(
+                        entries => {
+                            const visible =
+                                entries
+                                    .filter(entry => {
+                                        return (
+                                            entry.isIntersecting &&
+                                            linkById.has(
+                                                `#${entry.target.id}`
+                                            )
+                                        );
+                                    })
+                                    .sort(
+                                        (a, b) =>
+                                            a.boundingClientRect.top -
+                                            b.boundingClientRect.top
+                                    );
+
+                            if (!visible.length) {
+                                return;
+                            }
+
+                            const id =
+                                `#${visible[0].target.id}`;
+
+                            if (id !== activeId) {
+                                setActive(id);
+                            }
+                        },
+                        {
+                            root: null,
+                            rootMargin:
+                                `-${Math.max(
+                                    90,
+                                    headerOffset + 28
+                                )}px 0px -55% 0px`,
+                            threshold: [0, 0.1, 0.25, 0.5]
+                        }
+                    );
+
+                targets.forEach(target => {
+                    observer.observe(target);
+                });
+
+                links.forEach(link => {
+                    link.addEventListener("click", event => {
+                        const href =
+                            link.getAttribute("href");
+
+                        if (
+                            !href ||
+                            !href.startsWith("#")
+                        ) {
+                            return;
+                        }
+
+                        const target =
+                            document.getElementById(
+                                href.slice(1)
+                            );
+
+                        if (!target) {
+                            return;
+                        }
+
+                        setActive(href);
+
+                        /*
+                         * Native hash navigation is retained.
+                         * The explicit scroll is only used to account
+                         * for the fixed global header.
+                         */
+                        window.setTimeout(() => {
+                            scrollToHash(
+                                href,
+                                "smooth"
+                            );
+                        }, 0);
+                    });
+                });
+
+                window.addEventListener(
+                    "hashchange",
+                    () => {
+                        const hash =
+                            window.location.hash;
+
+                        if (linkById.has(hash)) {
+                            setActive(hash);
+                            scrollToHash(
+                                hash,
+                                "smooth"
+                            );
+                        }
+                    }
+                );
+
+                window.addEventListener(
+                    "pageshow",
+                    () => {
+                        const hash =
+                            window.location.hash;
+
+                        if (linkById.has(hash)) {
+                            setActive(hash);
+                            scrollToHash(
+                                hash,
+                                "auto"
+                            );
+                        }
+                    }
+                );
+
+                if (linkById.has(window.location.hash)) {
+                    scrollToHash(
+                        window.location.hash,
+                        "auto"
+                    );
+                }
+            }
+
+            /* ========================================================
+               BOOT
+               ======================================================== */
+
+            async function boot() {
+                const headerOk =
+                    await loadComponent(
+                        "header-container",
+                        "/components/header.html"
+                    );
+
+                if (headerOk) {
+                    initNav();
+                }
+
+                await loadComponent(
+                    "footer-container",
+                    "/components/footer.html"
+                );
+
+                initDocumentationNavigation();
+
+                document.dispatchEvent(
+                    new CustomEvent(
+                        "aevum:docs-ready"
+                    )
+                );
+            }
+
+            boot().catch(error => {
+                console.error(
+                    "[Aevum] Documentation boot failed:",
+                    error
+                );
+            });
+        })();
+    </script>
+
+</body>
+</html>

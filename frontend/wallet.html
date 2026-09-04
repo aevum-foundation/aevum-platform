@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Aevum Wallet — secure access to your Aevum identity, assets and network activity.">
+    <meta name="theme-color" content="#061426">
+    <meta name="color-scheme" content="dark light">
+    <title>Aevum — Wallet</title>
+
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/app-shell.css">
+    <link rel="stylesheet" href="/css/components.css">
+
+    <script src="/js/theme.js"></script>
+
+    <style>
+        .wallet-page {
+            padding: 56px 0 88px;
+        }
+
+        .wallet-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 48px;
+            margin-bottom: 48px;
+        }
+
+        .wallet-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 14px;
+            color: var(--color-accent-cyan);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+        }
+
+        .wallet-kicker::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+            box-shadow: 0 0 0 4px var(--color-accent-cyan-dim), 0 0 14px rgba(32, 217, 255, 0.35);
+        }
+
+        .wallet-header h1 {
+            margin: 0 0 12px;
+            color: var(--color-text-primary);
+            font-size: clamp(38px, 5vw, 58px);
+            font-weight: 700;
+            line-height: 1.02;
+            letter-spacing: -0.045em;
+        }
+
+        .wallet-header p {
+            max-width: 650px;
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 16px;
+            line-height: 1.7;
+        }
+
+        .wallet-identity {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 150px;
+            height: 150px;
+            border: 1px solid var(--color-border-gold);
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--color-accent-gold-dim), transparent 62%);
+        }
+
+        .wallet-identity::before,
+        .wallet-identity::after {
+            content: "";
+            position: absolute;
+            border: 1px solid var(--color-border-cyan);
+            border-radius: 50%;
+        }
+
+        .wallet-identity::before { inset: 17px; }
+        .wallet-identity::after { inset: 39px; border-color: var(--color-border-gold); }
+
+        .wallet-identity-core {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            color: var(--color-accent-gold);
+            border: 1px solid var(--color-border-gold);
+            border-radius: 12px;
+            background: var(--color-bg-primary);
+            box-shadow: 0 0 30px rgba(245, 197, 66, 0.12);
+        }
+
+        .wallet-identity-core svg { width: 21px; height: 21px; }
+
+        .wallet-entry-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .wallet-entry {
+            position: relative;
+            overflow: hidden;
+            min-height: 270px;
+            padding: 30px;
+            background: linear-gradient(145deg, var(--color-bg-surface), var(--color-bg-surface-light));
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .wallet-entry::after {
+            content: "";
+            position: absolute;
+            width: 190px;
+            height: 190px;
+            right: -100px;
+            bottom: -105px;
+            border: 1px solid var(--color-border-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .wallet-entry:hover {
+            transform: translateY(-3px);
+            border-color: var(--color-border-gold);
+            box-shadow: var(--shadow-glow-gold);
+        }
+
+        .wallet-entry-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            margin-bottom: 24px;
+            color: var(--color-accent-gold);
+            border: 1px solid var(--color-border-gold);
+            border-radius: 12px;
+            background: var(--color-accent-gold-dim);
+        }
+
+        .wallet-entry-icon svg { width: 21px; height: 21px; }
+
+        .wallet-entry h2 {
+            margin: 0 0 8px;
+            color: var(--color-text-primary);
+            font-size: 22px;
+            font-weight: 650;
+            letter-spacing: -0.02em;
+        }
+
+        .wallet-entry p {
+            max-width: 500px;
+            margin: 0 0 24px;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .wallet-section { margin-top: 48px; }
+
+        .wallet-section-heading {
+            margin-bottom: 20px;
+        }
+
+        .wallet-section-heading span {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--color-accent-cyan);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .wallet-section-heading h2 {
+            margin: 0;
+            color: var(--color-text-primary);
+            font-size: 26px;
+            font-weight: 650;
+            letter-spacing: -0.025em;
+        }
+
+        .wallet-capabilities {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .wallet-capability {
+            min-height: 150px;
+            padding: 22px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .wallet-capability-number {
+            display: block;
+            margin-bottom: 22px;
+            color: var(--color-accent-gold);
+            font-family: monospace;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+        }
+
+        .wallet-capability h3 {
+            margin: 0 0 7px;
+            color: var(--color-text-primary);
+            font-size: 16px;
+            font-weight: 650;
+        }
+
+        .wallet-capability p {
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .wallet-security {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: start;
+            gap: 18px;
+            margin-top: 20px;
+            padding: 24px 26px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border-cyan);
+            border-radius: var(--radius-md);
+        }
+
+        .wallet-security-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            color: var(--color-accent-cyan);
+            border: 1px solid var(--color-border-cyan);
+            border-radius: 10px;
+            background: var(--color-accent-cyan-dim);
+        }
+
+        .wallet-security-icon svg { width: 19px; height: 19px; }
+
+        .wallet-security h2 {
+            margin: 0 0 6px;
+            color: var(--color-text-primary);
+            font-size: 16px;
+            font-weight: 650;
+        }
+
+        .wallet-security p {
+            max-width: 760px;
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 13px;
+            line-height: 1.65;
+        }
+
+        .wallet-connect {
+            position: relative;
+            overflow: hidden;
+            margin-top: 20px;
+            padding: 46px 32px;
+            text-align: center;
+            background: radial-gradient(circle at 50% 0%, var(--color-accent-gold-dim), transparent 50%), var(--color-bg-surface);
+            border: 1px solid var(--color-border-gold);
+            border-radius: var(--radius-md);
+        }
+
+        .wallet-connect::before,
+        .wallet-connect::after {
+            content: "";
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            border: 1px solid var(--color-border-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .wallet-connect::before { left: -150px; top: -120px; }
+        .wallet-connect::after { right: -150px; bottom: -130px; }
+
+        .wallet-connect-content { position: relative; z-index: 1; }
+
+        .wallet-connect h2 {
+            margin: 0 0 9px;
+            color: var(--color-text-primary);
+            font-size: clamp(24px, 3vw, 30px);
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .wallet-connect p {
+            max-width: 520px;
+            margin: 0 auto 24px;
+            color: var(--color-text-secondary);
+            font-size: 15px;
+            line-height: 1.65;
+        }
+
+        .wallet-connect-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            color: var(--color-text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        .wallet-connect-status::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--color-accent-gold);
+            box-shadow: 0 0 10px rgba(245, 197, 66, 0.25);
+        }
+
+        .wallet-connect .btn[aria-disabled="true"] {
+            cursor: not-allowed;
+            opacity: 0.72;
+        }
+
+        @media (max-width: 1024px) {
+            .wallet-capabilities { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 900px) {
+            .wallet-header { grid-template-columns: 1fr; }
+            .wallet-identity { display: none; }
+        }
+
+        @media (max-width: 768px) {
+            .wallet-page { padding: 40px 0 64px; }
+            .wallet-entry-grid { grid-template-columns: 1fr; }
+            .wallet-entry { min-height: auto; }
+            .wallet-capabilities { grid-template-columns: 1fr; }
+            .wallet-security { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .wallet-page { padding: 32px 0 52px; }
+            .wallet-header h1 { font-size: 34px; }
+            .wallet-entry { padding: 22px; }
+            .wallet-connect { padding: 36px 20px; }
+            .wallet-connect .btn { width: 100%; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .wallet-entry { transition: none; }
+            .wallet-entry:hover { transform: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="header-container" aria-busy="true"></div>
+
+    <main class="wallet-page" id="main-content">
+        <div class="container">
+
+            <header class="wallet-header">
+                <div>
+                    <div class="wallet-kicker">Aevum Wallet</div>
+                    <h1>Your network identity.</h1>
+                    <p>A secure gateway to your Aevum assets, transactions and network activity. Wallet functionality is being prepared for the Aevum ecosystem.</p>
+                </div>
+                <div class="wallet-identity" aria-hidden="true">
+                    <div class="wallet-identity-core">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="5" y="10" width="14" height="10" rx="2"/>
+                            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+                            <circle cx="12" cy="15" r="1"/>
+                        </svg>
+                    </div>
+                </div>
+            </header>
+
+            <section aria-labelledby="wallet-entry-title">
+                <div class="wallet-section-heading">
+                    <span>Access</span>
+                    <h2 id="wallet-entry-title">Wallet entry points.</h2>
+                </div>
+                <div class="wallet-entry-grid">
+                    <article class="wallet-entry">
+                        <div class="wallet-entry-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 3 5 6v5c0 4.7 2.9 8.2 7 10 4.1-1.8 7-5.3 7-10V6l-7-3Z"/>
+                                <path d="m9.2 12 1.8 1.8 3.8-4"/>
+                            </svg>
+                        </div>
+                        <h2>Create Wallet</h2>
+                        <p>Generate a new Aevum wallet when the official wallet implementation is released. Keys will remain under your control.</p>
+                        <span class="btn btn-secondary btn-sm" aria-disabled="true">Coming soon</span>
+                    </article>
+                    <article class="wallet-entry">
+                        <div class="wallet-entry-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 3v12"/>
+                                <path d="m7 10 5 5 5-5"/>
+                                <path d="M5 20h14"/>
+                            </svg>
+                        </div>
+                        <h2>Recover Wallet</h2>
+                        <p>Restore an existing wallet through the official recovery mechanism once wallet support is available.</p>
+                        <span class="btn btn-secondary btn-sm" aria-disabled="true">Coming soon</span>
+                    </article>
+                </div>
+            </section>
+
+            <section class="wallet-section" aria-labelledby="wallet-capabilities-title">
+                <div class="wallet-section-heading">
+                    <span>Architecture</span>
+                    <h2 id="wallet-capabilities-title">Designed around your identity.</h2>
+                </div>
+                <div class="wallet-capabilities">
+                    <article class="wallet-capability">
+                        <span class="wallet-capability-number">01 / IDENTITY</span>
+                        <h3>Key ownership</h3>
+                        <p>Your wallet represents control over your network identity and assets.</p>
+                    </article>
+                    <article class="wallet-capability">
+                        <span class="wallet-capability-number">02 / ASSETS</span>
+                        <h3>Asset management</h3>
+                        <p>View and manage AEV and supported ecosystem assets from one interface.</p>
+                    </article>
+                    <article class="wallet-capability">
+                        <span class="wallet-capability-number">03 / ACTIVITY</span>
+                        <h3>Network activity</h3>
+                        <p>Track transactions and finalized network activity associated with your wallet.</p>
+                    </article>
+                    <article class="wallet-capability">
+                        <span class="wallet-capability-number">04 / SECURITY</span>
+                        <h3>Security first</h3>
+                        <p>Wallet operations should minimize unnecessary exposure of sensitive key material.</p>
+                    </article>
+                </div>
+            </section>
+
+            <aside class="wallet-security" aria-labelledby="wallet-security-title">
+                <div class="wallet-security-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3 5 6v5c0 4.7 2.9 8.2 7 10 4.1-1.8 7-5.3 7-10V6l-7-3Z"/>
+                        <path d="M12 8v4"/>
+                        <circle cx="12" cy="15.5" r=".8"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 id="wallet-security-title">Never expose your private keys.</h2>
+                    <p>Aevum will never require you to publish a private key or recovery secret to join the community. Only use official wallet software and verify what you are signing before approving an operation.</p>
+                </div>
+            </aside>
+
+            <section class="wallet-connect" aria-labelledby="wallet-connect-title">
+                <div class="wallet-connect-content">
+                    <div class="wallet-connect-status">Wallet interface</div>
+                    <h2 id="wallet-connect-title">Connect to Aevum.</h2>
+                    <p>The wallet interface will become the secure entry point for interacting with the Aevum network.</p>
+                    <span class="btn btn-primary" aria-disabled="true">Coming soon</span>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <div id="footer-container" aria-busy="true"></div>
+
+    <script>
+        (() => {
+            'use strict';
+
+            const componentCache = new Map();
+
+            async function loadComponent(id, url) {
+                const el = document.getElementById(id);
+                if (!el) return false;
+
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+
+                try {
+                    let html = componentCache.get(url);
+                    if (!html) {
+                        const response = await fetch(url, {
+                            cache: 'default',
+                            signal: controller.signal
+                        });
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        html = await response.text();
+                        componentCache.set(url, html);
+                    }
+                    el.innerHTML = html;
+                    el.setAttribute('aria-busy', 'false');
+                    document.dispatchEvent(new CustomEvent('aevum:component-loaded', { detail: { id, url } }));
+                    return true;
+                } catch (error) {
+                    console.error(`[Aevum] Component failed: ${url}`, error);
+                    el.innerHTML = '';
+                    el.setAttribute('aria-busy', 'false');
+                    return false;
+                } finally {
+                    clearTimeout(timeout);
+                }
+            }
+
+            function initNav() {
+                const burger = document.getElementById('burger');
+                const overlay = document.getElementById('overlay');
+                const sideNav = document.getElementById('sideNav');
+                const closeNavButton = document.getElementById('closeNav');
+
+                if (!burger || !overlay || !sideNav || !closeNavButton) return;
+
+                let previousFocus = null;
+                let previousOverflow = '';
+
+                const getFocusable = () => [...sideNav.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')];
+
+                function openNav() {
+                    previousFocus = document.activeElement;
+                    previousOverflow = document.body.style.overflow;
+                    sideNav.classList.add('active');
+                    overlay.classList.add('active');
+                    burger.classList.add('active');
+                    burger.setAttribute('aria-expanded', 'true');
+                    sideNav.setAttribute('aria-hidden', 'false');
+                    document.body.style.overflow = 'hidden';
+                    closeNavButton.focus();
+                }
+
+                function closeNav(returnFocus = true) {
+                    sideNav.classList.remove('active');
+                    overlay.classList.remove('active');
+                    burger.classList.remove('active');
+                    burger.setAttribute('aria-expanded', 'false');
+                    sideNav.setAttribute('aria-hidden', 'true');
+                    document.body.style.overflow = previousOverflow;
+                    if (returnFocus && previousFocus && typeof previousFocus.focus === 'function') {
+                        previousFocus.focus();
+                    }
+                    previousFocus = null;
+                }
+
+                function trapFocus(event) {
+                    if (event.key !== 'Tab') return;
+                    const focusable = getFocusable();
+                    if (!focusable.length) { event.preventDefault(); closeNavButton.focus(); return; }
+                    const first = focusable[0];
+                    const last = focusable[focusable.length - 1];
+                    if (event.shiftKey && document.activeElement === first) {
+                        event.preventDefault();
+                        last.focus();
+                    } else if (!event.shiftKey && document.activeElement === last) {
+                        event.preventDefault();
+                        first.focus();
+                    }
+                }
+
+                burger.addEventListener('click', () => {
+                    if (sideNav.classList.contains('active')) closeNav();
+                    else openNav();
+                });
+
+                overlay.addEventListener('click', () => closeNav());
+                closeNavButton.addEventListener('click', () => closeNav());
+
+                document.addEventListener('keydown', event => {
+                    if (!sideNav.classList.contains('active')) return;
+                    if (event.key === 'Escape') { event.preventDefault(); closeNav(); return; }
+                    trapFocus(event);
+                });
+            }
+
+            async function boot() {
+                const headerLoaded = await loadComponent('header-container', '/components/header.html');
+                if (headerLoaded) initNav();
+                await loadComponent('footer-container', '/components/footer.html');
+            }
+
+            boot();
+        })();
+    </script>
+
+</body>
+</html>

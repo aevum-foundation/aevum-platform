@@ -1,0 +1,348 @@
+/**
+ * AEVUM WEB PLATFORM
+ * STORE LAYER v1
+ *
+ * Manages application state and data caching.
+ * 
+ * Architecture:
+ *   UI → Store → AevumAPI → Provider
+ *
+ * Store responsibilities:
+ *   1. Cache data to reduce API calls
+ *   2. Track loading/error states
+ *   3. Provide reactive data updates
+ *   4. Isolate UI from API implementation details
+ *
+ * UI components never call AevumAPI directly.
+ * They always go through Store.
+ */
+
+import { AevumAPI } from './client.js';
+
+// ============================================================
+// CACHE TTL CONFIG
+// ============================================================
+
+const CACHE_TTL = Object.freeze({
+    network: 30_000,
+    epoch: 30_000,
+    supply: 60_000,
+    participants: 60_000,
+    activity: 30_000,
+    search: 10_000,
+});
+
+// ============================================================
+// STATE
+// ============================================================
+
+const state = {
+    // Network status
+    network: {
+        data: null,
+        loading: false,
+        error: null,
+        lastUpdated: null,
+    },
+
+    // Epoch data
+    epoch: {
+        data: null,
+        loading: false,
+        error: null,
+        lastUpdated: null,
+    },
+
+    // Supply data
+    supply: {
+        data: null,
+        loading: false,
+        error: null,
+        lastUpdated: null,
+    },
+
+    // Participants
+    participants: {
+        data: null,
+        loading: false,
+        error: null,
+        lastUpdated: null,
+    },
+
+    // Activity
+    activity: {
+        data: null,
+        loading: false,
+        error: null,
+        lastUpdated: null,
+    },
+
+    // Search results
+    search: {
+        data: null,
+        loading: false,
+        error: null,
+        lastUpdated: null,
+    },
+};
+
+// ============================================================
+// SUBSCRIBERS
+// ============================================================
+
+const subscribers = new Map();
+
+function notify(key) {
+    const callbacks = subscribers.get(key) || [];
+    const value = state[key];
+    for (const cb of callbacks) {
+        try {
+            cb(value);
+        } catch (e) {
+            console.error(`[Store] Subscriber error for ${key}:`, e);
+        }
+    }
+}
+
+/**
+ * Subscribe to store changes.
+ * 
+ * @param {string} key - State key to watch
+ * @param {Function} callback - Called when state changes
+ * @returns {Function} Unsubscribe function
+ */
+export function subscribe(key, callback) {
+    if (!subscribers.has(key)) {
+        subscribers.set(key, []);
+    }
+    subscribers.get(key).push(callback);
+
+    // Immediately call with current state
+    callback(state[key]);
+
+    return () => {
+        const callbacks = subscribers.get(key);
+        if (callbacks) {
+            const index = callbacks.indexOf(callback);
+            if (index > -1) callbacks.splice(index, 1);
+        }
+    };
+}
+
+// ============================================================
+// STORE METHODS
+// ============================================================
+
+/**
+ * Update a state key and notify subscribers.
+ */
+function update(key, updates) {
+    const current = state[key];
+    state[key] = { ...current, ...updates, lastUpdated: new Date().toISOString() };
+    notify(key);
+}
+
+/**
+ * Set loading state for a key.
+ */
+function setLoading(key) {
+    update(key, { loading: true, error: null });
+}
+
+/**
+ * Set error state for a key.
+ */
+function setError(key, error) {
+    update(key, { loading: false, error: error instanceof Error ? error.message : String(error) });
+}
+
+/**
+ * Set data for a key.
+ */
+function setData(key, data) {
+    update(key, { data, loading: false, error: null });
+}
+
+// ============================================================
+// PUBLIC API
+// ============================================================
+
+export const Store = {
+    /**
+     * Get network status.
+     * Returns cached data if available and fresh.
+     * Otherwise fetches from API.
+     */
+    async getNetworkStatus({ force = false } = {}) {
+        const cached = state.network;
+        const isFresh = cached.lastUpdated && (Date.now() - new Date(cached.lastUpdated).getTime() < 30000);
+
+        if (!force && isFresh && cached.data) {
+            return cached.data;
+        }
+
+        setLoading('network');
+
+        try {
+            const data = await AevumAPI.getNetworkStatus();
+            setData('network', data);
+            return data;
+        } catch (error) {
+            setError('network', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get epoch information.
+     */
+    async getEpoch(epochId, { force = false } = {}) {
+        const cached = state.epoch;
+        const isFresh = cached.lastUpdated && (Date.now() - new Date(cached.lastUpdated).getTime() < 30000);
+
+        if (!force && isFresh && cached.data) {
+            return cached.data;
+        }
+
+        setLoading('epoch');
+
+        try {
+            const data = await AevumAPI.getEpoch(epochId);
+            setData('epoch', data);
+            return data;
+        } catch (error) {
+            setError('epoch', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get supply information.
+     */
+    async getSupply({ force = false } = {}) {
+        const cached = state.supply;
+        const isFresh = cached.lastUpdated && (Date.now() - new Date(cached.lastUpdated).getTime() < 60000);
+
+        if (!force && isFresh && cached.data) {
+            return cached.data;
+        }
+
+        setLoading('supply');
+
+        try {
+            const data = await AevumAPI.getSupply();
+            setData('supply', data);
+            return data;
+        } catch (error) {
+            setError('supply', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get participants list.
+     */
+    async getParticipants(limit = 10, offset = 0, { force = false } = {}) {
+        // Simple cache key based on limit/offset
+        const cacheKey = `participants_${limit}_${offset}`;
+        const cached = state.participants;
+        const isFresh = cached.lastUpdated && (Date.now() - new Date(cached.lastUpdated).getTime() < 60000);
+
+        if (!force && isFresh && cached.data && cached.data._cacheKey === cacheKey) {
+            return cached.data;
+        }
+
+        setLoading('participants');
+
+        try {
+            const data = await AevumAPI.getParticipants(limit, offset);
+            data._cacheKey = cacheKey;
+            setData('participants', data);
+            return data;
+        } catch (error) {
+            setError('participants', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get recent activity.
+     */
+    async getRecentActivity(limit = 10, { force = false } = {}) {
+        const cached = state.activity;
+        const isFresh = cached.lastUpdated && (Date.now() - new Date(cached.lastUpdated).getTime() < 30000);
+
+        if (!force && isFresh && cached.data) {
+            return cached.data;
+        }
+
+        setLoading('activity');
+
+        try {
+            const data = await AevumAPI.getRecentActivity(limit);
+            setData('activity', data);
+            return data;
+        } catch (error) {
+            setError('activity', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Search the network.
+     */
+    async search(query, { force = false } = {}) {
+        if (!query || query.trim().length < 2) {
+            return null;
+        }
+
+        setLoading('search');
+
+        try {
+            const data = await AevumAPI.search(query);
+            setData('search', data);
+            return data;
+        } catch (error) {
+            setError('search', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get the current state of a store key.
+     * Useful for debugging or reading cached state.
+     */
+    getState(key) {
+        return state[key] || null;
+    },
+
+    /**
+     * Get the entire store state.
+     */
+    getAllState() {
+        return { ...state };
+    },
+
+    /**
+     * Clear cache for a specific key or all keys.
+     */
+    clearCache(key) {
+        if (key) {
+            if (state[key]) {
+                state[key] = { data: null, loading: false, error: null, lastUpdated: null };
+                notify(key);
+            }
+        } else {
+            for (const k of Object.keys(state)) {
+                state[k] = { data: null, loading: false, error: null, lastUpdated: null };
+                notify(k);
+            }
+        }
+    },
+};
+
+// ============================================================
+// EXPORT
+// ============================================================
+
+export default Store;

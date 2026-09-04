@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="Aevum Genesis — the origin, monetary constitution and foundational principles of the Aevum protocol."
+    >
+    <meta name="theme-color" content="#061426">
+    <meta name="color-scheme" content="dark light">
+
+    <title>Aevum — Genesis</title>
+
+    <!-- =====================================================
+         AEVUM DESIGN SYSTEM
+         ===================================================== -->
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/app-shell.css">
+    <link rel="stylesheet" href="/css/components.css">
+
+    <!-- Theme bootstrap -->
+    <script src="/js/theme.js"></script>
+
+    <style>
+        /* =====================================================
+           GENESIS PAGE
+           ===================================================== */
+
+        .genesis-page {
+            min-height: calc(100svh - var(--header-height, 72px));
+            padding: 48px 0 72px;
+        }
+
+        /* -----------------------------------------------------
+           Header
+           ----------------------------------------------------- */
+
+        .genesis-header {
+            max-width: 760px;
+            margin-bottom: 40px;
+        }
+
+        .genesis-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            color: var(--color-accent-cyan);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+        }
+
+        .genesis-kicker::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+            box-shadow: 0 0 10px rgba(32, 217, 255, 0.45);
+        }
+
+        .genesis-header h1 {
+            margin: 0 0 10px;
+            color: var(--color-text-primary);
+            font-size: clamp(34px, 5vw, 46px);
+            font-weight: 700;
+            line-height: 1.12;
+            letter-spacing: -0.03em;
+        }
+
+        .genesis-header p {
+            max-width: 700px;
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 16px;
+            line-height: 1.65;
+        }
+
+        /* -----------------------------------------------------
+           Genesis Core
+           ----------------------------------------------------- */
+
+        .genesis-core {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.15fr);
+            gap: 32px;
+            align-items: stretch;
+            margin-bottom: 42px;
+            padding: 32px;
+            overflow: hidden;
+            background:
+                radial-gradient(
+                    circle at 20% 50%,
+                    var(--color-accent-gold-dim),
+                    transparent 34%
+                ),
+                var(--color-bg-surface);
+            border: 1px solid var(--color-border-gold);
+            border-radius: var(--radius-md);
+        }
+
+        .genesis-core::after {
+            content: "";
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            right: -100px;
+            top: -120px;
+            border: 1px solid var(--color-border-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .genesis-core-visual {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 260px;
+        }
+
+        .genesis-orbit {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 190px;
+            height: 190px;
+            border: 1px solid var(--color-border-gold);
+            border-radius: 50%;
+            box-shadow: var(--shadow-glow-gold);
+        }
+
+        .genesis-orbit::before,
+        .genesis-orbit::after {
+            content: "";
+            position: absolute;
+            border: 1px solid var(--color-border-cyan);
+            border-radius: 50%;
+        }
+
+        .genesis-orbit::before {
+            inset: 22px;
+        }
+
+        .genesis-orbit::after {
+            inset: 48px;
+        }
+
+        .genesis-core-symbol {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 82px;
+            height: 82px;
+            border: 1px solid var(--color-accent-gold);
+            border-radius: 50%;
+            background: var(--color-bg-deep);
+            color: var(--color-accent-gold);
+            font-family:
+                "SFMono-Regular",
+                Consolas,
+                "Liberation Mono",
+                monospace;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            box-shadow:
+                0 0 0 8px var(--color-accent-gold-dim),
+                0 0 40px rgba(245, 197, 66, 0.1);
+        }
+
+        .genesis-core-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .genesis-core-label {
+            margin-bottom: 8px;
+            color: var(--color-text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        .genesis-core-content h2 {
+            margin: 0 0 10px;
+            color: var(--color-text-primary);
+            font-size: clamp(24px, 3vw, 32px);
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .genesis-core-content p {
+            max-width: 580px;
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 15px;
+            line-height: 1.65;
+        }
+
+        /* -----------------------------------------------------
+           Constitution
+           ----------------------------------------------------- */
+
+        .genesis-section {
+            margin-bottom: 42px;
+        }
+
+        .genesis-section-header {
+            margin-bottom: 16px;
+        }
+
+        .genesis-section-header h2 {
+            margin: 0 0 5px;
+            color: var(--color-text-primary);
+            font-size: 20px;
+            font-weight: 650;
+        }
+
+        .genesis-section-header p {
+            margin: 0;
+            color: var(--color-text-muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .genesis-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .genesis-card {
+            min-width: 0;
+            padding: 24px 22px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            transition:
+                border-color var(--transition-fast),
+                transform var(--transition-fast),
+                box-shadow var(--transition-fast);
+        }
+
+        .genesis-card:hover {
+            border-color: var(--color-border-gold);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .genesis-card-number {
+            display: block;
+            margin-bottom: 12px;
+            color: var(--color-accent-cyan);
+            font-family:
+                "SFMono-Regular",
+                Consolas,
+                "Liberation Mono",
+                monospace;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+        }
+
+        .genesis-card h3 {
+            margin: 0 0 7px;
+            color: var(--color-text-primary);
+            font-size: 17px;
+            font-weight: 650;
+        }
+
+        .genesis-card p {
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        /* -----------------------------------------------------
+           Monetary Constitution
+           ----------------------------------------------------- */
+
+        .genesis-monetary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .genesis-metric {
+            min-width: 0;
+            padding: 22px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .genesis-metric-value {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--color-accent-gold);
+            font-size: clamp(24px, 3vw, 30px);
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .genesis-metric-label {
+            display: block;
+            color: var(--color-text-muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* -----------------------------------------------------
+           L1 Flow
+           ----------------------------------------------------- */
+
+        .genesis-flow {
+            display: grid;
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .genesis-flow-step {
+            position: relative;
+            min-width: 0;
+            padding: 20px 18px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .genesis-flow-step::after {
+            content: "→";
+            position: absolute;
+            top: 50%;
+            right: -9px;
+            z-index: 2;
+            color: var(--color-accent-cyan);
+            transform: translateY(-50%);
+        }
+
+        .genesis-flow-step:last-child::after {
+            display: none;
+        }
+
+        .genesis-flow-index {
+            display: block;
+            margin-bottom: 9px;
+            color: var(--color-accent-cyan);
+            font-family:
+                "SFMono-Regular",
+                Consolas,
+                monospace;
+            font-size: 11px;
+        }
+
+        .genesis-flow-step strong {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--color-text-primary);
+            font-size: 14px;
+        }
+
+        .genesis-flow-step span {
+            display: block;
+            color: var(--color-text-muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* -----------------------------------------------------
+           Timeline
+           ----------------------------------------------------- */
+
+        .genesis-timeline {
+            overflow: hidden;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .genesis-timeline-header {
+            padding: 20px 22px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .genesis-timeline-header h2 {
+            margin: 0 0 5px;
+            color: var(--color-text-primary);
+            font-size: 18px;
+            font-weight: 650;
+        }
+
+        .genesis-timeline-header p {
+            margin: 0;
+            color: var(--color-text-muted);
+            font-size: 13px;
+        }
+
+        .genesis-event {
+            display: grid;
+            grid-template-columns: 70px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 18px;
+            min-height: 66px;
+            padding: 12px 22px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .genesis-event:last-child {
+            border-bottom: 0;
+        }
+
+        .genesis-event-year {
+            color: var(--color-accent-gold);
+            font-family:
+                "SFMono-Regular",
+                Consolas,
+                monospace;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .genesis-event-description {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .genesis-event-status {
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 4px 9px;
+            border-radius: var(--radius-pill);
+            background: var(--color-bg-surface-light);
+            color: var(--color-text-muted);
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .genesis-event-status-active {
+            background: var(--color-accent-cyan-dim);
+            color: var(--color-accent-cyan);
+        }
+
+        .genesis-event-status-target {
+            background: var(--color-accent-gold-dim);
+            color: var(--color-accent-gold);
+        }
+
+        /* -----------------------------------------------------
+           Responsive
+           ----------------------------------------------------- */
+
+        @media (max-width: 900px) {
+            .genesis-core {
+                grid-template-columns: 1fr;
+            }
+
+            .genesis-core-visual {
+                min-height: 220px;
+            }
+
+            .genesis-grid,
+            .genesis-monetary {
+                grid-template-columns: 1fr;
+            }
+
+            .genesis-flow {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .genesis-flow-step::after {
+                display: none;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .genesis-page {
+                padding: 36px 0 56px;
+            }
+
+            .genesis-header {
+                margin-bottom: 32px;
+            }
+
+            .genesis-header h1 {
+                font-size: 32px;
+            }
+
+            .genesis-header p {
+                font-size: 15px;
+            }
+
+            .genesis-core {
+                padding: 24px 20px;
+                gap: 18px;
+            }
+
+            .genesis-core-visual {
+                min-height: 190px;
+            }
+
+            .genesis-orbit {
+                width: 150px;
+                height: 150px;
+            }
+
+            .genesis-core-symbol {
+                width: 68px;
+                height: 68px;
+                font-size: 18px;
+            }
+
+            .genesis-flow {
+                grid-template-columns: 1fr;
+            }
+
+            .genesis-event {
+                grid-template-columns: 1fr;
+                gap: 5px;
+                align-items: flex-start;
+                padding: 16px 18px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .genesis-card {
+                transition: none;
+            }
+
+            .genesis-card:hover {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- =====================================================
+         GLOBAL HEADER
+         ===================================================== -->
+    <div
+        id="header-container"
+        aria-busy="true"
+    ></div>
+
+
+    <!-- =====================================================
+         GENESIS
+         ===================================================== -->
+    <main
+        class="genesis-page"
+        id="main-content"
+    >
+        <div class="container">
+
+            <!-- Header -->
+            <header class="genesis-header">
+
+                <div class="genesis-kicker">
+                    Protocol Origin
+                </div>
+
+                <h1>Genesis</h1>
+
+                <p>
+                    The origin of Aevum — its monetary foundation,
+                    cryptographic principles and architecture for
+                    decentralized infrastructure.
+                </p>
+
+            </header>
+
+
+            <!-- =================================================
+                 GENESIS CORE
+                 ================================================= -->
+            <section
+                class="genesis-core"
+                aria-labelledby="genesis-core-title"
+            >
+
+                <div
+                    class="genesis-core-visual"
+                    aria-hidden="true"
+                >
+                    <div class="genesis-orbit">
+                        <div class="genesis-core-symbol">
+                            AEV
+                        </div>
+                    </div>
+                </div>
+
+                <div class="genesis-core-content">
+
+                    <span class="genesis-core-label">
+                        Genesis Constitution
+                    </span>
+
+                    <h2 id="genesis-core-title">
+                        The foundation of the network
+                    </h2>
+
+                    <p>
+                        Aevum begins with a fixed genesis allocation
+                        and a protocol designed around post-quantum
+                        security, equal participation and
+                        epoch-native finality.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 FOUNDATIONAL PRINCIPLES
+                 ================================================= -->
+            <section
+                class="genesis-section"
+                aria-labelledby="principles-title"
+            >
+
+                <header class="genesis-section-header">
+                    <h2 id="principles-title">
+                        Foundational Principles
+                    </h2>
+
+                    <p>
+                        The core ideas established at the origin
+                        of the Aevum protocol.
+                    </p>
+                </header>
+
+                <div class="genesis-grid">
+
+                    <article class="genesis-card">
+
+                        <span class="genesis-card-number">
+                            01 / MONETARY
+                        </span>
+
+                        <h3>Genesis Supply</h3>
+
+                        <p>
+                            21,000,000 AEV are established at
+                            genesis. The protocol defines a
+                            maximum supply of 371,000,000 AEV.
+                        </p>
+
+                    </article>
+
+
+                    <article class="genesis-card">
+
+                        <span class="genesis-card-number">
+                            02 / SECURITY
+                        </span>
+
+                        <h3>Post-Quantum</h3>
+
+                        <p>
+                            Aevum is designed around
+                            post-quantum cryptographic primitives,
+                            including ML-KEM, ML-DSA and SLH-DSA.
+                        </p>
+
+                    </article>
+
+
+                    <article class="genesis-card">
+
+                        <span class="genesis-card-number">
+                            03 / PARTICIPATION
+                        </span>
+
+                        <h3>Proof of Presence</h3>
+
+                        <p>
+                            Network participation is designed
+                            around presence and fair participation
+                            rather than energy-intensive mining.
+                        </p>
+
+                    </article>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 MONETARY CONSTITUTION
+                 ================================================= -->
+            <section
+                class="genesis-section"
+                aria-labelledby="monetary-title"
+            >
+
+                <header class="genesis-section-header">
+                    <h2 id="monetary-title">
+                        Monetary Constitution
+                    </h2>
+
+                    <p>
+                        Genesis establishes the initial monetary
+                        parameters of Aevum.
+                    </p>
+                </header>
+
+                <dl class="genesis-monetary">
+
+                    <div class="genesis-metric">
+                        <dd class="genesis-metric-value">
+                            21M AEV
+                        </dd>
+
+                        <dt class="genesis-metric-label">
+                            Genesis allocation
+                        </dt>
+                    </div>
+
+                    <div class="genesis-metric">
+                        <dd class="genesis-metric-value">
+                            350M AEV
+                        </dd>
+
+                        <dt class="genesis-metric-label">
+                            Emission budget
+                        </dt>
+                    </div>
+
+                    <div class="genesis-metric">
+                        <dd class="genesis-metric-value">
+                            371M AEV
+                        </dd>
+
+                        <dt class="genesis-metric-label">
+                            Maximum supply
+                        </dt>
+                    </div>
+
+                </dl>
+
+            </section>
+
+
+            <!-- =================================================
+                 L1 GENESIS FLOW
+                 ================================================= -->
+            <section
+                class="genesis-section"
+                aria-labelledby="l1-flow-title"
+            >
+
+                <header class="genesis-section-header">
+                    <h2 id="l1-flow-title">
+                        From Genesis to Finality
+                    </h2>
+
+                    <p>
+                        The epoch-native lifecycle of the Aevum L1.
+                    </p>
+                </header>
+
+                <div class="genesis-flow">
+
+                    <div class="genesis-flow-step">
+
+                        <span class="genesis-flow-index">
+                            01
+                        </span>
+
+                        <strong>Slot</strong>
+
+                        <span>
+                            30-second units of network activity.
+                        </span>
+
+                    </div>
+
+
+                    <div class="genesis-flow-step">
+
+                        <span class="genesis-flow-index">
+                            02
+                        </span>
+
+                        <strong>Epoch</strong>
+
+                        <span>
+                            2,880 slots form the daily
+                            coordination period.
+                        </span>
+
+                    </div>
+
+
+                    <div class="genesis-flow-step">
+
+                        <span class="genesis-flow-index">
+                            03
+                        </span>
+
+                        <strong>Snapshot</strong>
+
+                        <span>
+                            Canonical state, presence,
+                            reward, fee and emission roots.
+                        </span>
+
+                    </div>
+
+
+                    <div class="genesis-flow-step">
+
+                        <span class="genesis-flow-index">
+                            04
+                        </span>
+
+                        <strong>Finality</strong>
+
+                        <span>
+                            The finalized snapshot becomes
+                            canonical L1 state.
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 GENESIS TIMELINE
+                 ================================================= -->
+            <section
+                class="genesis-section"
+                aria-labelledby="timeline-title"
+            >
+
+                <div class="genesis-timeline">
+
+                    <header class="genesis-timeline-header">
+
+                        <h2 id="timeline-title">
+                            Genesis Timeline
+                        </h2>
+
+                        <p>
+                            Development milestones and current
+                            roadmap targets.
+                        </p>
+
+                    </header>
+
+
+                    <div class="genesis-event">
+
+                        <time
+                            class="genesis-event-year"
+                            datetime="2024"
+                        >
+                            2024
+                        </time>
+
+                        <span class="genesis-event-description">
+                            Protocol research begins, with
+                            post-quantum cryptography selected
+                            as a foundational security direction.
+                        </span>
+
+                        <span class="genesis-event-status">
+                            Research
+                        </span>
+
+                    </div>
+
+
+                    <div class="genesis-event">
+
+                        <time
+                            class="genesis-event-year"
+                            datetime="2025"
+                        >
+                            2025
+                        </time>
+
+                        <span class="genesis-event-description">
+                            AevumDB, consensus and network
+                            infrastructure are designed and
+                            developed.
+                        </span>
+
+                        <span class="genesis-event-status">
+                            Development
+                        </span>
+
+                    </div>
+
+
+                    <div class="genesis-event">
+
+                        <time
+                            class="genesis-event-year"
+                            datetime="2026"
+                        >
+                            2026
+                        </time>
+
+                        <span class="genesis-event-description">
+                            Genesis infrastructure and the
+                            network test environment enter
+                            active development.
+                        </span>
+
+                        <span class="genesis-event-status genesis-event-status-active">
+                            Current
+                        </span>
+
+                    </div>
+
+
+                    <div class="genesis-event">
+
+                        <time
+                            class="genesis-event-year"
+                            datetime="2027"
+                        >
+                            2027
+                        </time>
+
+                        <span class="genesis-event-description">
+                            Mainnet launch target, subject to
+                            protocol readiness, testing and
+                            final validation.
+                        </span>
+
+                        <span class="genesis-event-status genesis-event-status-target">
+                            Target
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+    </main>
+
+
+    <!-- =====================================================
+         GLOBAL FOOTER
+         ===================================================== -->
+    <div
+        id="footer-container"
+        aria-busy="true"
+    ></div>
+
+
+    <!-- =====================================================
+         COMPONENT + NAVIGATION BOOTSTRAP
+         ===================================================== -->
+    <script>
+        (() => {
+            "use strict";
+
+            const componentCache = new Map();
+
+            async function loadComponent(id, url) {
+                const element =
+                    document.getElementById(id);
+
+                if (!element) {
+                    return false;
+                }
+
+                try {
+                    let html =
+                        componentCache.get(url);
+
+                    if (!html) {
+                        const controller =
+                            new AbortController();
+
+                        const timeout =
+                            setTimeout(
+                                () => controller.abort(),
+                                10000
+                            );
+
+                        const response =
+                            await fetch(url, {
+                                signal:
+                                    controller.signal,
+                                cache: "default"
+                            });
+
+                        clearTimeout(timeout);
+
+                        if (!response.ok) {
+                            throw new Error(
+                                `HTTP ${response.status}`
+                            );
+                        }
+
+                        html =
+                            await response.text();
+
+                        if (!html.trim()) {
+                            throw new Error(
+                                "Empty component response"
+                            );
+                        }
+
+                        componentCache.set(
+                            url,
+                            html
+                        );
+                    }
+
+                    element.innerHTML = html;
+                    element.setAttribute(
+                        "aria-busy",
+                        "false"
+                    );
+
+                    document.dispatchEvent(
+                        new CustomEvent(
+                            "aevum:component-loaded",
+                            {
+                                detail: {
+                                    id,
+                                    url
+                                }
+                            }
+                        )
+                    );
+
+                    return true;
+
+                } catch (error) {
+                    console.error(
+                        `[Aevum] Component load failed: ${url}`,
+                        error
+                    );
+
+                    element.innerHTML = "";
+                    element.setAttribute(
+                        "aria-busy",
+                        "false"
+                    );
+
+                    return false;
+                }
+            }
+
+
+            function initNav() {
+                const burger =
+                    document.getElementById("burger");
+
+                const overlay =
+                    document.getElementById("overlay");
+
+                const sideNav =
+                    document.getElementById("sideNav");
+
+                const closeNav =
+                    document.getElementById("closeNav");
+
+                if (
+                    !burger ||
+                    !overlay ||
+                    !sideNav ||
+                    !closeNav
+                ) {
+                    return;
+                }
+
+                let previousOverflow = "";
+                let previousFocus = null;
+
+                function getFocusable() {
+                    return sideNav.querySelectorAll(
+                        [
+                            "a[href]",
+                            "button:not([disabled])",
+                            "input:not([disabled])",
+                            "select:not([disabled])",
+                            "textarea:not([disabled])",
+                            "[tabindex]:not([tabindex='-1'])"
+                        ].join(",")
+                    );
+                }
+
+                function openNav() {
+                    previousFocus =
+                        document.activeElement;
+
+                    previousOverflow =
+                        document.body.style.overflow;
+
+                    sideNav.classList.add("active");
+                    overlay.classList.add("active");
+                    burger.classList.add("active");
+
+                    burger.setAttribute(
+                        "aria-expanded",
+                        "true"
+                    );
+
+                    sideNav.setAttribute(
+                        "aria-hidden",
+                        "false"
+                    );
+
+                    document.body.style.overflow =
+                        "hidden";
+
+                    closeNav.focus();
+                }
+
+                function closeNavMenu(
+                    restoreFocus = true
+                ) {
+                    sideNav.classList.remove(
+                        "active"
+                    );
+
+                    overlay.classList.remove(
+                        "active"
+                    );
+
+                    burger.classList.remove(
+                        "active"
+                    );
+
+                    burger.setAttribute(
+                        "aria-expanded",
+                        "false"
+                    );
+
+                    sideNav.setAttribute(
+                        "aria-hidden",
+                        "true"
+                    );
+
+                    document.body.style.overflow =
+                        previousOverflow;
+
+                    if (
+                        restoreFocus &&
+                        previousFocus &&
+                        typeof previousFocus.focus ===
+                            "function"
+                    ) {
+                        previousFocus.focus();
+                    } else {
+                        burger.focus();
+                    }
+                }
+
+                burger.addEventListener(
+                    "click",
+                    () => {
+                        if (
+                            sideNav.classList.contains(
+                                "active"
+                            )
+                        ) {
+                            closeNavMenu();
+                        } else {
+                            openNav();
+                        }
+                    }
+                );
+
+                overlay.addEventListener(
+                    "click",
+                    () => closeNavMenu()
+                );
+
+                closeNav.addEventListener(
+                    "click",
+                    () => closeNavMenu()
+                );
+
+                document.addEventListener(
+                    "keydown",
+                    event => {
+                        if (
+                            !sideNav.classList.contains(
+                                "active"
+                            )
+                        ) {
+                            return;
+                        }
+
+                        if (event.key === "Escape") {
+                            event.preventDefault();
+                            closeNavMenu();
+                            return;
+                        }
+
+                        if (event.key !== "Tab") {
+                            return;
+                        }
+
+                        const focusable =
+                            getFocusable();
+
+                        if (!focusable.length) {
+                            event.preventDefault();
+                            closeNav.focus();
+                            return;
+                        }
+
+                        const first =
+                            focusable[0];
+
+                        const last =
+                            focusable[
+                                focusable.length - 1
+                            ];
+
+                        if (
+                            event.shiftKey &&
+                            document.activeElement ===
+                                first
+                        ) {
+                            event.preventDefault();
+                            last.focus();
+                        } else if (
+                            !event.shiftKey &&
+                            document.activeElement ===
+                                last
+                        ) {
+                            event.preventDefault();
+                            first.focus();
+                        }
+                    }
+                );
+            }
+
+
+            async function boot() {
+                const headerLoaded =
+                    await loadComponent(
+                        "header-container",
+                        "/components/header.html"
+                    );
+
+                if (headerLoaded) {
+                    initNav();
+                }
+
+                await loadComponent(
+                    "footer-container",
+                    "/components/footer.html"
+                );
+            }
+
+            boot();
+        })();
+    </script>
+
+</body>
+</html>

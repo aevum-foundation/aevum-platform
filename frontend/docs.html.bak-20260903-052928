@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="Aevum Documentation — protocol architecture, consensus, economics, security, APIs and ecosystem specifications."
+    >
+    <meta name="theme-color" content="#061426">
+    <meta name="color-scheme" content="dark light">
+
+    <title>Aevum — Documentation</title>
+
+    <!-- =====================================================
+         AEVUM DESIGN SYSTEM
+         ===================================================== -->
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/app-shell.css">
+    <link rel="stylesheet" href="/css/components.css">
+
+    <!-- Theme bootstrap -->
+    <script src="/js/theme.js"></script>
+
+    <style>
+        /* =====================================================
+           DOCUMENTATION PAGE
+           ===================================================== */
+
+        .docs-page {
+            min-height: calc(100svh - var(--header-height, 72px));
+            padding: 48px 0 72px;
+        }
+
+        /* -----------------------------------------------------
+           Header
+           ----------------------------------------------------- */
+
+        .docs-header {
+            max-width: 760px;
+            margin-bottom: 42px;
+        }
+
+        .docs-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            color: var(--color-accent-cyan);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+        }
+
+        .docs-kicker::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+            box-shadow: 0 0 10px rgba(32, 217, 255, 0.45);
+        }
+
+        .docs-header h1 {
+            margin: 0 0 10px;
+            color: var(--color-text-primary);
+            font-size: clamp(32px, 4vw, 42px);
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: -0.025em;
+        }
+
+        .docs-header p {
+            max-width: 700px;
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 16px;
+            line-height: 1.65;
+        }
+
+        /* -----------------------------------------------------
+           Documentation Grid
+           ----------------------------------------------------- */
+
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .docs-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 210px;
+            padding: 26px 24px 22px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            transition:
+                border-color var(--transition-fast),
+                transform var(--transition-fast),
+                box-shadow var(--transition-fast);
+        }
+
+        .docs-card:hover {
+            border-color: var(--color-border-gold);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .docs-card:focus-within {
+            border-color: var(--color-accent-gold);
+            box-shadow:
+                0 0 0 2px var(--color-accent-gold-dim),
+                var(--shadow-sm);
+        }
+
+        .docs-card-anchor {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            border-radius: inherit;
+            outline: none;
+        }
+
+        .docs-card-anchor:focus-visible {
+            outline: 2px solid var(--color-accent-gold);
+            outline-offset: -3px;
+        }
+
+        .docs-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .docs-card-index {
+            color: var(--color-text-muted);
+            font-family:
+                "SFMono-Regular",
+                Consolas,
+                "Liberation Mono",
+                monospace;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+        }
+
+        .docs-card-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            color: var(--color-accent-gold);
+            background: var(--color-accent-gold-dim);
+            border: 1px solid var(--color-border-gold);
+            border-radius: 10px;
+        }
+
+        .docs-card-icon svg {
+            width: 19px;
+            height: 19px;
+            stroke: currentColor;
+        }
+
+        .docs-card h2 {
+            position: relative;
+            z-index: 2;
+            margin: 0 0 7px;
+            color: var(--color-text-primary);
+            font-size: 18px;
+            font-weight: 650;
+            line-height: 1.3;
+        }
+
+        .docs-card p {
+            position: relative;
+            z-index: 2;
+            max-width: 500px;
+            margin: 0 0 20px;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .docs-card-footer {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: auto;
+        }
+
+        /* -----------------------------------------------------
+           Status Badges
+           ----------------------------------------------------- */
+
+        .docs-badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .docs-badge-stable {
+            background: var(--color-accent-gold-dim);
+            color: var(--color-accent-gold);
+        }
+
+        .docs-badge-alpha {
+            background: var(--color-accent-cyan-dim);
+            color: var(--color-accent-cyan);
+        }
+
+        .docs-badge-soon {
+            background: var(--color-bg-surface-light);
+            color: var(--color-text-muted);
+        }
+
+        .docs-card-arrow {
+            color: var(--color-text-muted);
+            font-size: 16px;
+            transition:
+                color var(--transition-fast),
+                transform var(--transition-fast);
+        }
+
+        .docs-card:hover .docs-card-arrow {
+            color: var(--color-accent-gold);
+            transform: translateX(3px);
+        }
+
+        /* -----------------------------------------------------
+           Architecture Section
+           ----------------------------------------------------- */
+
+        .docs-architecture {
+            margin-top: 42px;
+        }
+
+        .docs-section-header {
+            margin-bottom: 16px;
+        }
+
+        .docs-section-header h2 {
+            margin: 0 0 5px;
+            color: var(--color-text-primary);
+            font-size: 20px;
+            font-weight: 650;
+        }
+
+        .docs-section-header p {
+            margin: 0;
+            color: var(--color-text-muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .docs-flow {
+            display: grid;
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .docs-flow-step {
+            position: relative;
+            min-width: 0;
+            padding: 18px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+
+        .docs-flow-step::after {
+            content: "→";
+            position: absolute;
+            top: 50%;
+            right: -9px;
+            z-index: 2;
+            color: var(--color-accent-cyan);
+            font-size: 14px;
+            transform: translateY(-50%);
+        }
+
+        .docs-flow-step:last-child::after {
+            display: none;
+        }
+
+        .docs-flow-number {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--color-accent-cyan);
+            font-family:
+                "SFMono-Regular",
+                Consolas,
+                monospace;
+            font-size: 11px;
+        }
+
+        .docs-flow-step strong {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--color-text-primary);
+            font-size: 14px;
+        }
+
+        .docs-flow-step span {
+            display: block;
+            color: var(--color-text-muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* -----------------------------------------------------
+           Documentation Notice
+           ----------------------------------------------------- */
+
+        .docs-notice {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 28px;
+            margin-top: 42px;
+            padding: 28px;
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--color-bg-surface),
+                    var(--color-bg-surface-light)
+                );
+            border: 1px solid var(--color-border-gold);
+            border-radius: var(--radius-md);
+        }
+
+        .docs-notice h2 {
+            margin: 0 0 7px;
+            color: var(--color-text-primary);
+            font-size: 20px;
+            font-weight: 650;
+        }
+
+        .docs-notice p {
+            max-width: 650px;
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .docs-notice-action {
+            flex: 0 0 auto;
+        }
+
+        .docs-notice-action .btn {
+            white-space: nowrap;
+        }
+
+        /* -----------------------------------------------------
+           Responsive
+           ----------------------------------------------------- */
+
+        @media (max-width: 900px) {
+            .docs-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .docs-flow {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .docs-flow-step::after {
+                display: none;
+            }
+
+            .docs-notice {
+                grid-template-columns: 1fr;
+            }
+
+            .docs-notice-action {
+                width: fit-content;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .docs-page {
+                padding: 36px 0 56px;
+            }
+
+            .docs-header {
+                margin-bottom: 32px;
+            }
+
+            .docs-header h1 {
+                font-size: 30px;
+            }
+
+            .docs-header p {
+                font-size: 15px;
+            }
+
+            .docs-card {
+                min-height: 190px;
+                padding: 22px 20px 20px;
+            }
+
+            .docs-flow {
+                grid-template-columns: 1fr;
+            }
+
+            .docs-notice {
+                padding: 22px 20px;
+            }
+
+            .docs-notice-action,
+            .docs-notice-action .btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .docs-page {
+                padding-top: 32px;
+            }
+
+            .docs-card-top {
+                margin-bottom: 15px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .docs-card,
+            .docs-card-arrow {
+                transition: none;
+            }
+
+            .docs-card:hover {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- =====================================================
+         GLOBAL HEADER
+         ===================================================== -->
+    <div
+        id="header-container"
+        aria-busy="true"
+    ></div>
+
+
+    <!-- =====================================================
+         DOCUMENTATION
+         ===================================================== -->
+    <main
+        class="docs-page"
+        id="main-content"
+    >
+        <div class="container">
+
+            <!-- Header -->
+            <header class="docs-header">
+
+                <div class="docs-kicker">
+                    Aevum Protocol
+                </div>
+
+                <h1>Documentation</h1>
+
+                <p>
+                    Technical documentation for the Aevum network —
+                    protocol architecture, consensus, economics,
+                    security, APIs and ecosystem infrastructure.
+                </p>
+
+            </header>
+
+
+            <!-- =================================================
+                 DOCUMENTATION MODULES
+                 ================================================= -->
+            <section
+                class="docs-grid"
+                aria-label="Documentation modules"
+            >
+
+                <!-- Architecture -->
+                <article
+                    class="docs-card"
+                    id="architecture"
+                >
+                    <a
+                        class="docs-card-anchor"
+                        href="/docs.html#architecture"
+                        aria-label="Open Architecture documentation"
+                    ></a>
+
+                    <div class="docs-card-top">
+                        <span class="docs-card-index">
+                            01 / CORE
+                        </span>
+
+                        <span
+                            class="docs-card-icon"
+                            aria-hidden="true"
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <rect
+                                    x="4"
+                                    y="4"
+                                    width="6"
+                                    height="6"
+                                    rx="1"
+                                />
+                                <rect
+                                    x="14"
+                                    y="14"
+                                    width="6"
+                                    height="6"
+                                    rx="1"
+                                />
+                                <path d="M10 7h4a2 2 0 0 1 2 2v5" />
+                                <path d="M14 17h-4a2 2 0 0 1-2-2v-5" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <h2>Architecture</h2>
+
+                    <p>
+                        Understand the Aevum protocol architecture,
+                        including the slot-based L1, epoch finality,
+                        L2 execution and decentralized infrastructure.
+                    </p>
+
+                    <div class="docs-card-footer">
+                        <span class="docs-badge docs-badge-stable">
+                            v1.0
+                        </span>
+
+                        <span
+                            class="docs-card-arrow"
+                            aria-hidden="true"
+                        >
+                            →
+                        </span>
+                    </div>
+                </article>
+
+
+                <!-- Consensus -->
+                <article
+                    class="docs-card"
+                    id="consensus"
+                >
+                    <a
+                        class="docs-card-anchor"
+                        href="/docs.html#consensus"
+                        aria-label="Open Consensus documentation"
+                    ></a>
+
+                    <div class="docs-card-top">
+                        <span class="docs-card-index">
+                            02 / CONSENSUS
+                        </span>
+
+                        <span
+                            class="docs-card-icon"
+                            aria-hidden="true"
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <circle cx="12" cy="12" r="8" />
+                                <path d="M12 8v4l3 2" />
+                                <path d="M5 5l2 2" />
+                                <path d="M19 5l-2 2" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <h2>Consensus Specification</h2>
+
+                    <p>
+                        Explore presence, participation, epoch
+                        finality and the consensus mechanisms that
+                        secure the Aevum network.
+                    </p>
+
+                    <div class="docs-card-footer">
+                        <span class="docs-badge docs-badge-stable">
+                            v1.0
+                        </span>
+
+                        <span
+                            class="docs-card-arrow"
+                            aria-hidden="true"
+                        >
+                            →
+                        </span>
+                    </div>
+                </article>
+
+
+                <!-- Economics -->
+                <article
+                    class="docs-card"
+                    id="economics"
+                >
+                    <a
+                        class="docs-card-anchor"
+                        href="/docs.html#economics"
+                        aria-label="Open Economics documentation"
+                    ></a>
+
+                    <div class="docs-card-top">
+                        <span class="docs-card-index">
+                            03 / MONETARY
+                        </span>
+
+                        <span
+                            class="docs-card-icon"
+                            aria-hidden="true"
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <circle cx="12" cy="12" r="8" />
+                                <path d="M12 7v10" />
+                                <path d="M15 9.5c-.7-.8-1.7-1.2-3-1.2-1.5 0-2.5.7-2.5 1.7 0 2.7 5.5 1.1 5.5 4 0 1.1-1 1.8-2.8 1.8-1.4 0-2.5-.5-3.2-1.3" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <h2>Economics</h2>
+
+                    <p>
+                        Learn about genesis supply, emission,
+                        halving epochs, network fees and the
+                        long-term monetary model of AEV.
+                    </p>
+
+                    <div class="docs-card-footer">
+                        <span class="docs-badge docs-badge-stable">
+                            v1.0
+                        </span>
+
+                        <span
+                            class="docs-card-arrow"
+                            aria-hidden="true"
+                        >
+                            →
+                        </span>
+                    </div>
+                </article>
+
+
+                <!-- Security -->
+                <article class="docs-card">
+
+                    <div class="docs-card-top">
+                        <span class="docs-card-index">
+                            04 / SECURITY
+                        </span>
+
+                        <span
+                            class="docs-card-icon"
+                            aria-hidden="true"
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path d="M12 3l7 3v5c0 4.5-2.8 7.8-7 10-4.2-2.2-7-5.5-7-10V6l7-3z" />
+                                <path d="M9 12l2 2 4-4" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <h2>Security Guide</h2>
+
+                    <p>
+                        Post-quantum cryptography, key management,
+                        secure node operation and security practices
+                        for the Aevum ecosystem.
+                    </p>
+
+                    <div class="docs-card-footer">
+                        <span class="docs-badge docs-badge-soon">
+                            Coming soon
+                        </span>
+                    </div>
+
+                </article>
+
+
+                <!-- API -->
+                <article class="docs-card">
+
+                    <div class="docs-card-top">
+                        <span class="docs-card-index">
+                            05 / DEVELOPERS
+                        </span>
+
+                        <span
+                            class="docs-card-icon"
+                            aria-hidden="true"
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path d="M8 8l-4 4 4 4" />
+                                <path d="M16 8l4 4-4 4" />
+                                <path d="M14 5l-4 14" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <h2>API Reference</h2>
+
+                    <p>
+                        REST, gRPC and WebSocket interfaces for
+                        interacting with Aevum nodes, explorers,
+                        wallets and ecosystem services.
+                    </p>
+
+                    <div class="docs-card-footer">
+                        <span class="docs-badge docs-badge-soon">
+                            Coming soon
+                        </span>
+                    </div>
+
+                </article>
+
+
+                <!-- Rust SDK -->
+                <article class="docs-card">
+
+                    <div class="docs-card-top">
+                        <span class="docs-card-index">
+                            06 / SDK
+                        </span>
+
+                        <span
+                            class="docs-card-icon"
+                            aria-hidden="true"
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path d="M5 5h14v14H5z" rx="2" />
+                                <path d="M9 9l-2 3 2 3" />
+                                <path d="M15 9l2 3-2 3" />
+                                <path d="M13 8l-2 8" />
+                            </svg>
+                        </span>
+                    </div>
+
+                    <h2>Rust SDK</h2>
+
+                    <p>
+                        Build applications and infrastructure on
+                        Aevum using the official Rust development
+                        libraries and protocol interfaces.
+                    </p>
+
+                    <div class="docs-card-footer">
+                        <span class="docs-badge docs-badge-alpha">
+                            Alpha
+                        </span>
+                    </div>
+
+                </article>
+
+            </section>
+
+
+            <!-- =================================================
+                 PROTOCOL FLOW
+                 ================================================= -->
+            <section
+                class="docs-architecture"
+                aria-labelledby="protocol-flow-title"
+            >
+
+                <header class="docs-section-header">
+                    <h2 id="protocol-flow-title">
+                        Protocol Flow
+                    </h2>
+
+                    <p>
+                        The high-level lifecycle of the Aevum L1.
+                    </p>
+                </header>
+
+                <div class="docs-flow">
+
+                    <div class="docs-flow-step">
+                        <span class="docs-flow-number">
+                            01
+                        </span>
+
+                        <strong>Slot</strong>
+
+                        <span>
+                            Network activity occurs in
+                            30-second slots.
+                        </span>
+                    </div>
+
+                    <div class="docs-flow-step">
+                        <span class="docs-flow-number">
+                            02
+                        </span>
+
+                        <strong>Epoch</strong>
+
+                        <span>
+                            Slots form the protocol's
+                            epoch-level coordination.
+                        </span>
+                    </div>
+
+                    <div class="docs-flow-step">
+                        <span class="docs-flow-number">
+                            03
+                        </span>
+
+                        <strong>Snapshot</strong>
+
+                        <span>
+                            Canonical state and monetary
+                            roots are finalized.
+                        </span>
+                    </div>
+
+                    <div class="docs-flow-step">
+                        <span class="docs-flow-number">
+                            04
+                        </span>
+
+                        <strong>Finality</strong>
+
+                        <span>
+                            The finalized snapshot becomes
+                            the canonical L1 state.
+                        </span>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 DOCUMENTATION NOTICE
+                 ================================================= -->
+            <section
+                class="docs-notice"
+                aria-labelledby="docs-notice-title"
+            >
+
+                <div>
+                    <h2 id="docs-notice-title">
+                        Documentation is evolving
+                    </h2>
+
+                    <p>
+                        Protocol specifications are being published
+                        progressively as Aevum approaches mainnet.
+                        Stable documents will be versioned and linked
+                        directly from this documentation hub.
+                    </p>
+                </div>
+
+                <div class="docs-notice-action">
+                    <a
+                        href="/genesis.html"
+                        class="btn btn-primary"
+                    >
+                        Explore Genesis
+                    </a>
+                </div>
+
+            </section>
+
+        </div>
+    </main>
+
+
+    <!-- =====================================================
+         GLOBAL FOOTER
+         ===================================================== -->
+    <div
+        id="footer-container"
+        aria-busy="true"
+    ></div>
+
+
+    <!-- =====================================================
+         COMPONENT + NAVIGATION BOOTSTRAP
+         ===================================================== -->
+    <script>
+        (() => {
+            "use strict";
+
+            const componentCache = new Map();
+
+            async function loadComponent(id, url) {
+                const element =
+                    document.getElementById(id);
+
+                if (!element) {
+                    return false;
+                }
+
+                try {
+                    let html =
+                        componentCache.get(url);
+
+                    if (!html) {
+                        const controller =
+                            new AbortController();
+
+                        const timeout =
+                            setTimeout(
+                                () => controller.abort(),
+                                10000
+                            );
+
+                        const response =
+                            await fetch(url, {
+                                signal:
+                                    controller.signal,
+                                cache: "default"
+                            });
+
+                        clearTimeout(timeout);
+
+                        if (!response.ok) {
+                            throw new Error(
+                                `HTTP ${response.status}`
+                            );
+                        }
+
+                        html =
+                            await response.text();
+
+                        if (!html.trim()) {
+                            throw new Error(
+                                "Empty component response"
+                            );
+                        }
+
+                        componentCache.set(
+                            url,
+                            html
+                        );
+                    }
+
+                    element.innerHTML = html;
+                    element.setAttribute(
+                        "aria-busy",
+                        "false"
+                    );
+
+                    document.dispatchEvent(
+                        new CustomEvent(
+                            "aevum:component-loaded",
+                            {
+                                detail: {
+                                    id,
+                                    url
+                                }
+                            }
+                        )
+                    );
+
+                    return true;
+
+                } catch (error) {
+                    console.error(
+                        `[Aevum] Component load failed: ${url}`,
+                        error
+                    );
+
+                    element.innerHTML = "";
+                    element.setAttribute(
+                        "aria-busy",
+                        "false"
+                    );
+
+                    return false;
+                }
+            }
+
+
+            function initNav() {
+                const burger =
+                    document.getElementById("burger");
+
+                const overlay =
+                    document.getElementById("overlay");
+
+                const sideNav =
+                    document.getElementById("sideNav");
+
+                const closeNav =
+                    document.getElementById("closeNav");
+
+                if (
+                    !burger ||
+                    !overlay ||
+                    !sideNav ||
+                    !closeNav
+                ) {
+                    return;
+                }
+
+                let previousOverflow = "";
+                let previousFocus = null;
+
+                function getFocusable() {
+                    return sideNav.querySelectorAll(
+                        [
+                            "a[href]",
+                            "button:not([disabled])",
+                            "input:not([disabled])",
+                            "select:not([disabled])",
+                            "textarea:not([disabled])",
+                            "[tabindex]:not([tabindex='-1'])"
+                        ].join(",")
+                    );
+                }
+
+                function openNav() {
+                    previousFocus =
+                        document.activeElement;
+
+                    previousOverflow =
+                        document.body.style.overflow;
+
+                    sideNav.classList.add("active");
+                    overlay.classList.add("active");
+                    burger.classList.add("active");
+
+                    burger.setAttribute(
+                        "aria-expanded",
+                        "true"
+                    );
+
+                    sideNav.setAttribute(
+                        "aria-hidden",
+                        "false"
+                    );
+
+                    document.body.style.overflow =
+                        "hidden";
+
+                    closeNav.focus();
+                }
+
+                function closeNavMenu(
+                    restoreFocus = true
+                ) {
+                    sideNav.classList.remove(
+                        "active"
+                    );
+
+                    overlay.classList.remove(
+                        "active"
+                    );
+
+                    burger.classList.remove(
+                        "active"
+                    );
+
+                    burger.setAttribute(
+                        "aria-expanded",
+                        "false"
+                    );
+
+                    sideNav.setAttribute(
+                        "aria-hidden",
+                        "true"
+                    );
+
+                    document.body.style.overflow =
+                        previousOverflow;
+
+                    if (
+                        restoreFocus &&
+                        previousFocus &&
+                        typeof previousFocus.focus ===
+                            "function"
+                    ) {
+                        previousFocus.focus();
+                    } else {
+                        burger.focus();
+                    }
+                }
+
+                burger.addEventListener(
+                    "click",
+                    () => {
+                        if (
+                            sideNav.classList.contains(
+                                "active"
+                            )
+                        ) {
+                            closeNavMenu();
+                        } else {
+                            openNav();
+                        }
+                    }
+                );
+
+                overlay.addEventListener(
+                    "click",
+                    () => closeNavMenu()
+                );
+
+                closeNav.addEventListener(
+                    "click",
+                    () => closeNavMenu()
+                );
+
+                document.addEventListener(
+                    "keydown",
+                    event => {
+                        if (
+                            !sideNav.classList.contains(
+                                "active"
+                            )
+                        ) {
+                            return;
+                        }
+
+                        if (event.key === "Escape") {
+                            event.preventDefault();
+                            closeNavMenu();
+                            return;
+                        }
+
+                        if (event.key !== "Tab") {
+                            return;
+                        }
+
+                        const focusable =
+                            getFocusable();
+
+                        if (!focusable.length) {
+                            event.preventDefault();
+                            closeNav.focus();
+                            return;
+                        }
+
+                        const first =
+                            focusable[0];
+
+                        const last =
+                            focusable[
+                                focusable.length - 1
+                            ];
+
+                        if (
+                            event.shiftKey &&
+                            document.activeElement ===
+                                first
+                        ) {
+                            event.preventDefault();
+                            last.focus();
+                        } else if (
+                            !event.shiftKey &&
+                            document.activeElement ===
+                                last
+                        ) {
+                            event.preventDefault();
+                            first.focus();
+                        }
+                    }
+                );
+            }
+
+
+            async function boot() {
+                const headerLoaded =
+                    await loadComponent(
+                        "header-container",
+                        "/components/header.html"
+                    );
+
+                if (headerLoaded) {
+                    initNav();
+                }
+
+                await loadComponent(
+                    "footer-container",
+                    "/components/footer.html"
+                );
+            }
+
+            boot();
+        })();
+    </script>
+
+</body>
+</html>
