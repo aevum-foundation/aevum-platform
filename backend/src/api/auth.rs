@@ -52,11 +52,18 @@ fn build_logout_cookie() -> Cookie<'static> {
 #[post("/api/v1/auth/register")]
 pub async fn register(
     req: web::Json<RegisterRequest>,
+    http_req: HttpRequest,
     service: web::Data<AppAuthService>,
 ) -> ApiResult<HttpResponse> {
     req.validate().map_err(|_| ApiError::BadRequest)?;
 
-    let user = service.register(&req.email, &req.password).await?;
+    let ip = http_req
+        .connection_info()
+        .realip_remote_addr()
+        .unwrap_or("unknown")
+        .to_string();
+
+    let user = service.register(&req.email, &req.password, &ip).await?;
 
     let response = RegisterResponse {
         user_id: user.id,
@@ -69,11 +76,18 @@ pub async fn register(
 #[post("/api/v1/auth/login")]
 pub async fn login(
     req: web::Json<LoginRequest>,
+    http_req: HttpRequest,
     service: web::Data<AppAuthService>,
 ) -> ApiResult<HttpResponse> {
     req.validate().map_err(|_| ApiError::BadRequest)?;
 
-    let (user, session_token) = service.login(&req.email, &req.password).await?;
+    let ip = http_req
+        .connection_info()
+        .realip_remote_addr()
+        .unwrap_or("unknown")
+        .to_string();
+
+    let (user, session_token) = service.login(&req.email, &req.password, &ip).await?;
 
     let response = LoginResponse {
         user_id: user.id,
@@ -177,7 +191,10 @@ mod tests {
     }
 
     async fn register_test_user(service: &AppAuthService) {
-        service.register(TEST_EMAIL, TEST_PASSWORD).await.unwrap();
+        service
+            .register(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1")
+            .await
+            .unwrap();
     }
 
     #[actix_web::test]
@@ -324,7 +341,7 @@ mod tests {
         let service = AppAuthService::new(storage.clone());
         register_test_user(&service).await;
 
-        let (user, token) = service.login(TEST_EMAIL, TEST_PASSWORD).await.unwrap();
+        let (user, token) = service.login(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1").await.unwrap();
         assert!(!user.id.is_nil());
 
         let authenticated = service.authenticate(token.expose()).await.unwrap().unwrap();
@@ -405,7 +422,7 @@ mod tests {
         let service = web::Data::new(AppAuthService::new(storage.clone()));
         register_test_user(&service).await;
 
-        let (_, token) = service.login(TEST_EMAIL, TEST_PASSWORD).await.unwrap();
+        let (_, token) = service.login(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1").await.unwrap();
 
         let app = test::init_service(App::new().app_data(service.clone()).service(logout)).await;
 
@@ -430,7 +447,7 @@ mod tests {
         let service = web::Data::new(AppAuthService::new(storage.clone()));
         register_test_user(&service).await;
 
-        let (_, token) = service.login(TEST_EMAIL, TEST_PASSWORD).await.unwrap();
+        let (_, token) = service.login(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1").await.unwrap();
 
         let app = test::init_service(App::new().app_data(service.clone()).service(logout)).await;
 

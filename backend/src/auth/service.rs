@@ -10,6 +10,7 @@ use uuid::Uuid;
 use crate::auth::contracts::SESSION_DURATION_DAYS;
 use crate::auth::models::{Session, SessionTokenHash, User};
 use crate::auth::password::{PasswordHasher, SessionToken};
+use crate::auth::rate_limit::LoginRateLimiter;
 use crate::error::ApiError;
 
 const MAX_SESSION_DURATION_DAYS: i64 = 30;
@@ -40,6 +41,7 @@ where
     storage: Arc<S>,
     password_hasher: PasswordHasher,
     session_duration_days: i64,
+    rate_limiter: Arc<dyn LoginRateLimiter + Send + Sync>,
 }
 
 impl<S> std::fmt::Debug for AuthService<S>
@@ -51,6 +53,7 @@ where
             .field("storage", &"<redacted>")
             .field("password_hasher", &self.password_hasher)
             .field("session_duration_days", &self.session_duration_days)
+            .field("rate_limiter", &"<redacted>")
             .finish()
     }
 }
@@ -64,6 +67,7 @@ where
             storage: Arc::new(storage),
             password_hasher: PasswordHasher::new(),
             session_duration_days: SESSION_DURATION_DAYS,
+            rate_limiter: Arc::new(crate::auth::rate_limit::InMemoryRateLimiter::default()),
         }
     }
 
@@ -76,6 +80,7 @@ where
             storage: Arc::new(storage),
             password_hasher: PasswordHasher::new(),
             session_duration_days: days,
+            rate_limiter: Arc::new(crate::auth::rate_limit::InMemoryRateLimiter::default()),
         })
     }
 
@@ -87,12 +92,20 @@ where
         now + Duration::days(self.session_duration_days)
     }
 
-    pub async fn register(&self, email: &str, password: &str) -> Result<User, ApiError> {
+    pub async fn register(
+        &self,
+        email: &str,
+        password: &str,
+        ip: &str,
+    ) -> Result<User, ApiError> {
         let normalized_email = Self::normalize_email(email);
 
         if normalized_email.is_empty() {
             return Err(ApiError::BadRequest);
         }
+
+        // Rate limit: IP-based
+        self.rate_limiter.check_register_ip(ip).await?;
 
         if self.storage.user_exists(&normalized_email).await? {
             return Err(ApiError::Conflict);
@@ -106,7 +119,10 @@ where
         let user = User::new(normalized_email, password_hash);
 
         match self.storage.create_user(&user).await {
-            Ok(()) => Ok(user),
+            Ok(()) => {
+                self.rate_limiter.record_successful_registration(ip).await;
+                Ok(user)
+            }
             Err(ApiError::Conflict) => Err(ApiError::Conflict),
             Err(error) => Err(error),
         }
@@ -116,8 +132,15 @@ where
         &self,
         email: &str,
         password: &str,
+        ip: &str,
     ) -> Result<(User, SessionToken), ApiError> {
         let normalized_email = Self::normalize_email(email);
+
+        // Rate limit: IP-based
+        self.rate_limiter.check_login_ip(ip).await?;
+
+        // Rate limit: email-based
+        self.rate_limiter.check_login_email(&normalized_email).await?;
 
         let user = self
             .storage
@@ -126,6 +149,7 @@ where
             .ok_or(ApiError::Unauthorized)?;
 
         if !user.status.can_authenticate() {
+            self.rate_limiter.record_login_failure(ip, &normalized_email).await;
             return Err(ApiError::Unauthorized);
         }
 
@@ -135,8 +159,11 @@ where
             .map_err(|_| ApiError::Unauthorized)?;
 
         if !password_valid {
+            self.rate_limiter.record_login_failure(ip, &normalized_email).await;
             return Err(ApiError::Unauthorized);
         }
+
+        self.rate_limiter.record_login_success(ip, &normalized_email).await;
 
         self.create_session_for_user(user).await
     }
