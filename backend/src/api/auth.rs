@@ -1,20 +1,57 @@
 //! Authentication API endpoints.
 //!
-//! AUTH-07 — Register endpoint
-//! AUTH-10 — /me endpoint
+//! AUTH-07 — Register
+//! AUTH-08 — Login
+//! AUTH-10 — /me
+//! AUTH-11 — Logout
 
-use actix_web::{get, post, web, HttpMessage, HttpRequest, HttpResponse};
+use actix_web::{
+    cookie::{Cookie, SameSite},
+    get, post, web, HttpMessage, HttpRequest, HttpResponse,
+};
 
-use crate::auth::contracts::{MeResponse, RegisterRequest, RegisterResponse};
+use crate::auth::contracts::{
+    LoginRequest, LoginResponse, LogoutResponse, MeResponse, RegisterRequest, RegisterResponse,
+    SESSION_COOKIE_NAME, SESSION_DURATION_DAYS,
+};
 use crate::auth::models::User;
 use crate::auth::service::AuthService;
 use crate::auth::storage::InMemoryAuthStorage;
 use crate::error::{ApiError, ApiResult};
 
+/// Application-wide authentication service type.
+///
+/// AUTH-17 will replace this alias with a storage-agnostic backend selection.
+pub type AppAuthService = AuthService<InMemoryAuthStorage>;
+
+fn build_session_cookie(token: &str) -> Cookie<'static> {
+    Cookie::build(SESSION_COOKIE_NAME, token.to_owned())
+        .http_only(true)
+        .secure(cfg!(not(debug_assertions)))
+        .same_site(SameSite::Lax)
+        .path("/")
+        .max_age(actix_web::cookie::time::Duration::days(
+            SESSION_DURATION_DAYS,
+        ))
+        .finish()
+}
+
+fn build_logout_cookie() -> Cookie<'static> {
+    let mut cookie = Cookie::build(SESSION_COOKIE_NAME, "")
+        .http_only(true)
+        .secure(cfg!(not(debug_assertions)))
+        .same_site(SameSite::Lax)
+        .path("/")
+        .finish();
+
+    cookie.make_removal();
+    cookie
+}
+
 #[post("/api/v1/auth/register")]
 pub async fn register(
     req: web::Json<RegisterRequest>,
-    service: web::Data<AuthService<InMemoryAuthStorage>>,
+    service: web::Data<AppAuthService>,
 ) -> ApiResult<HttpResponse> {
     req.validate().map_err(|_| ApiError::BadRequest)?;
 
@@ -26,6 +63,62 @@ pub async fn register(
     };
 
     Ok(HttpResponse::Created().json(response))
+}
+
+#[post("/api/v1/auth/login")]
+pub async fn login(
+    req: web::Json<LoginRequest>,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    req.validate().map_err(|_| ApiError::BadRequest)?;
+
+    let (user, session_token) = service.login(&req.email, &req.password).await?;
+
+    let response = LoginResponse {
+        user_id: user.id,
+        email: user.email,
+    };
+
+    let cookie = build_session_cookie(session_token.expose());
+
+    let mut http_response = HttpResponse::Ok().json(response);
+
+    http_response
+        .add_cookie(&cookie)
+        .map_err(|_| ApiError::Internal)?;
+
+    Ok(http_response)
+}
+
+#[post("/api/v1/auth/logout")]
+pub async fn logout(
+    req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    if let Some(cookie) = req.cookie(SESSION_COOKIE_NAME) {
+        let token = cookie.value().to_owned();
+
+        match service.logout(&token).await {
+            Ok(()) => {}
+            Err(ApiError::Unauthorized) | Err(ApiError::NotFound) => {
+                // Logout is intentionally idempotent:
+                // unknown/already-revoked sessions do not leak information.
+            }
+            Err(error) => return Err(error),
+        }
+    }
+
+    let response = LogoutResponse { success: true };
+
+    let removal_cookie = build_logout_cookie();
+
+    let mut http_response = HttpResponse::Ok().json(response);
+
+    http_response
+        .add_cookie(&removal_cookie)
+        .map_err(|_| ApiError::Internal)?;
+
+    Ok(http_response)
 }
 
 #[get("/api/v1/auth/me")]
@@ -53,30 +146,41 @@ pub async fn me(req: HttpRequest) -> ApiResult<HttpResponse> {
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(register).service(me);
+    cfg.service(register)
+        .service(login)
+        .service(logout)
+        .service(me);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::auth::service::AuthService;
-    use crate::auth::storage::InMemoryAuthStorage;
     use actix_web::{http::StatusCode, test, App};
 
-    fn test_service() -> AuthService<InMemoryAuthStorage> {
-        AuthService::new(InMemoryAuthStorage::new())
+    const TEST_EMAIL: &str = "test@example.com";
+    const TEST_PASSWORD: &str = "correct-horse-battery-staple";
+
+    fn test_service() -> AppAuthService {
+        AppAuthService::new(InMemoryAuthStorage::new())
+    }
+
+    async fn register_test_user(service: &AppAuthService) {
+        service.register(TEST_EMAIL, TEST_PASSWORD).await.unwrap();
     }
 
     #[actix_web::test]
     async fn register_returns_created() {
         let service = web::Data::new(test_service());
-        let app = test::init_service(App::new().app_data(service).service(register)).await;
+        let app = test::init_service(
+            App::new().app_data(service).service(register),
+        )
+        .await;
 
         let req = test::TestRequest::post()
             .uri("/api/v1/auth/register")
             .set_json(serde_json::json!({
                 "email": "test@example.com",
-                "password": "correct-horse-battery-staple"
+                "password": TEST_PASSWORD
             }))
             .to_request();
 
@@ -87,7 +191,10 @@ mod tests {
     #[actix_web::test]
     async fn register_rejects_invalid_request() {
         let service = web::Data::new(test_service());
-        let app = test::init_service(App::new().app_data(service).service(register)).await;
+        let app = test::init_service(
+            App::new().app_data(service).service(register),
+        )
+        .await;
 
         let req = test::TestRequest::post()
             .uri("/api/v1/auth/register")
@@ -104,11 +211,14 @@ mod tests {
     #[actix_web::test]
     async fn register_rejects_duplicate_email() {
         let service = web::Data::new(test_service());
-        let app = test::init_service(App::new().app_data(service).service(register)).await;
+        let app = test::init_service(
+            App::new().app_data(service).service(register),
+        )
+        .await;
 
         let payload = serde_json::json!({
             "email": "duplicate@example.com",
-            "password": "correct-horse-battery-staple"
+            "password": TEST_PASSWORD
         });
 
         let req1 = test::TestRequest::post()
@@ -129,11 +239,118 @@ mod tests {
     }
 
     #[actix_web::test]
+    async fn login_returns_ok_and_session_cookie() {
+        let service = web::Data::new(test_service());
+        register_test_user(&service).await;
+
+        let app = test::init_service(
+            App::new().app_data(service).service(login),
+        )
+        .await;
+
+        let req = test::TestRequest::post()
+            .uri("/api/v1/auth/login")
+            .set_json(serde_json::json!({
+                "email": TEST_EMAIL,
+                "password": TEST_PASSWORD
+            }))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let cookie = resp.headers().get("set-cookie").unwrap();
+        assert!(cookie.to_str().unwrap().contains("aevum_session="));
+    }
+
+    #[actix_web::test]
+    async fn login_rejects_invalid_password() {
+        let service = web::Data::new(test_service());
+        register_test_user(&service).await;
+
+        let app = test::init_service(
+            App::new().app_data(service).service(login),
+        )
+        .await;
+
+        let req = test::TestRequest::post()
+            .uri("/api/v1/auth/login")
+            .set_json(serde_json::json!({
+                "email": TEST_EMAIL,
+                "password": "wrong-password"
+            }))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[actix_web::test]
+    async fn login_rejects_unknown_user() {
+        let service = web::Data::new(test_service());
+
+        let app = test::init_service(
+            App::new().app_data(service).service(login),
+        )
+        .await;
+
+        let req = test::TestRequest::post()
+            .uri("/api/v1/auth/login")
+            .set_json(serde_json::json!({
+                "email": "unknown@example.com",
+                "password": TEST_PASSWORD
+            }))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[actix_web::test]
+    async fn login_rejects_invalid_request() {
+        let service = web::Data::new(test_service());
+
+        let app = test::init_service(
+            App::new().app_data(service).service(login),
+        )
+        .await;
+
+        let req = test::TestRequest::post()
+            .uri("/api/v1/auth/login")
+            .set_json(serde_json::json!({
+                "email": "",
+                "password": ""
+            }))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[actix_web::test]
+    async fn login_creates_session() {
+        let storage = InMemoryAuthStorage::new();
+        let service = AppAuthService::new(storage.clone());
+        register_test_user(&service).await;
+
+        let (user, token) = service.login(TEST_EMAIL, TEST_PASSWORD).await.unwrap();
+        assert!(!user.id.is_nil());
+
+        let authenticated = service.authenticate(token.expose()).await.unwrap().unwrap();
+        assert_eq!(authenticated.id, user.id);
+    }
+
+    #[actix_web::test]
     async fn me_returns_unauthorized_without_user() {
         let service = web::Data::new(test_service());
-        let app = test::init_service(App::new().app_data(service).service(me)).await;
+        let app = test::init_service(
+            App::new().app_data(service).service(me),
+        )
+        .await;
 
-        let req = test::TestRequest::get().uri("/api/v1/auth/me").to_request();
+        let req = test::TestRequest::get()
+            .uri("/api/v1/auth/me")
+            .to_request();
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
@@ -142,17 +359,19 @@ mod tests {
     #[actix_web::test]
     async fn me_returns_user_for_authenticated_request() {
         let service = web::Data::new(test_service());
-        let app = test::init_service(App::new().app_data(service).service(me)).await;
+        let app = test::init_service(
+            App::new().app_data(service).service(me),
+        )
+        .await;
 
-        let user = crate::auth::models::User::new(
+        let user = User::new(
             "me-test@example.com".to_string(),
             "hashed_password".to_string(),
         );
 
-        let req = test::TestRequest::get().uri("/api/v1/auth/me").to_request();
-
-        // Insert User into request extensions
-        let mut req = test::TestRequest::get().uri("/api/v1/auth/me").to_request();
+        let mut req = test::TestRequest::get()
+            .uri("/api/v1/auth/me")
+            .to_request();
         req.extensions_mut().insert(user.clone());
 
         let resp = test::call_service(&app, req).await;
@@ -167,18 +386,103 @@ mod tests {
     #[actix_web::test]
     async fn me_rejects_suspended_user() {
         let service = web::Data::new(test_service());
-        let app = test::init_service(App::new().app_data(service).service(me)).await;
+        let app = test::init_service(
+            App::new().app_data(service).service(me),
+        )
+        .await;
 
-        let mut user = crate::auth::models::User::new(
+        let mut user = User::new(
             "suspended@example.com".to_string(),
             "hashed_password".to_string(),
         );
         user.status = crate::auth::models::UserStatus::Suspended;
 
-        let mut req = test::TestRequest::get().uri("/api/v1/auth/me").to_request();
+        let mut req = test::TestRequest::get()
+            .uri("/api/v1/auth/me")
+            .to_request();
         req.extensions_mut().insert(user);
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[actix_web::test]
+    async fn logout_returns_ok_without_cookie() {
+        let service = web::Data::new(test_service());
+
+        let app = test::init_service(
+            App::new().app_data(service).service(logout),
+        )
+        .await;
+
+        let req = test::TestRequest::post()
+            .uri("/api/v1/auth/logout")
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let body: LogoutResponse = test::read_body_json(resp).await;
+        assert!(body.success);
+    }
+
+    #[actix_web::test]
+    async fn logout_removes_session_cookie() {
+        let storage = InMemoryAuthStorage::new();
+        let service = web::Data::new(AppAuthService::new(storage.clone()));
+        register_test_user(&service).await;
+
+        let (_, token) = service.login(TEST_EMAIL, TEST_PASSWORD).await.unwrap();
+
+        let app = test::init_service(
+            App::new().app_data(service.clone()).service(logout),
+        )
+        .await;
+
+        let cookie = build_session_cookie(token.expose());
+
+        let req = test::TestRequest::post()
+            .uri("/api/v1/auth/logout")
+            .cookie(cookie)
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let set_cookie = resp.headers().get("set-cookie").unwrap();
+        let set_cookie_str = set_cookie.to_str().unwrap();
+        assert!(set_cookie_str.contains("aevum_session=;"));
+    }
+
+    #[actix_web::test]
+    async fn logout_is_idempotent() {
+        let storage = InMemoryAuthStorage::new();
+        let service = web::Data::new(AppAuthService::new(storage.clone()));
+        register_test_user(&service).await;
+
+        let (_, token) = service.login(TEST_EMAIL, TEST_PASSWORD).await.unwrap();
+
+        let app = test::init_service(
+            App::new().app_data(service.clone()).service(logout),
+        )
+        .await;
+
+        let cookie = build_session_cookie(token.expose());
+
+        // First logout
+        let req1 = test::TestRequest::post()
+            .uri("/api/v1/auth/logout")
+            .cookie(cookie.clone())
+            .to_request();
+        let resp1 = test::call_service(&app, req1).await;
+        assert_eq!(resp1.status(), StatusCode::OK);
+
+        // Second logout with same cookie
+        let req2 = test::TestRequest::post()
+            .uri("/api/v1/auth/logout")
+            .cookie(cookie.clone())
+            .to_request();
+        let resp2 = test::call_service(&app, req2).await;
+        assert_eq!(resp2.status(), StatusCode::OK);
     }
 }

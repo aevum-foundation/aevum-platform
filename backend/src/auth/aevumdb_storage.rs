@@ -1,12 +1,12 @@
 //! AevumDB-backed authentication storage.
 
-use std::sync::Arc;
-use chrono::{DateTime, Utc};
-use uuid::Uuid;
-use aevum_db::{AevumDb, DbConfig, DbError, DbRuntime};
 use crate::auth::models::{Session, SessionTokenHash, User};
 use crate::auth::service::AuthStorage;
 use crate::error::ApiError;
+use aevum_db::{AevumDb, DbConfig, DbError, DbRuntime};
+use chrono::{DateTime, Utc};
+use std::sync::Arc;
+use uuid::Uuid;
 
 const USER_EMAIL_PREFIX: &str = "platform:user:email:";
 const USER_ID_PREFIX: &str = "platform:user:id:";
@@ -28,11 +28,10 @@ impl std::fmt::Debug for AevumDbAuthStorage {
 
 impl AevumDbAuthStorage {
     pub fn open(config: DbConfig, runtime: DbRuntime) -> Result<Self, ApiError> {
-        let db = AevumDb::open(config, runtime)
-            .map_err(|error| {
-                log::error!("AevumDB open failed: {}", error);
-                ApiError::Internal
-            })?;
+        let db = AevumDb::open(config, runtime).map_err(|error| {
+            log::error!("AevumDB open failed: {}", error);
+            ApiError::Internal
+        })?;
         Ok(Self { db: Arc::new(db) })
     }
 
@@ -99,7 +98,12 @@ impl AuthStorage for AevumDbAuthStorage {
         let user_data = Self::serialize(user)?;
 
         // Проверяем существование email
-        if self.db.get(email_key.as_bytes()).map_err(Self::map_db_error)?.is_some() {
+        if self
+            .db
+            .get(email_key.as_bytes())
+            .map_err(Self::map_db_error)?
+            .is_some()
+        {
             return Err(ApiError::Conflict);
         }
 
@@ -122,15 +126,25 @@ impl AuthStorage for AevumDbAuthStorage {
         Ok(())
     }
 
-    async fn get_session_by_token_hash(&self, token_hash: &SessionTokenHash) -> Result<Option<Session>, ApiError> {
+    async fn get_session_by_token_hash(
+        &self,
+        token_hash: &SessionTokenHash,
+    ) -> Result<Option<Session>, ApiError> {
         let key = Self::session_token_key(token_hash);
         let data = self.db.get(key.as_bytes()).map_err(Self::map_db_error)?;
         data.map(|d| Self::deserialize(&d)).transpose()
     }
 
-    async fn revoke_session_by_token_hash(&self, token_hash: &SessionTokenHash, revoked_at: DateTime<Utc>) -> Result<(), ApiError> {
+    async fn revoke_session_by_token_hash(
+        &self,
+        token_hash: &SessionTokenHash,
+        revoked_at: DateTime<Utc>,
+    ) -> Result<(), ApiError> {
         let token_key = Self::session_token_key(token_hash);
-        let data = self.db.get(token_key.as_bytes()).map_err(Self::map_db_error)?;
+        let data = self
+            .db
+            .get(token_key.as_bytes())
+            .map_err(Self::map_db_error)?;
         let data = data.ok_or(ApiError::NotFound)?;
         let mut session: Session = Self::deserialize(&data)?;
         session.revoke(revoked_at);
@@ -149,9 +163,9 @@ impl AuthStorage for AevumDbAuthStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use aevum_db::config::SyncMode;
     use chrono::Duration;
     use tempfile::TempDir;
-    use aevum_db::config::SyncMode;
 
     fn test_db() -> (AevumDbAuthStorage, TempDir) {
         let temp = TempDir::new().unwrap();
@@ -177,7 +191,11 @@ mod tests {
         storage.create_user(&user).await.unwrap();
         assert!(storage.user_exists("test@example.com").await.unwrap());
 
-        let by_email = storage.get_user_by_email("test@example.com").await.unwrap().unwrap();
+        let by_email = storage
+            .get_user_by_email("test@example.com")
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(by_email.id, user.id);
 
         let by_id = storage.get_user_by_id(&user.id).await.unwrap().unwrap();
@@ -207,14 +225,25 @@ mod tests {
 
         storage.create_session(&session).await.unwrap();
 
-        let found = storage.get_session_by_token_hash(&token_hash).await.unwrap().unwrap();
+        let found = storage
+            .get_session_by_token_hash(&token_hash)
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(found.id, session.id);
         assert!(found.revoked_at.is_none());
 
         let revoked_at = Utc::now();
-        storage.revoke_session_by_token_hash(&token_hash, revoked_at).await.unwrap();
+        storage
+            .revoke_session_by_token_hash(&token_hash, revoked_at)
+            .await
+            .unwrap();
 
-        let revoked = storage.get_session_by_token_hash(&token_hash).await.unwrap().unwrap();
+        let revoked = storage
+            .get_session_by_token_hash(&token_hash)
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(revoked.revoked_at, Some(revoked_at));
     }
 
@@ -222,7 +251,9 @@ mod tests {
     async fn logout_unknown_session_is_idempotent() {
         let (storage, _temp) = test_db();
         let token_hash = SessionTokenHash::new("unknown".to_string());
-        let result = storage.revoke_session_by_token_hash(&token_hash, Utc::now()).await;
+        let result = storage
+            .revoke_session_by_token_hash(&token_hash, Utc::now())
+            .await;
         assert!(matches!(result, Err(ApiError::NotFound)));
     }
 

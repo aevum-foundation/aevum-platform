@@ -5,11 +5,7 @@ use env_logger::Env;
 
 use aevum_platform_api::{
     api::{self, health},
-    auth::{
-        middleware::AuthMiddleware,
-        service::AuthService,
-        storage::InMemoryAuthStorage,
-    },
+    auth::{middleware::AuthMiddleware, service::AuthService, storage::InMemoryAuthStorage},
     config::Config,
     state::AppState,
     storage::MockStorage,
@@ -43,7 +39,6 @@ async fn main() -> std::io::Result<()> {
             .wrap(AuthMiddleware::new(auth_service_data.clone()))
             .configure(health::configure)
             .configure(api::auth::configure)
-            .configure(api::login::configure)
     })
     .bind((host.as_str(), port))?
     .run()
