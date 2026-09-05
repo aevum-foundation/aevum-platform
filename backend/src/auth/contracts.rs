@@ -55,7 +55,7 @@ pub struct LogoutResponse {
 // AUTH CONTRACT CONSTANTS
 // ============================================================
 
-pub const SESSION_COOKIE_NAME: &str = "aevum_session";
+pub const SESSION_COOKIE_NAME: &str = "__Host-aevum_session";
 pub const SESSION_DURATION_DAYS: i64 = 7;
 pub const SESSION_DURATION_SECONDS: i64 = SESSION_DURATION_DAYS * 24 * 60 * 60;
 
