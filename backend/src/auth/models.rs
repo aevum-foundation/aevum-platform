@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
+use crate::auth::csrf::CsrfTokenHash;
 use crate::auth::password::SessionToken;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -37,6 +38,7 @@ pub struct Session {
     pub id: Uuid,
     pub user_id: Uuid,
     pub token_hash: SessionTokenHash,
+    pub csrf_token_hash: Option<CsrfTokenHash>,
     pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
     pub revoked_at: Option<DateTime<Utc>>,
@@ -45,16 +47,13 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(
-        user_id: Uuid,
-        token_hash: SessionTokenHash,
-        expires_at: DateTime<Utc>,
-    ) -> Self {
+    pub fn new(user_id: Uuid, token_hash: SessionTokenHash, expires_at: DateTime<Utc>) -> Self {
         let now = Utc::now();
         Self {
             id: Uuid::new_v4(),
             user_id,
             token_hash,
+            csrf_token_hash: None,
             created_at: now,
             expires_at,
             revoked_at: None,

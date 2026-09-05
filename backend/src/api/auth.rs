@@ -14,6 +14,7 @@ use crate::auth::contracts::{
     LoginRequest, LoginResponse, LogoutResponse, MeResponse, RegisterRequest, RegisterResponse,
     SESSION_COOKIE_NAME, SESSION_DURATION_DAYS,
 };
+use crate::auth::csrf::{build_csrf_cookie, build_csrf_removal_cookie, CsrfConfig, CsrfToken};
 use crate::auth::models::User;
 use crate::auth::service::AuthService;
 use crate::auth::storage::InMemoryAuthStorage;
@@ -79,12 +80,18 @@ pub async fn login(
         email: user.email,
     };
 
-    let cookie = build_session_cookie(session_token.expose());
+    let session_cookie = build_session_cookie(session_token.expose());
+    let csrf_token = CsrfToken::generate();
+    let csrf_cookie = build_csrf_cookie(&csrf_token, &CsrfConfig::default());
 
     let mut http_response = HttpResponse::Ok().json(response);
 
     http_response
-        .add_cookie(&cookie)
+        .add_cookie(&session_cookie)
+        .map_err(|_| ApiError::Internal)?;
+
+    http_response
+        .add_cookie(&csrf_cookie)
         .map_err(|_| ApiError::Internal)?;
 
     Ok(http_response)
@@ -111,11 +118,16 @@ pub async fn logout(
     let response = LogoutResponse { success: true };
 
     let removal_cookie = build_logout_cookie();
+    let csrf_removal_cookie = build_csrf_removal_cookie(&CsrfConfig::default());
 
     let mut http_response = HttpResponse::Ok().json(response);
 
     http_response
         .add_cookie(&removal_cookie)
+        .map_err(|_| ApiError::Internal)?;
+
+    http_response
+        .add_cookie(&csrf_removal_cookie)
         .map_err(|_| ApiError::Internal)?;
 
     Ok(http_response)

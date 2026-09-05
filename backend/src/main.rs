@@ -5,6 +5,8 @@ use env_logger::Env;
 
 use aevum_platform_api::{
     api::{self, health},
+    auth::csrf::CsrfConfig,
+    auth::csrf_middleware::CsrfMiddleware,
     auth::{middleware::AuthMiddleware, service::AuthService, storage::InMemoryAuthStorage},
     config::Config,
     state::AppState,
@@ -37,6 +39,9 @@ async fn main() -> std::io::Result<()> {
             .app_data(auth_service_data.clone())
             .wrap(Logger::default())
             .wrap(AuthMiddleware::new(auth_service_data.clone()))
+            .wrap(CsrfMiddleware::new(actix_web::web::Data::new(
+                CsrfConfig::default(),
+            )))
             .configure(health::configure)
             .configure(api::auth::configure)
     })
