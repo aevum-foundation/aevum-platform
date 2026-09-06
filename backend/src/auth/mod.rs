@@ -5,6 +5,8 @@ pub mod contracts;
 pub mod csrf;
 pub mod csrf_middleware;
 pub mod events;
+
+pub use events::storage::{InMemorySecurityEventStorage, SecurityEventStorage};
 pub mod middleware;
 pub mod models;
 pub mod password;
