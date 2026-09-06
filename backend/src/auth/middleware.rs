@@ -1,11 +1,13 @@
 //! Session authentication middleware.
 //!
-//! The middleware is intentionally generic over AuthStorage.
-//! The concrete storage type is selected at the composition root
-//! (production: AevumDbAuthStorage, tests: InMemoryAuthStorage).
+//! AUTH-17 — Storage Agnostic Refactor
+//!
+//! The middleware depends only on the `Authenticator` trait.
+//! It has no knowledge of the concrete storage backend.
 
 use std::{
     rc::Rc,
+    sync::Arc,
     task::{Context, Poll},
 };
 
@@ -17,39 +19,30 @@ use actix_web::{
 use futures_util::future::{ready, LocalBoxFuture, Ready};
 
 use crate::auth::{
+    authenticator::Authenticator,
     contracts::SESSION_COOKIE_NAME,
     models::User,
-    service::{AuthService, AuthStorage},
+    password::SessionToken,
 };
 
 #[derive(Clone)]
-pub struct AuthMiddleware<S>
-where
-    S: AuthStorage + 'static,
-{
-    auth_service: web::Data<AuthService<S>>,
+pub struct AuthMiddleware {
+    auth: web::Data<Arc<dyn Authenticator>>,
 }
 
-impl<S> AuthMiddleware<S>
-where
-    S: AuthStorage + 'static,
-{
-    pub fn new(auth_service: web::Data<AuthService<S>>) -> Self {
-        Self { auth_service }
+impl AuthMiddleware {
+    pub fn new(auth: web::Data<Arc<dyn Authenticator>>) -> Self {
+        Self { auth }
     }
 }
 
-pub struct AuthMiddlewareService<S, T>
-where
-    S: AuthStorage + 'static,
-{
-    auth_service: web::Data<AuthService<S>>,
+pub struct AuthMiddlewareService<T> {
+    auth: web::Data<Arc<dyn Authenticator>>,
     service: Rc<T>,
 }
 
-impl<S, T, B> Transform<T, ServiceRequest> for AuthMiddleware<S>
+impl<T, B> Transform<T, ServiceRequest> for AuthMiddleware
 where
-    S: AuthStorage + 'static,
     T: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     T::Future: 'static,
     B: MessageBody + 'static,
@@ -57,20 +50,19 @@ where
     type Response = ServiceResponse<B>;
     type Error = Error;
     type InitError = ();
-    type Transform = AuthMiddlewareService<S, T>;
+    type Transform = AuthMiddlewareService<T>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: T) -> Self::Future {
         ready(Ok(AuthMiddlewareService {
-            auth_service: self.auth_service.clone(),
+            auth: self.auth.clone(),
             service: Rc::new(service),
         }))
     }
 }
 
-impl<S, T, B> Service<ServiceRequest> for AuthMiddlewareService<S, T>
+impl<T, B> Service<ServiceRequest> for AuthMiddlewareService<T>
 where
-    S: AuthStorage + 'static,
     T: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     T::Future: 'static,
     B: MessageBody + 'static,
@@ -84,7 +76,7 @@ where
     }
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        let auth_service = self.auth_service.clone();
+        let auth = self.auth.clone();
         let service = Rc::clone(&self.service);
 
         Box::pin(async move {
@@ -95,7 +87,9 @@ where
                 .map(|cookie| cookie.value().to_owned());
 
             if let Some(token) = token {
-                match auth_service.authenticate(&token).await {
+                let session_token = SessionToken::from_secret(token);
+
+                match auth.authenticate(&session_token).await {
                     Ok(Some(user)) => {
                         req.extensions_mut().insert::<User>(user);
                     }

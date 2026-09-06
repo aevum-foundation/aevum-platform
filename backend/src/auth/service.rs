@@ -10,6 +10,8 @@ use uuid::Uuid;
 use crate::auth::contracts::SESSION_DURATION_DAYS;
 use crate::auth::models::{Session, SessionTokenHash, User};
 use crate::auth::password::{PasswordHasher, SessionToken};
+use crate::auth::api::AuthApi;
+use crate::auth::authenticator::Authenticator;
 use crate::auth::events::storage::SecurityEventStorage;
 use crate::auth::events::{SecurityEvent, SecurityMetadata};
 use crate::auth::rate_limit::LoginRateLimiter;
@@ -19,26 +21,41 @@ const MAX_SESSION_DURATION_DAYS: i64 = 30;
 const MIN_SESSION_DURATION_DAYS: i64 = 1;
 
 pub trait AuthStorage: Send + Sync {
-    async fn user_exists(&self, email: &str) -> Result<bool, ApiError>;
-    async fn get_user_by_email(&self, email: &str) -> Result<Option<User>, ApiError>;
-    async fn get_user_by_id(&self, user_id: &Uuid) -> Result<Option<User>, ApiError>;
-    async fn create_user(&self, user: &User) -> Result<(), ApiError>;
-    async fn create_session(&self, session: &Session) -> Result<(), ApiError>;
-    async fn get_session_by_token_hash(
+    fn user_exists(
+        &self,
+        email: &str,
+    ) -> impl std::future::Future<Output = Result<bool, ApiError>> + Send;
+    fn get_user_by_email(
+        &self,
+        email: &str,
+    ) -> impl std::future::Future<Output = Result<Option<User>, ApiError>> + Send;
+    fn get_user_by_id(
+        &self,
+        user_id: &Uuid,
+    ) -> impl std::future::Future<Output = Result<Option<User>, ApiError>> + Send;
+    fn create_user(
+        &self,
+        user: &User,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+    fn create_session(
+        &self,
+        session: &Session,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+    fn get_session_by_token_hash(
         &self,
         token_hash: &SessionTokenHash,
-    ) -> Result<Option<Session>, ApiError>;
-    async fn revoke_session_by_token_hash(
+    ) -> impl std::future::Future<Output = Result<Option<Session>, ApiError>> + Send;
+    fn revoke_session_by_token_hash(
         &self,
         token_hash: &SessionTokenHash,
         revoked_at: DateTime<Utc>,
-    ) -> Result<(), ApiError>;
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
 
-    async fn revoke_all_sessions_for_user(
+    fn revoke_all_sessions_for_user(
         &self,
         user_id: &Uuid,
         revoked_at: DateTime<Utc>,
-    ) -> Result<usize, ApiError>;
+    ) -> impl std::future::Future<Output = Result<usize, ApiError>> + Send;
 }
 
 #[derive(Clone)]
@@ -65,6 +82,60 @@ where
             .field("rate_limiter", &"<redacted>")
             .field("events", &"<redacted>")
             .finish()
+    }
+}
+
+#[async_trait::async_trait]
+impl<S> AuthApi for AuthService<S>
+where
+    S: AuthStorage + 'static,
+{
+    async fn register(
+        &self,
+        email: &str,
+        password: &str,
+        ip: &str,
+    ) -> Result<User, ApiError> {
+        AuthService::register(self, email, password, ip).await
+    }
+
+    async fn login(
+        &self,
+        email: &str,
+        password: &str,
+        ip: &str,
+    ) -> Result<(User, SessionToken, crate::auth::csrf::CsrfToken), ApiError> {
+        let (user, session_token) = AuthService::login(self, email, password, ip).await?;
+        let csrf_token = crate::auth::csrf::CsrfToken::generate();
+        Ok((user, session_token, csrf_token))
+    }
+
+    async fn logout(&self, token: &SessionToken) -> Result<(), ApiError> {
+        AuthService::logout(self, token).await
+    }
+
+    async fn authenticate(&self, token: &SessionToken) -> Result<Option<User>, ApiError> {
+        AuthService::authenticate(self, token).await
+    }
+
+    async fn rotate_session(
+        &self,
+        token: &SessionToken,
+    ) -> Result<(SessionToken, crate::auth::csrf::CsrfToken), ApiError> {
+        AuthService::rotate_session(self, token).await
+    }
+}
+
+#[async_trait::async_trait]
+impl<S> Authenticator for AuthService<S>
+where
+    S: AuthStorage + 'static,
+{
+    async fn authenticate(
+        &self,
+        token: &SessionToken,
+    ) -> Result<Option<User>, ApiError> {
+        AuthService::authenticate(self, token).await
     }
 }
 
@@ -260,22 +331,19 @@ where
         Ok((user, session_token))
     }
 
-    pub async fn authenticate(&self, token: &str) -> Result<Option<User>, ApiError> {
+    pub async fn authenticate(
+        &self,
+        token: &SessionToken,
+    ) -> Result<Option<User>, ApiError> {
         self.authenticate_at(token, Utc::now()).await
     }
 
     pub async fn authenticate_at(
         &self,
-        token: &str,
+        token: &SessionToken,
         now: DateTime<Utc>,
     ) -> Result<Option<User>, ApiError> {
-        if token.is_empty() {
-            return Ok(None);
-        }
-
-        // Создаём хеш токена так же, как при создании сессии
-        let temp_token = SessionToken::from_secret(token.to_string());
-        let token_hash = SessionTokenHash::from_token(&temp_token);
+        let token_hash = SessionTokenHash::from_token(token);
 
         let session = self.storage.get_session_by_token_hash(&token_hash).await?;
 
@@ -300,17 +368,16 @@ where
         Ok(Some(user))
     }
 
-    pub async fn logout(&self, token: &str) -> Result<(), ApiError> {
+    pub async fn logout(&self, token: &SessionToken) -> Result<(), ApiError> {
         self.logout_at(token, Utc::now()).await
     }
 
-    pub async fn logout_at(&self, token: &str, now: DateTime<Utc>) -> Result<(), ApiError> {
-        if token.is_empty() {
-            return Ok(());
-        }
-
-        let temp_token = SessionToken::from_secret(token.to_string());
-        let token_hash = SessionTokenHash::from_token(&temp_token);
+    pub async fn logout_at(
+        &self,
+        token: &SessionToken,
+        now: DateTime<Utc>,
+    ) -> Result<(), ApiError> {
+        let token_hash = SessionTokenHash::from_token(token);
 
         if let Some(session) = self
             .storage
@@ -344,14 +411,9 @@ where
     /// token and CSRF token is created. Returns the new tokens.
     pub async fn rotate_session(
         &self,
-        token: &str,
+        token: &SessionToken,
     ) -> Result<(SessionToken, crate::auth::csrf::CsrfToken), ApiError> {
-        if token.is_empty() {
-            return Err(ApiError::Unauthorized);
-        }
-
-        let temp_token = SessionToken::from_secret(token.to_string());
-        let token_hash = SessionTokenHash::from_token(&temp_token);
+        let token_hash = SessionTokenHash::from_token(token);
 
         let session = self
             .storage

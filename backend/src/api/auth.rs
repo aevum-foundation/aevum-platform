@@ -10,20 +10,23 @@ use actix_web::{
     get, post, web, HttpMessage, HttpRequest, HttpResponse,
 };
 
+use std::sync::Arc;
+
+use crate::auth::api::AuthApi;
 use crate::auth::contracts::{
     LoginRequest, LoginResponse, LogoutResponse, MeResponse, RegisterRequest, RegisterResponse,
     SESSION_COOKIE_NAME, SESSION_DURATION_DAYS,
 };
 use crate::auth::csrf::{build_csrf_cookie, build_csrf_removal_cookie, CsrfConfig, CsrfToken};
 use crate::auth::models::User;
-use crate::auth::service::AuthService;
-use crate::auth::storage::InMemoryAuthStorage;
+
 use crate::error::{ApiError, ApiResult};
 
 /// Application-wide authentication service type.
 ///
-/// AUTH-17 will replace this alias with a storage-agnostic backend selection.
-pub type AppAuthService = AuthService<InMemoryAuthStorage>;
+/// AUTH-17 — Storage agnostic API. The API layer works with the
+/// AuthApi trait object and has no knowledge of the concrete storage.
+pub type AppAuthService = Arc<dyn AuthApi>;
 
 fn build_session_cookie(token: &str) -> Cookie<'static> {
     Cookie::build(SESSION_COOKIE_NAME, token.to_owned())
@@ -87,7 +90,7 @@ pub async fn login(
         .unwrap_or("unknown")
         .to_string();
 
-    let (user, session_token) = service.login(&req.email, &req.password, &ip).await?;
+    let (user, session_token, csrf_token) = service.login(&req.email, &req.password, &ip).await?;
 
     let response = LoginResponse {
         user_id: user.id,
@@ -95,7 +98,6 @@ pub async fn login(
     };
 
     let session_cookie = build_session_cookie(session_token.expose());
-    let csrf_token = CsrfToken::generate();
     let csrf_cookie = build_csrf_cookie(&csrf_token, &CsrfConfig::default());
 
     let mut http_response = HttpResponse::Ok().json(response);
@@ -117,7 +119,7 @@ pub async fn logout(
     service: web::Data<AppAuthService>,
 ) -> ApiResult<HttpResponse> {
     if let Some(cookie) = req.cookie(SESSION_COOKIE_NAME) {
-        let token = cookie.value().to_owned();
+        let token = crate::auth::password::SessionToken::from_secret(cookie.value().to_owned());
 
         match service.logout(&token).await {
             Ok(()) => {}
@@ -182,12 +184,14 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 mod tests {
     use super::*;
     use actix_web::{http::StatusCode, test, App};
+    use crate::auth::service::AuthService;
+    use crate::auth::storage::InMemoryAuthStorage;
 
     const TEST_EMAIL: &str = "test@example.com";
     const TEST_PASSWORD: &str = "correct-horse-battery-staple";
 
     fn test_service() -> AppAuthService {
-        AppAuthService::new(InMemoryAuthStorage::new())
+        Arc::new(AuthService::new(InMemoryAuthStorage::new()))
     }
 
     async fn register_test_user(service: &AppAuthService) {
@@ -338,13 +342,17 @@ mod tests {
     #[actix_web::test]
     async fn login_creates_session() {
         let storage = InMemoryAuthStorage::new();
-        let service = AppAuthService::new(storage.clone());
+        let auth_service = Arc::new(AuthService::new(storage.clone()));
+        let service: Arc<dyn AuthApi> = auth_service.clone();
         register_test_user(&service).await;
 
-        let (user, token) = service.login(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1").await.unwrap();
+        let (user, token, _csrf_token) = service
+            .login(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1")
+            .await
+            .unwrap();
         assert!(!user.id.is_nil());
 
-        let authenticated = service.authenticate(token.expose()).await.unwrap().unwrap();
+        let authenticated = service.authenticate(&token).await.unwrap().unwrap();
         assert_eq!(authenticated.id, user.id);
     }
 
@@ -419,14 +427,19 @@ mod tests {
     #[actix_web::test]
     async fn logout_removes_session_cookie() {
         let storage = InMemoryAuthStorage::new();
-        let service = web::Data::new(AppAuthService::new(storage.clone()));
+        let auth_service = Arc::new(AuthService::new(storage.clone()));
+        let service: Arc<dyn AuthApi> = auth_service.clone();
         register_test_user(&service).await;
 
-        let (_, token) = service.login(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1").await.unwrap();
+        let (_, token, _csrf_token) = service
+            .login(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1")
+            .await
+            .unwrap();
 
-        let app = test::init_service(App::new().app_data(service.clone()).service(logout)).await;
+        let app = test::init_service(App::new().app_data(web::Data::new(service.clone())).service(logout)).await;
 
         let cookie = build_session_cookie(token.expose());
+        let session_token = crate::auth::password::SessionToken::from_secret(token.expose().to_string());
 
         let req = test::TestRequest::post()
             .uri("/api/v1/auth/logout")
@@ -444,14 +457,19 @@ mod tests {
     #[actix_web::test]
     async fn logout_is_idempotent() {
         let storage = InMemoryAuthStorage::new();
-        let service = web::Data::new(AppAuthService::new(storage.clone()));
+        let auth_service = Arc::new(AuthService::new(storage.clone()));
+        let service: Arc<dyn AuthApi> = auth_service.clone();
         register_test_user(&service).await;
 
-        let (_, token) = service.login(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1").await.unwrap();
+        let (_, token, _csrf_token) = service
+            .login(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1")
+            .await
+            .unwrap();
 
-        let app = test::init_service(App::new().app_data(service.clone()).service(logout)).await;
+        let app = test::init_service(App::new().app_data(web::Data::new(service.clone())).service(logout)).await;
 
         let cookie = build_session_cookie(token.expose());
+        let session_token = crate::auth::password::SessionToken::from_secret(token.expose().to_string());
 
         // First logout
         let req1 = test::TestRequest::post()
