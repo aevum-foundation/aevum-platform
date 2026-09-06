@@ -8,6 +8,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub mod aevumdb;
 pub mod storage;
 
 /// Severity level for security events.
@@ -236,6 +237,95 @@ pub enum SecurityEvent {
 }
 
 impl SecurityEvent {
+    pub fn user_registered(user_id: Uuid, email: String, metadata: SecurityMetadata) -> Self {
+        Self::UserRegistered {
+            metadata,
+            user_id,
+            email,
+        }
+    }
+
+    pub fn login_success(user_id: Uuid, email: String, metadata: SecurityMetadata) -> Self {
+        Self::LoginSuccess {
+            metadata,
+            user_id,
+            email,
+        }
+    }
+
+    pub fn login_failed(
+        email: String,
+        reason: LoginFailureReason,
+        metadata: SecurityMetadata,
+    ) -> Self {
+        Self::LoginFailed {
+            metadata,
+            email,
+            reason,
+        }
+    }
+
+    pub fn login_rate_limited(
+        email: Option<String>,
+        metadata: SecurityMetadata,
+    ) -> Self {
+        Self::LoginRateLimited { metadata, email }
+    }
+
+    pub fn register_rate_limited(metadata: SecurityMetadata) -> Self {
+        Self::RegisterRateLimited { metadata }
+    }
+
+    pub fn session_created(
+        user_id: Uuid,
+        session_id: Uuid,
+        metadata: SecurityMetadata,
+    ) -> Self {
+        Self::SessionCreated {
+            metadata,
+            user_id,
+            session_id,
+        }
+    }
+
+    pub fn session_revoked(
+        user_id: Uuid,
+        session_id: Uuid,
+        metadata: SecurityMetadata,
+    ) -> Self {
+        Self::SessionRevoked {
+            metadata,
+            user_id,
+            session_id,
+        }
+    }
+
+    pub fn all_sessions_revoked(
+        user_id: Uuid,
+        revoked_count: usize,
+        metadata: SecurityMetadata,
+    ) -> Self {
+        Self::AllSessionsRevoked {
+            metadata,
+            user_id,
+            revoked_count,
+        }
+    }
+
+    pub fn session_rotated(
+        user_id: Uuid,
+        old_session_id: Uuid,
+        new_session_id: Uuid,
+        metadata: SecurityMetadata,
+    ) -> Self {
+        Self::SessionRotated {
+            metadata,
+            user_id,
+            old_session_id,
+            new_session_id,
+        }
+    }
+
     pub fn kind(&self) -> SecurityEventKind {
         match self {
             SecurityEvent::UserRegistered { .. } => SecurityEventKind::UserRegistered,
