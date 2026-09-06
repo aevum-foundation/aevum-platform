@@ -12,6 +12,7 @@ const USER_EMAIL_PREFIX: &str = "platform:user:email:";
 const USER_ID_PREFIX: &str = "platform:user:id:";
 const SESSION_TOKEN_PREFIX: &str = "platform:session:token:";
 const SESSION_ID_PREFIX: &str = "platform:session:id:";
+const SESSION_BY_USER_PREFIX: &str = "platform:session:by_user:";
 
 #[derive(Clone)]
 pub struct AevumDbAuthStorage {
@@ -47,8 +48,20 @@ impl AevumDbAuthStorage {
         format!("{}{}", SESSION_TOKEN_PREFIX, token_hash.as_str())
     }
 
+    fn session_token_key_from_hash(hash: &str) -> String {
+        format!("{}{}", SESSION_TOKEN_PREFIX, hash)
+    }
+
     fn session_id_key(session_id: &Uuid) -> String {
         format!("{}{}", SESSION_ID_PREFIX, session_id)
+    }
+
+    fn session_by_user_key(user_id: &Uuid, session_id: &Uuid) -> String {
+        format!("{}{}:{}", SESSION_BY_USER_PREFIX, user_id, session_id)
+    }
+
+    fn session_by_user_prefix(user_id: &Uuid) -> String {
+        format!("{}{}:", SESSION_BY_USER_PREFIX, user_id)
     }
 
     fn serialize<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, ApiError> {
@@ -157,6 +170,49 @@ impl AuthStorage for AevumDbAuthStorage {
         batch.put(id_key.as_bytes(), &session_data);
         batch.commit().map_err(Self::map_db_error)?;
         Ok(())
+    }
+
+    async fn revoke_all_sessions_for_user(
+        &self,
+        user_id: &Uuid,
+        revoked_at: DateTime<Utc>,
+    ) -> Result<usize, ApiError> {
+        let prefix = Self::session_by_user_prefix(user_id);
+        let entries = self
+            .db
+            .prefix_scan(prefix.as_bytes())
+            .map_err(Self::map_db_error)?;
+
+        let mut batch = self.db.batch();
+        let mut revoked_count = 0;
+
+        for (index_key, token_hash_bytes) in entries {
+            let token_hash_str = String::from_utf8_lossy(&token_hash_bytes);
+
+            let token_key = Self::session_token_key_from_hash(&token_hash_str);
+            let Some(data) = self.db.get(token_key.as_bytes()).map_err(Self::map_db_error)? else {
+                // Stale index: no corresponding session exists
+                batch.delete(&index_key);
+                continue;
+            };
+
+            let mut session: Session = Self::deserialize(&data)?;
+            if session.revoked_at.is_some() {
+                continue;
+            }
+
+            session.revoke(revoked_at);
+
+            let session_data = Self::serialize(&session)?;
+            let id_key = Self::session_id_key(&session.id);
+
+            batch.put(token_key.as_bytes(), &session_data);
+            batch.put(id_key.as_bytes(), &session_data);
+            revoked_count += 1;
+        }
+
+        batch.commit().map_err(Self::map_db_error)?;
+        Ok(revoked_count)
     }
 }
 

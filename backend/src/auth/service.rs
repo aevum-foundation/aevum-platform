@@ -31,6 +31,12 @@ pub trait AuthStorage: Send + Sync {
         token_hash: &SessionTokenHash,
         revoked_at: DateTime<Utc>,
     ) -> Result<(), ApiError>;
+
+    async fn revoke_all_sessions_for_user(
+        &self,
+        user_id: &Uuid,
+        revoked_at: DateTime<Utc>,
+    ) -> Result<usize, ApiError>;
 }
 
 #[derive(Clone)]
@@ -92,12 +98,7 @@ where
         now + Duration::days(self.session_duration_days)
     }
 
-    pub async fn register(
-        &self,
-        email: &str,
-        password: &str,
-        ip: &str,
-    ) -> Result<User, ApiError> {
+    pub async fn register(&self, email: &str, password: &str, ip: &str) -> Result<User, ApiError> {
         let normalized_email = Self::normalize_email(email);
 
         if normalized_email.is_empty() {
@@ -140,7 +141,9 @@ where
         self.rate_limiter.check_login_ip(ip).await?;
 
         // Rate limit: email-based
-        self.rate_limiter.check_login_email(&normalized_email).await?;
+        self.rate_limiter
+            .check_login_email(&normalized_email)
+            .await?;
 
         let user = self
             .storage
@@ -149,7 +152,9 @@ where
             .ok_or(ApiError::Unauthorized)?;
 
         if !user.status.can_authenticate() {
-            self.rate_limiter.record_login_failure(ip, &normalized_email).await;
+            self.rate_limiter
+                .record_login_failure(ip, &normalized_email)
+                .await;
             return Err(ApiError::Unauthorized);
         }
 
@@ -159,11 +164,15 @@ where
             .map_err(|_| ApiError::Unauthorized)?;
 
         if !password_valid {
-            self.rate_limiter.record_login_failure(ip, &normalized_email).await;
+            self.rate_limiter
+                .record_login_failure(ip, &normalized_email)
+                .await;
             return Err(ApiError::Unauthorized);
         }
 
-        self.rate_limiter.record_login_success(ip, &normalized_email).await;
+        self.rate_limiter
+            .record_login_success(ip, &normalized_email)
+            .await;
 
         self.create_session_for_user(user).await
     }
@@ -249,6 +258,54 @@ where
 
     pub async fn get_user(&self, user_id: &Uuid) -> Result<Option<User>, ApiError> {
         self.storage.get_user_by_id(user_id).await
+    }
+
+    /// Rotate the session token for an authenticated session.
+    ///
+    /// AUTH-15 — Session Rotation
+    ///
+    /// The old session is revoked and a new session with a fresh
+    /// token and CSRF token is created. Returns the new tokens.
+    pub async fn rotate_session(
+        &self,
+        token: &str,
+    ) -> Result<(SessionToken, crate::auth::csrf::CsrfToken), ApiError> {
+        if token.is_empty() {
+            return Err(ApiError::Unauthorized);
+        }
+
+        let temp_token = SessionToken::from_secret(token.to_string());
+        let token_hash = SessionTokenHash::from_token(&temp_token);
+
+        let session = self
+            .storage
+            .get_session_by_token_hash(&token_hash)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        if !session.is_valid() {
+            return Err(ApiError::Unauthorized);
+        }
+
+        // Revoke old session
+        self.storage
+            .revoke_session_by_token_hash(&token_hash, Utc::now())
+            .await?;
+
+        // Get user
+        let user = self
+            .storage
+            .get_user_by_id(&session.user_id)
+            .await?
+            .ok_or(ApiError::Internal)?;
+
+        // Create new session
+        let (_, new_session_token) = self.create_session_for_user(user).await?;
+
+        // Generate new CSRF token
+        let new_csrf_token = crate::auth::csrf::CsrfToken::generate();
+
+        Ok((new_session_token, new_csrf_token))
     }
 
     pub fn session_duration_days(&self) -> i64 {

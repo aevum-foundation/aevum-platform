@@ -42,6 +42,9 @@ pub struct Session {
     pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
     pub revoked_at: Option<DateTime<Utc>>,
+    pub issued_at: DateTime<Utc>,
+    pub last_rotated_at: DateTime<Utc>,
+    pub last_seen_at: Option<DateTime<Utc>>,
     pub user_agent: Option<String>,
     pub ip_address: Option<String>,
 }
@@ -57,6 +60,9 @@ impl Session {
             created_at: now,
             expires_at,
             revoked_at: None,
+            issued_at: now,
+            last_rotated_at: now,
+            last_seen_at: None,
             user_agent: None,
             ip_address: None,
         }

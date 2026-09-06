@@ -168,6 +168,24 @@ impl AuthStorage for InMemoryAuthStorage {
         // unknown/already-revoked sessions do not leak information.
         Ok(())
     }
+
+    async fn revoke_all_sessions_for_user(
+        &self,
+        user_id: &Uuid,
+        revoked_at: DateTime<Utc>,
+    ) -> Result<usize, ApiError> {
+        let mut sessions = self.sessions.lock().await;
+        let mut revoked_count = 0;
+
+        for session in sessions.values_mut() {
+            if &session.user_id == user_id && session.revoked_at.is_none() {
+                session.revoke(revoked_at);
+                revoked_count += 1;
+            }
+        }
+
+        Ok(revoked_count)
+    }
 }
 
 #[cfg(test)]
