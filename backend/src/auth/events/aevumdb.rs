@@ -290,6 +290,10 @@ impl SecurityEventStorage for AevumDbSecurityEventStorage {
         Ok(events)
     }
 
+    async fn flush(&self) -> Result<(), ApiError> {
+        self.db.flush().map_err(Self::map_db_error)
+    }
+
     async fn prune_before(&self, timestamp: DateTime<Utc>) -> Result<usize, ApiError> {
         let entries = self
             .db

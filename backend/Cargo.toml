@@ -25,6 +25,9 @@ aevum-db = { path = "/root/aevum-db/crates/aevum-db" }
 tempfile = "3.8"
 async-trait = "0.1"
 subtle = "2.6"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+metrics = "0.23"
 
 [profile.release]
 lto = true

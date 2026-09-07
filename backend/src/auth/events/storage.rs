@@ -37,10 +37,7 @@ pub trait SecurityEventStorage: Send + Sync {
         limit: usize,
     ) -> Result<Vec<SecurityEvent>, ApiError>;
 
-    async fn get_recent_events(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<SecurityEvent>, ApiError>;
+    async fn get_recent_events(&self, limit: usize) -> Result<Vec<SecurityEvent>, ApiError>;
 
     async fn get_events_since(
         &self,
@@ -48,10 +45,9 @@ pub trait SecurityEventStorage: Send + Sync {
         limit: usize,
     ) -> Result<Vec<SecurityEvent>, ApiError>;
 
-    async fn prune_before(
-        &self,
-        timestamp: DateTime<Utc>,
-    ) -> Result<usize, ApiError>;
+    async fn prune_before(&self, timestamp: DateTime<Utc>) -> Result<usize, ApiError>;
+
+    async fn flush(&self) -> Result<(), ApiError>;
 }
 
 /// Internal index container for atomic read/write.
@@ -149,10 +145,7 @@ impl SecurityEventStorage for InMemorySecurityEventStorage {
         Ok(events)
     }
 
-    async fn get_recent_events(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<SecurityEvent>, ApiError> {
+    async fn get_recent_events(&self, limit: usize) -> Result<Vec<SecurityEvent>, ApiError> {
         let inner = self.inner.read().unwrap();
         let recent: Vec<SecurityEvent> = inner
             .events
@@ -181,10 +174,11 @@ impl SecurityEventStorage for InMemorySecurityEventStorage {
         Ok(filtered)
     }
 
-    async fn prune_before(
-        &self,
-        timestamp: DateTime<Utc>,
-    ) -> Result<usize, ApiError> {
+    async fn flush(&self) -> Result<(), ApiError> {
+        Ok(())
+    }
+
+    async fn prune_before(&self, timestamp: DateTime<Utc>) -> Result<usize, ApiError> {
         let mut inner = self.inner.write().unwrap();
         let original_len = inner.events.len();
 

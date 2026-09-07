@@ -1,13 +1,15 @@
 //! Aevum Platform API — entry point.
 
 use actix_web::{middleware::Logger, App, HttpServer};
-use env_logger::Env;
+use std::time::Duration;
+use tracing_subscriber::filter::EnvFilter;
+use tracing_subscriber::fmt;
 
 use aevum_platform_api::{
     api::{self, health},
+    auth::api::AuthApi,
     auth::csrf::CsrfConfig,
     auth::csrf_middleware::CsrfMiddleware,
-    auth::api::AuthApi,
     auth::{middleware::AuthMiddleware, service::AuthService, storage::InMemoryAuthStorage},
     config::Config,
     state::AppState,
@@ -16,15 +18,20 @@ use aevum_platform_api::{
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+        )
+        .with_target(false)
+        .init();
 
     let config = Config::from_env();
     let host = config.host.clone();
     let port = config.port;
 
-    log::info!("Starting Aevum Platform API v{}", env!("CARGO_PKG_VERSION"));
-    log::info!("Environment: {}", config.environment);
-    log::info!("Listening on {}:{}", host, port);
+    tracing::info!("Starting Aevum Platform API v{}", env!("CARGO_PKG_VERSION"));
+    tracing::info!("Environment: {}", config.environment);
+    tracing::info!("Listening on {}:{}", host, port);
 
     let storage = std::sync::Arc::new(MockStorage::new());
     let app_state = AppState::new(config, storage);
@@ -42,7 +49,7 @@ async fn main() -> std::io::Result<()> {
         auth_service.clone();
     let auth_middleware_data = actix_web::web::Data::new(authenticator);
 
-    HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         App::new()
             .app_data(actix_web::web::Data::new(app_state.clone()))
             .app_data(auth_api_data.clone())
@@ -55,6 +62,55 @@ async fn main() -> std::io::Result<()> {
             .configure(api::auth::configure)
     })
     .bind((host.as_str(), port))?
-    .run()
-    .await
+    .disable_signals()
+    .run();
+
+    let server_handle = server.handle();
+
+    let shutdown_task = tokio::spawn(async move {
+        shutdown_signal().await;
+        tracing::info!("shutdown signal received");
+
+        // Stop accepting new requests
+        server_handle.stop(true).await;
+    });
+
+    // Wait for either shutdown signal or server exit
+    tokio::select! {
+        result = server => {
+            if let Err(error) = result {
+                tracing::error!("server error: {}", error);
+                return Err(error);
+            }
+        }
+        _ = shutdown_task => {
+            // Signal received, server already stopped
+            tracing::info!("server stopped");
+        }
+    }
+
+    Ok(())
+}
+
+#[cfg(unix)]
+async fn shutdown_signal() {
+    use tokio::signal::unix::{signal, SignalKind};
+
+    let mut sigterm = signal(SignalKind::terminate()).expect("failed to register SIGTERM handler");
+    let mut sigint = signal(SignalKind::interrupt()).expect("failed to register SIGINT handler");
+
+    tokio::select! {
+        _ = sigterm.recv() => {
+            tracing::info!("SIGTERM received");
+        }
+        _ = sigint.recv() => {
+            tracing::info!("SIGINT received");
+        }
+    }
+}
+
+#[cfg(not(unix))]
+async fn shutdown_signal() {
+    let _ = tokio::signal::ctrl_c().await;
+    tracing::info!("SIGINT received");
 }
