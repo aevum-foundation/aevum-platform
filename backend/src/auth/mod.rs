@@ -1,9 +1,12 @@
 //! Authentication module for Aevum Platform.
 
 pub mod aevumdb_storage;
+pub mod api;
+pub mod authenticator;
 pub mod contracts;
 pub mod csrf;
 pub mod csrf_middleware;
+pub mod email;
 pub mod events;
 
 pub use events::storage::{InMemorySecurityEventStorage, SecurityEventStorage};

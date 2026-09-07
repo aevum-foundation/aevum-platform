@@ -15,7 +15,8 @@ use std::sync::Arc;
 use crate::auth::api::AuthApi;
 use crate::auth::contracts::{
     LoginRequest, LoginResponse, LogoutResponse, MeResponse, PasswordChangeRequest,
-    RegisterRequest, RegisterResponse, SESSION_COOKIE_NAME, SESSION_DURATION_DAYS,
+    PasswordResetRequest, PasswordResetConfirm, RegisterRequest, RegisterResponse,
+    SESSION_COOKIE_NAME, SESSION_DURATION_DAYS,
 };
 use crate::auth::csrf::{build_csrf_cookie, build_csrf_removal_cookie, CsrfConfig, CsrfToken};
 use crate::auth::models::User;
@@ -221,6 +222,43 @@ pub async fn change_password(
     Ok(http_response)
 }
 
+#[post("/api/v1/auth/password-reset/request")]
+pub async fn request_password_reset(
+    req: web::Json<PasswordResetRequest>,
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    req.validate().map_err(|_| ApiError::BadRequest)?;
+
+    let ip = http_req
+        .connection_info()
+        .realip_remote_addr()
+        .unwrap_or("unknown")
+        .to_string();
+
+    service.request_password_reset(&req.email, &ip).await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "message": "If the account exists, reset instructions have been sent."
+    })))
+}
+
+#[post("/api/v1/auth/password-reset/confirm")]
+pub async fn confirm_password_reset(
+    req: web::Json<PasswordResetConfirm>,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    req.validate().map_err(|_| ApiError::BadRequest)?;
+
+    service
+        .confirm_password_reset(&req.token, &req.new_password)
+        .await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "success": true
+    })))
+}
+
 #[get("/api/v1/auth/me")]
 pub async fn me(req: HttpRequest) -> ApiResult<HttpResponse> {
     let user = req
@@ -251,6 +289,8 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(logout)
         .service(rotate)
         .service(change_password)
+        .service(request_password_reset)
+        .service(confirm_password_reset)
         .service(me);
 }
 

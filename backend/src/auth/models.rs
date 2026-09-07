@@ -7,7 +7,7 @@ use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::auth::csrf::CsrfTokenHash;
-use crate::auth::password::SessionToken;
+use crate::auth::password::{PasswordHasher, SessionToken};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
@@ -119,6 +119,40 @@ impl std::fmt::Debug for SessionTokenHash {
 pub struct LoginCredentials {
     pub email: String,
     pub password: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PasswordResetToken {
+    pub user_id: Uuid,
+    pub token_hash: String,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+    pub used_at: Option<DateTime<Utc>>,
+}
+
+impl PasswordResetToken {
+    pub fn new(user_id: Uuid, token_hash: String, ttl_minutes: i64) -> Self {
+        let now = Utc::now();
+        Self {
+            user_id,
+            token_hash,
+            created_at: now,
+            expires_at: now + chrono::Duration::minutes(ttl_minutes),
+            used_at: None,
+        }
+    }
+
+    pub fn is_expired_at(&self, now: DateTime<Utc>) -> bool {
+        now >= self.expires_at
+    }
+
+    pub fn is_used(&self) -> bool {
+        self.used_at.is_some()
+    }
+
+    pub fn is_valid_at(&self, now: DateTime<Utc>) -> bool {
+        !self.is_expired_at(now) && !self.is_used()
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

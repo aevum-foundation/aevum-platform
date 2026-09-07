@@ -28,6 +28,17 @@ pub struct PasswordChangeRequest {
     pub new_password: String,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct PasswordResetRequest {
+    pub email: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct PasswordResetConfirm {
+    pub token: String,
+    pub new_password: String,
+}
+
 // ============================================================
 // RESPONSE DTOs
 // ============================================================
@@ -74,6 +85,8 @@ pub const MIN_PASSWORD_LENGTH: usize = 12;
 pub const MAX_PASSWORD_LENGTH: usize = 128;
 pub const MAX_USER_AGENT_LENGTH: usize = 512;
 pub const MAX_IP_ADDRESS_LENGTH: usize = 64;
+pub const PASSWORD_RESET_TOKEN_BYTES: usize = 32;
+pub const PASSWORD_RESET_TOKEN_TTL_MINUTES: i64 = 30;
 
 // ============================================================
 // CONTRACT VALIDATION HELPERS
@@ -109,6 +122,23 @@ impl PasswordChangeRequest {
     }
 }
 
+impl PasswordResetRequest {
+    pub fn validate(&self) -> Result<(), ContractValidationError> {
+        validate_email(&self.email)?;
+        Ok(())
+    }
+}
+
+impl PasswordResetConfirm {
+    pub fn validate(&self) -> Result<(), ContractValidationError> {
+        if self.token.is_empty() {
+            return Err(ContractValidationError::EmptyResetToken);
+        }
+        validate_password(&self.new_password)?;
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContractValidationError {
     EmptyEmail,
@@ -116,6 +146,7 @@ pub enum ContractValidationError {
     EmptyPassword,
     PasswordTooShort,
     PasswordTooLong,
+    EmptyResetToken,
 }
 
 fn validate_email(email: &str) -> Result<(), ContractValidationError> {

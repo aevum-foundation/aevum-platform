@@ -45,4 +45,12 @@ pub trait AuthApi: Send + Sync {
         current_password: &str,
         new_password: &str,
     ) -> Result<SessionToken, ApiError>;
+
+    async fn request_password_reset(&self, email: &str, ip: &str) -> Result<(), ApiError>;
+
+    async fn confirm_password_reset(
+        &self,
+        token: &str,
+        new_password: &str,
+    ) -> Result<(), ApiError>;
 }

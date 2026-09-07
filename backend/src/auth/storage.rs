@@ -23,7 +23,7 @@ use chrono::{DateTime, Utc};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::auth::models::{Session, SessionTokenHash, User};
+use crate::auth::models::{PasswordResetToken, Session, SessionTokenHash, User};
 use crate::auth::service::AuthStorage;
 use crate::error::ApiError;
 
@@ -46,6 +46,9 @@ pub struct InMemoryAuthStorage {
 
     /// Sessions indexed by token hash.
     sessions: Arc<Mutex<HashMap<String, Session>>>,
+
+    /// Password reset tokens indexed by token hash.
+    password_reset_tokens: Arc<Mutex<HashMap<String, PasswordResetToken>>>,
 }
 
 impl InMemoryAuthStorage {
@@ -161,6 +164,34 @@ impl AuthStorage for InMemoryAuthStorage {
         let sessions = self.sessions.lock().await;
 
         Ok(sessions.get(token_hash.as_str()).cloned())
+    }
+
+    async fn create_password_reset_token(&self, token: &PasswordResetToken) -> Result<(), ApiError> {
+        let mut tokens = self.password_reset_tokens.lock().await;
+        tokens.insert(token.token_hash.clone(), token.clone());
+        Ok(())
+    }
+
+    async fn get_password_reset_token_by_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<PasswordResetToken>, ApiError> {
+        let tokens = self.password_reset_tokens.lock().await;
+        Ok(tokens.get(token_hash).cloned())
+    }
+
+    async fn consume_password_reset_token(
+        &self,
+        token_hash: &str,
+        used_at: DateTime<Utc>,
+    ) -> Result<(), ApiError> {
+        let mut tokens = self.password_reset_tokens.lock().await;
+        if let Some(token) = tokens.get_mut(token_hash) {
+            if token.used_at.is_none() {
+                token.used_at = Some(used_at);
+            }
+        }
+        Ok(())
     }
 
     async fn revoke_session_by_token_hash(

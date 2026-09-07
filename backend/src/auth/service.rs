@@ -12,7 +12,7 @@ use crate::auth::authenticator::Authenticator;
 use crate::auth::contracts::SESSION_DURATION_DAYS;
 use crate::auth::events::storage::SecurityEventStorage;
 use crate::auth::events::{SecurityEvent, SecurityMetadata};
-use crate::auth::models::{Session, SessionTokenHash, User};
+use crate::auth::models::{PasswordResetToken, Session, SessionTokenHash, User};
 use crate::auth::password::{PasswordHasher, SessionToken};
 use crate::auth::rate_limit::LoginRateLimiter;
 use crate::error::ApiError;
@@ -61,6 +61,22 @@ pub trait AuthStorage: Send + Sync {
         user_id: &Uuid,
         revoked_at: DateTime<Utc>,
     ) -> impl std::future::Future<Output = Result<usize, ApiError>> + Send;
+
+    fn create_password_reset_token(
+        &self,
+        token: &PasswordResetToken,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    fn get_password_reset_token_by_hash(
+        &self,
+        token_hash: &str,
+    ) -> impl std::future::Future<Output = Result<Option<PasswordResetToken>, ApiError>> + Send;
+
+    fn consume_password_reset_token(
+        &self,
+        token_hash: &str,
+        used_at: DateTime<Utc>,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
 }
 
 #[derive(Clone)]
@@ -73,6 +89,7 @@ where
     session_duration_days: i64,
     rate_limiter: Arc<dyn LoginRateLimiter + Send + Sync>,
     events: Arc<dyn SecurityEventStorage + Send + Sync>,
+    email_provider: Arc<dyn crate::auth::email::EmailProvider + Send + Sync>,
 }
 
 impl<S> std::fmt::Debug for AuthService<S>
@@ -86,6 +103,7 @@ where
             .field("session_duration_days", &self.session_duration_days)
             .field("rate_limiter", &"<redacted>")
             .field("events", &"<redacted>")
+            .field("email_provider", &"<redacted>")
             .finish()
     }
 }
@@ -133,6 +151,18 @@ where
     ) -> Result<SessionToken, ApiError> {
         AuthService::change_password(self, user_id, current_password, new_password).await
     }
+
+    async fn request_password_reset(&self, email: &str, ip: &str) -> Result<(), ApiError> {
+        AuthService::request_password_reset(self, email, ip).await
+    }
+
+    async fn confirm_password_reset(
+        &self,
+        token: &str,
+        new_password: &str,
+    ) -> Result<(), ApiError> {
+        AuthService::confirm_password_reset(self, token, new_password).await
+    }
 }
 
 #[async_trait::async_trait]
@@ -150,12 +180,23 @@ where
     S: AuthStorage + 'static,
 {
     pub fn new(storage: S) -> Self {
+        Self::new_with_email_provider(
+            storage,
+            Arc::new(crate::auth::email::MockEmailProvider::new()),
+        )
+    }
+
+    pub fn new_with_email_provider(
+        storage: S,
+        email_provider: Arc<dyn crate::auth::email::EmailProvider + Send + Sync>,
+    ) -> Self {
         Self {
             storage: Arc::new(storage),
             password_hasher: PasswordHasher::new(),
             session_duration_days: SESSION_DURATION_DAYS,
             rate_limiter: Arc::new(crate::auth::rate_limit::InMemoryRateLimiter::default()),
             events: Arc::new(crate::auth::events::storage::InMemorySecurityEventStorage::new()),
+            email_provider,
         }
     }
 
@@ -170,6 +211,7 @@ where
             session_duration_days: days,
             rate_limiter: Arc::new(crate::auth::rate_limit::InMemoryRateLimiter::default()),
             events: Arc::new(crate::auth::events::storage::InMemorySecurityEventStorage::new()),
+            email_provider: Arc::new(crate::auth::email::MockEmailProvider::new()),
         })
     }
 
@@ -513,6 +555,117 @@ where
         }
 
         Ok(session_token)
+    }
+
+    /// Request a password reset.
+    ///
+    /// AUTH-21 — Password Reset
+    ///
+    /// Always returns Ok(()) to prevent account enumeration.
+    pub async fn request_password_reset(&self, email: &str, ip: &str) -> Result<(), ApiError> {
+        let normalized_email = Self::normalize_email(email);
+
+        // Rate limit: IP-based
+        self.rate_limiter.check_login_ip(ip).await?;
+
+        let user = self.storage.get_user_by_email(&normalized_email).await?;
+
+        if let Some(user) = user {
+            // Generate reset token
+            let reset_token = SessionToken::generate();
+            let reset_hash = SessionTokenHash::from_token(&reset_token);
+            let reset_model = PasswordResetToken::new(
+                user.id,
+                reset_hash.as_str().to_owned(),
+                crate::auth::contracts::PASSWORD_RESET_TOKEN_TTL_MINUTES,
+            );
+
+            // Store hashed token
+            self.storage
+                .create_password_reset_token(&reset_model)
+                .await?;
+
+            // Send email with raw token
+            let _ = self
+                .email_provider
+                .send_password_reset(&normalized_email, reset_token.expose())
+                .await;
+
+            // Audit event
+            self.emit_event(SecurityEvent::PasswordResetRequested {
+                metadata: SecurityMetadata::new(Some(ip.to_string()), None),
+                email: normalized_email,
+            })
+            .await;
+        }
+
+        Ok(())
+    }
+
+    /// Confirm a password reset using the emailed token.
+    ///
+    /// AUTH-21 — Password Reset
+    pub async fn confirm_password_reset(
+        &self,
+        token: &str,
+        new_password: &str,
+    ) -> Result<(), ApiError> {
+        let temp_token = SessionToken::from_secret(token.to_owned());
+        let token_hash = SessionTokenHash::from_token(&temp_token);
+        let token_hash_str = token_hash.as_str();
+
+        let reset_token = self
+            .storage
+            .get_password_reset_token_by_hash(token_hash_str)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        if !reset_token.is_valid_at(Utc::now()) {
+            return Err(ApiError::Unauthorized);
+        }
+
+        // Consume token (mark as used)
+        self.storage
+            .consume_password_reset_token(token_hash_str, Utc::now())
+            .await?;
+
+        // Get user
+        let user = self
+            .storage
+            .get_user_by_id(&reset_token.user_id)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        // Hash new password
+        let new_password_hash = self
+            .password_hasher
+            .hash(new_password)
+            .map_err(|_| ApiError::Internal)?;
+
+        // Update user
+        let mut updated_user = user.clone();
+        updated_user.password_hash = new_password_hash;
+        updated_user.updated_at = Utc::now();
+        self.storage.update_user(&updated_user).await?;
+
+        // Revoke all sessions
+        let revoked_count = self
+            .storage
+            .revoke_all_sessions_for_user(&user.id, Utc::now())
+            .await?;
+
+        for _ in 0..revoked_count {
+            metrics::gauge!("auth_active_sessions").decrement(1.0);
+        }
+
+        // Audit event
+        self.emit_event(SecurityEvent::PasswordResetCompleted {
+            metadata: SecurityMetadata::new(None, None),
+            user_id: user.id,
+        })
+        .await;
+
+        Ok(())
     }
 
     pub fn session_duration_days(&self) -> i64 {

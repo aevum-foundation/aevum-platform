@@ -1,6 +1,6 @@
 //! AevumDB-backed authentication storage.
 
-use crate::auth::models::{Session, SessionTokenHash, User};
+use crate::auth::models::{PasswordResetToken, Session, SessionTokenHash, User};
 use crate::auth::service::AuthStorage;
 use crate::error::ApiError;
 use aevum_db::{AevumDb, DbConfig, DbError, DbRuntime};
@@ -13,6 +13,7 @@ const USER_ID_PREFIX: &str = "platform:user:id:";
 const SESSION_TOKEN_PREFIX: &str = "platform:session:token:";
 const SESSION_ID_PREFIX: &str = "platform:session:id:";
 const SESSION_BY_USER_PREFIX: &str = "platform:session:by_user:";
+const PASSWORD_RESET_PREFIX: &str = "platform:auth:password_reset:";
 
 #[derive(Clone)]
 pub struct AevumDbAuthStorage {
@@ -62,6 +63,10 @@ impl AevumDbAuthStorage {
 
     fn session_by_user_prefix(user_id: &Uuid) -> String {
         format!("{}{}:", SESSION_BY_USER_PREFIX, user_id)
+    }
+
+    fn password_reset_key(token_hash: &str) -> String {
+        format!("{}{}", PASSWORD_RESET_PREFIX, token_hash)
     }
 
     fn serialize<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, ApiError> {
@@ -158,6 +163,42 @@ impl AuthStorage for AevumDbAuthStorage {
         let key = Self::session_token_key(token_hash);
         let data = self.db.get(key.as_bytes()).map_err(Self::map_db_error)?;
         data.map(|d| Self::deserialize(&d)).transpose()
+    }
+
+    async fn create_password_reset_token(&self, token: &PasswordResetToken) -> Result<(), ApiError> {
+        let key = Self::password_reset_key(&token.token_hash);
+        let data = Self::serialize(token)?;
+        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        Ok(())
+    }
+
+    async fn get_password_reset_token_by_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<PasswordResetToken>, ApiError> {
+        let key = Self::password_reset_key(token_hash);
+        let data = self.db.get(key.as_bytes()).map_err(Self::map_db_error)?;
+        data.map(|d| Self::deserialize(&d)).transpose()
+    }
+
+    async fn consume_password_reset_token(
+        &self,
+        token_hash: &str,
+        used_at: DateTime<Utc>,
+    ) -> Result<(), ApiError> {
+        let key = Self::password_reset_key(token_hash);
+        let data = self.db.get(key.as_bytes()).map_err(Self::map_db_error)?;
+
+        if let Some(data) = data {
+            let mut token: PasswordResetToken = Self::deserialize(&data)?;
+            if token.used_at.is_none() {
+                token.used_at = Some(used_at);
+                let updated = Self::serialize(&token)?;
+                self.db.put(key.as_bytes(), &updated).map_err(Self::map_db_error)?;
+            }
+        }
+
+        Ok(())
     }
 
     async fn revoke_session_by_token_hash(

@@ -6,6 +6,10 @@
 use actix_web::{cookie::Cookie, http::StatusCode, test, web, App};
 use std::sync::Arc;
 
+#[path = "support.rs"]
+mod support;
+use support::create_test_context;
+
 use aevum_platform_api::{
     api::{self},
     auth::{
@@ -21,31 +25,11 @@ use aevum_platform_api::{
 const TEST_EMAIL: &str = "integration@example.com";
 const TEST_PASSWORD: &str = "correct-horse-battery-staple";
 
-type TestApp = actix_web::dev::ServiceResponse<actix_web::body::EitherBody<actix_web::body::BoxBody>>;
 
-async fn build_test_app(
-) -> impl actix_web::dev::Service<actix_http::Request, Response = TestApp, Error = actix_web::Error>
-{
-    let storage = Arc::new(MockStorage::new());
-    let config = Config::from_env();
-    let app_state = AppState::new(config, storage);
 
-    let auth_storage = InMemoryAuthStorage::new();
-    let auth_service = Arc::new(AuthService::new(auth_storage));
 
-    let auth_api: Arc<dyn AuthApi> = auth_service.clone();
-    let authenticator: Arc<dyn Authenticator> = auth_service.clone();
 
-    test::init_service(
-        App::new()
-            .app_data(web::Data::new(app_state))
-            .app_data(web::Data::new(auth_api))
-            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
-            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
-            .configure(api::auth::configure),
-    )
-    .await
-}
+
 
 fn extract_cookie(
     response: &actix_web::dev::ServiceResponse<actix_web::body::EitherBody<actix_web::body::BoxBody>>,
@@ -69,7 +53,19 @@ fn cookie_header(name: &'static str, value: &str) -> Cookie<'static> {
 
 #[actix_web::test]
 async fn full_auth_flow_register_login_me_logout() {
-    let app = build_test_app().await;
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
 
     // 1. Register
     let req = test::TestRequest::post()
@@ -133,7 +129,19 @@ async fn full_auth_flow_register_login_me_logout() {
 
 #[actix_web::test]
 async fn register_validation_failures() {
-    let app = build_test_app().await;
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
 
     // Bad email
     let req = test::TestRequest::post()
@@ -160,7 +168,19 @@ async fn register_validation_failures() {
 
 #[actix_web::test]
 async fn register_duplicate_email_conflict() {
-    let app = build_test_app().await;
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
 
     let payload = serde_json::json!({
         "email": "duplicate@example.com",
@@ -184,7 +204,19 @@ async fn register_duplicate_email_conflict() {
 
 #[actix_web::test]
 async fn login_failures() {
-    let app = build_test_app().await;
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
 
     // Register user
     let req = test::TestRequest::post()
@@ -222,7 +254,19 @@ async fn login_failures() {
 #[actix_web::test]
 #[ignore = "requires protected csrf endpoint"]
 async fn csrf_rejects_missing_header() {
-    let app = build_test_app().await;
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
 
     let req = test::TestRequest::post()
         .uri("/api/v1/auth/login")
@@ -237,7 +281,19 @@ async fn csrf_rejects_missing_header() {
 
 #[actix_web::test]
 async fn rate_limit_login() {
-    let app = build_test_app().await;
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
 
     // Register user
     let req = test::TestRequest::post()
@@ -271,7 +327,19 @@ async fn rate_limit_login() {
 
 #[actix_web::test]
 async fn session_rotation_invalidates_old_token() {
-    let app = build_test_app().await;
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
 
     // Register
     let req = test::TestRequest::post()
@@ -338,7 +406,19 @@ async fn session_rotation_invalidates_old_token() {
 
 #[actix_web::test]
 async fn change_password_flow() {
-    let app = build_test_app().await;
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
 
     // Register
     let req = test::TestRequest::post()
@@ -424,7 +504,19 @@ async fn change_password_flow() {
 
 #[actix_web::test]
 async fn change_password_wrong_current_password() {
-    let app = build_test_app().await;
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
 
     // Register + Login
     let req = test::TestRequest::post()
@@ -475,7 +567,19 @@ async fn change_password_wrong_current_password() {
 
 #[actix_web::test]
 async fn change_password_weak_new_password() {
-    let app = build_test_app().await;
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
 
     let req = test::TestRequest::post()
         .uri("/api/v1/auth/register")
@@ -513,7 +617,19 @@ async fn change_password_weak_new_password() {
 
 #[actix_web::test]
 async fn change_password_requires_csrf() {
-    let app = build_test_app().await;
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
 
     let req = test::TestRequest::post()
         .uri("/api/v1/auth/register")
@@ -545,4 +661,141 @@ async fn change_password_requires_csrf() {
         .to_request();
     let resp = test::call_service(&app, req).await;
     assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+}
+
+
+#[actix_web::test]
+async fn password_reset_full_flow_with_real_token() {
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    // Register
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "reset-full@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    // Request reset
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/password-reset/request")
+        .set_json(serde_json::json!({
+            "email": "reset-full@example.com"
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Get real token from MockEmailProvider
+    let sent = ctx.email_provider.sent_emails.lock().unwrap();
+    assert_eq!(sent.len(), 1);
+    let reset_token = sent[0].1.clone();
+    drop(sent);
+
+    // Confirm reset with real token
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/password-reset/confirm")
+        .set_json(serde_json::json!({
+            "token": reset_token,
+            "new_password": "new-password-after-reset"
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Old password should fail
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "reset-full@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+
+    // New password should work
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "reset-full@example.com",
+            "password": "new-password-after-reset"
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Token reuse should fail
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/password-reset/confirm")
+        .set_json(serde_json::json!({
+            "token": reset_token,
+            "new_password": "another-password"
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+
+#[actix_web::test]
+async fn password_reset_enumeration_responses_identical() {
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    // Unknown email
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/password-reset/request")
+        .set_json(serde_json::json!({
+            "email": "unknown-enum@example.com"
+        }))
+        .to_request();
+    let resp_unknown = test::call_service(&app, req).await;
+
+    // Register existing
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "known-enum@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    // Known email
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/password-reset/request")
+        .set_json(serde_json::json!({
+            "email": "known-enum@example.com"
+        }))
+        .to_request();
+    let resp_known = test::call_service(&app, req).await;
+
+    // Responses must be identical
+    assert_eq!(resp_unknown.status(), resp_known.status());
 }
