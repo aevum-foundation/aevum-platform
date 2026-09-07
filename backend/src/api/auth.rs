@@ -5,6 +5,8 @@
 //! AUTH-10 — /me
 //! AUTH-11 — Logout
 
+use uuid::Uuid;
+
 use actix_web::{
     cookie::{Cookie, SameSite},
     get, post, web, HttpMessage, HttpRequest, HttpResponse,
@@ -192,11 +194,12 @@ pub async fn change_password(
 ) -> ApiResult<HttpResponse> {
     req.validate().map_err(|_| ApiError::BadRequest)?;
 
-    let user = http_req
+    let auth = http_req
         .extensions()
-        .get::<User>()
+        .get::<crate::auth::models::AuthContext>()
         .cloned()
         .ok_or(ApiError::Unauthorized)?;
+    let user = auth.user;
 
     let new_session_token = service
         .change_password(&user.id, &req.current_password, &req.new_password)
@@ -268,11 +271,12 @@ pub async fn request_email_verification(
 ) -> ApiResult<HttpResponse> {
     req.validate().map_err(|_| ApiError::BadRequest)?;
 
-    let user = http_req
+    let auth = http_req
         .extensions()
-        .get::<User>()
+        .get::<crate::auth::models::AuthContext>()
         .cloned()
         .ok_or(ApiError::Unauthorized)?;
+    let user = auth.user;
 
     service
         .request_email_verification(&user.id)
@@ -297,13 +301,85 @@ pub async fn confirm_email_verification(
     }))
 }
 
-#[get("/api/v1/auth/me")]
-pub async fn me(req: HttpRequest) -> ApiResult<HttpResponse> {
-    let user = req
+#[get("/api/v1/auth/sessions")]
+pub async fn list_sessions(
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
         .extensions()
-        .get::<User>()
+        .get::<crate::auth::models::AuthContext>()
         .cloned()
         .ok_or(ApiError::Unauthorized)?;
+    let user = auth.user;
+
+    let current_session_id = http_req
+        .extensions()
+        .get::<Uuid>()
+        .copied();
+
+    let sessions = service
+        .list_sessions(&user.id, current_session_id)
+        .await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "sessions": sessions
+    })))
+}
+
+#[post("/api/v1/auth/sessions/{id}/revoke")]
+pub async fn revoke_session(
+    path: web::Path<Uuid>,
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+    let user = auth.user;
+
+    let session_id = path.into_inner();
+
+    service.revoke_session(&session_id, &user.id).await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "success": true
+    })))
+}
+
+#[post("/api/v1/auth/sessions/revoke-all")]
+pub async fn revoke_other_sessions(
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+    let user = auth.user;
+    let current_session_id = auth.session.id;
+
+    let revoked = service
+        .revoke_other_sessions(&user.id, &current_session_id)
+        .await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "success": true,
+        "revoked_count": revoked
+    })))
+}
+
+#[get("/api/v1/auth/me")]
+pub async fn me(req: HttpRequest) -> ApiResult<HttpResponse> {
+    let auth = req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+    let user = auth.user;
 
     if !user.status.can_authenticate() {
         return Err(ApiError::Unauthorized);
@@ -331,6 +407,9 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(confirm_password_reset)
         .service(request_email_verification)
         .service(confirm_email_verification)
+        .service(list_sessions)
+        .service(revoke_session)
+        .service(revoke_other_sessions)
         .service(me);
 }
 
@@ -339,7 +418,9 @@ mod tests {
     use super::*;
     use crate::auth::service::AuthService;
     use crate::auth::storage::InMemoryAuthStorage;
-    use actix_web::{http::StatusCode, test, App};
+    use uuid::Uuid;
+
+use actix_web::{http::StatusCode, test, App};
 
     const TEST_EMAIL: &str = "test@example.com";
     const TEST_PASSWORD: &str = "correct-horse-battery-staple";

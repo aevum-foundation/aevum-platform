@@ -10,7 +10,7 @@ use async_trait::async_trait;
 use uuid::Uuid;
 
 use crate::auth::csrf::CsrfToken;
-use crate::auth::models::User;
+use crate::auth::models::{AuthContext, User};
 use crate::auth::password::SessionToken;
 use crate::error::ApiError;
 
@@ -32,7 +32,7 @@ pub trait AuthApi: Send + Sync {
 
     async fn logout(&self, token: &SessionToken) -> Result<(), ApiError>;
 
-    async fn authenticate(&self, token: &SessionToken) -> Result<Option<User>, ApiError>;
+    async fn authenticate(&self, token: &SessionToken) -> Result<Option<AuthContext>, ApiError>;
 
     async fn rotate_session(
         &self,
@@ -60,4 +60,18 @@ pub trait AuthApi: Send + Sync {
     ) -> Result<(), ApiError>;
 
     async fn verify_email(&self, token: &str) -> Result<(), ApiError>;
+
+    async fn list_sessions(
+        &self,
+        user_id: &Uuid,
+        current_session_id: Option<Uuid>,
+    ) -> Result<Vec<crate::auth::contracts::ActiveSessionResponse>, ApiError>;
+
+    async fn revoke_session(&self, session_id: &Uuid, user_id: &Uuid) -> Result<(), ApiError>;
+
+    async fn revoke_other_sessions(
+        &self,
+        user_id: &Uuid,
+        current_session_id: &Uuid,
+    ) -> Result<usize, ApiError>;
 }

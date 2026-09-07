@@ -117,6 +117,12 @@ impl std::fmt::Debug for SessionTokenHash {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct AuthContext {
+    pub user: User,
+    pub session: Session,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct LoginCredentials {
     pub email: String,

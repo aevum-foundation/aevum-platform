@@ -245,6 +245,94 @@ impl AuthStorage for AevumDbAuthStorage {
         Ok(())
     }
 
+    async fn get_active_sessions_for_user(
+        &self,
+        user_id: &Uuid,
+        now: DateTime<Utc>,
+    ) -> Result<Vec<Session>, ApiError> {
+        let prefix = Self::session_by_user_prefix(user_id);
+        let entries = self
+            .db
+            .prefix_scan(prefix.as_bytes())
+            .map_err(Self::map_db_error)?;
+
+        let mut sessions = Vec::new();
+        for (_, token_hash_bytes) in entries {
+            let token_hash_str = String::from_utf8_lossy(&token_hash_bytes);
+            let token_key = Self::session_token_key_from_hash(&token_hash_str);
+
+            if let Some(data) = self.db.get(token_key.as_bytes()).map_err(Self::map_db_error)? {
+                let session: Session = Self::deserialize(&data)?;
+                if session.revoked_at.is_none() && !session.is_expired_at(now) {
+                    sessions.push(session);
+                }
+            }
+        }
+
+        Ok(sessions)
+    }
+
+    async fn revoke_session_by_id(
+        &self,
+        session_id: &Uuid,
+        user_id: &Uuid,
+        revoked_at: DateTime<Utc>,
+    ) -> Result<(), ApiError> {
+        let id_key = Self::session_id_key(session_id);
+        if let Some(data) = self.db.get(id_key.as_bytes()).map_err(Self::map_db_error)? {
+            let mut session: Session = Self::deserialize(&data)?;
+            if &session.user_id == user_id && session.revoked_at.is_none() {
+                session.revoke(revoked_at);
+                let session_data = Self::serialize(&session)?;
+                let token_key = Self::session_token_key(&session.token_hash);
+                let mut batch = self.db.batch();
+                batch.put(token_key.as_bytes(), &session_data);
+                batch.put(id_key.as_bytes(), &session_data);
+                batch.commit().map_err(Self::map_db_error)?;
+            }
+        }
+        Ok(())
+    }
+
+    async fn revoke_all_sessions_except(
+        &self,
+        user_id: &Uuid,
+        except_session_id: &Uuid,
+        revoked_at: DateTime<Utc>,
+    ) -> Result<usize, ApiError> {
+        let prefix = Self::session_by_user_prefix(user_id);
+        let entries = self
+            .db
+            .prefix_scan(prefix.as_bytes())
+            .map_err(Self::map_db_error)?;
+
+        let mut batch = self.db.batch();
+        let mut revoked = 0;
+
+        for (_, token_hash_bytes) in entries {
+            let token_hash_str = String::from_utf8_lossy(&token_hash_bytes);
+            let token_key = Self::session_token_key_from_hash(&token_hash_str);
+
+            if let Some(data) = self.db.get(token_key.as_bytes()).map_err(Self::map_db_error)? {
+                let mut session: Session = Self::deserialize(&data)?;
+                if &session.user_id == user_id
+                    && &session.id != except_session_id
+                    && session.revoked_at.is_none()
+                {
+                    session.revoke(revoked_at);
+                    let session_data = Self::serialize(&session)?;
+                    let id_key = Self::session_id_key(&session.id);
+                    batch.put(token_key.as_bytes(), &session_data);
+                    batch.put(id_key.as_bytes(), &session_data);
+                    revoked += 1;
+                }
+            }
+        }
+
+        batch.commit().map_err(Self::map_db_error)?;
+        Ok(revoked)
+    }
+
     async fn revoke_session_by_token_hash(
         &self,
         token_hash: &SessionTokenHash,

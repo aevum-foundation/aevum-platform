@@ -88,8 +88,8 @@ where
                 let session_token = SessionToken::from_secret(token);
 
                 match auth.authenticate(&session_token).await {
-                    Ok(Some(user)) => {
-                        req.extensions_mut().insert::<User>(user);
+                    Ok(Some(ctx)) => {
+                        req.extensions_mut().insert(ctx);
                     }
                     Ok(None) => {
                         // Invalid, expired, revoked, or missing user:

@@ -52,6 +52,17 @@ pub struct EmailVerificationResponse {
     pub success: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActiveSessionResponse {
+    pub id: Uuid,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+    pub last_seen_at: Option<DateTime<Utc>>,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+    pub current: bool,
+}
+
 // ============================================================
 // RESPONSE DTOs
 // ============================================================

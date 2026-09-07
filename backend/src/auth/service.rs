@@ -12,7 +12,7 @@ use crate::auth::authenticator::Authenticator;
 use crate::auth::contracts::SESSION_DURATION_DAYS;
 use crate::auth::events::storage::SecurityEventStorage;
 use crate::auth::events::{SecurityEvent, SecurityMetadata};
-use crate::auth::models::{EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User};
+use crate::auth::models::{AuthContext, EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User};
 use crate::auth::password::{PasswordHasher, SessionToken};
 use crate::auth::rate_limit::LoginRateLimiter;
 use crate::error::ApiError;
@@ -59,6 +59,26 @@ pub trait AuthStorage: Send + Sync {
     fn revoke_all_sessions_for_user(
         &self,
         user_id: &Uuid,
+        revoked_at: DateTime<Utc>,
+    ) -> impl std::future::Future<Output = Result<usize, ApiError>> + Send;
+
+    fn get_active_sessions_for_user(
+        &self,
+        user_id: &Uuid,
+        now: DateTime<Utc>,
+    ) -> impl std::future::Future<Output = Result<Vec<Session>, ApiError>> + Send;
+
+    fn revoke_session_by_id(
+        &self,
+        session_id: &Uuid,
+        user_id: &Uuid,
+        revoked_at: DateTime<Utc>,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    fn revoke_all_sessions_except(
+        &self,
+        user_id: &Uuid,
+        except_session_id: &Uuid,
         revoked_at: DateTime<Utc>,
     ) -> impl std::future::Future<Output = Result<usize, ApiError>> + Send;
 
@@ -148,7 +168,7 @@ where
         AuthService::logout(self, token).await
     }
 
-    async fn authenticate(&self, token: &SessionToken) -> Result<Option<User>, ApiError> {
+    async fn authenticate(&self, token: &SessionToken) -> Result<Option<AuthContext>, ApiError> {
         AuthService::authenticate(self, token).await
     }
 
@@ -190,6 +210,26 @@ where
     async fn verify_email(&self, token: &str) -> Result<(), ApiError> {
         AuthService::verify_email(self, token).await
     }
+
+    async fn list_sessions(
+        &self,
+        user_id: &Uuid,
+        current_session_id: Option<Uuid>,
+    ) -> Result<Vec<crate::auth::contracts::ActiveSessionResponse>, ApiError> {
+        AuthService::list_sessions(self, user_id, current_session_id).await
+    }
+
+    async fn revoke_session(&self, session_id: &Uuid, user_id: &Uuid) -> Result<(), ApiError> {
+        AuthService::revoke_session(self, session_id, user_id).await
+    }
+
+    async fn revoke_other_sessions(
+        &self,
+        user_id: &Uuid,
+        current_session_id: &Uuid,
+    ) -> Result<usize, ApiError> {
+        AuthService::revoke_other_sessions(self, user_id, current_session_id).await
+    }
 }
 
 #[async_trait::async_trait]
@@ -197,7 +237,7 @@ impl<S> Authenticator for AuthService<S>
 where
     S: AuthStorage + 'static,
 {
-    async fn authenticate(&self, token: &SessionToken) -> Result<Option<User>, ApiError> {
+    async fn authenticate(&self, token: &SessionToken) -> Result<Option<AuthContext>, ApiError> {
         AuthService::authenticate(self, token).await
     }
 }
@@ -406,7 +446,7 @@ where
         Ok((user, session_token))
     }
 
-    pub async fn authenticate(&self, token: &SessionToken) -> Result<Option<User>, ApiError> {
+    pub async fn authenticate(&self, token: &SessionToken) -> Result<Option<AuthContext>, ApiError> {
         self.authenticate_at(token, Utc::now()).await
     }
 
@@ -414,7 +454,7 @@ where
         &self,
         token: &SessionToken,
         now: DateTime<Utc>,
-    ) -> Result<Option<User>, ApiError> {
+    ) -> Result<Option<AuthContext>, ApiError> {
         let token_hash = SessionTokenHash::from_token(token);
 
         let session = self.storage.get_session_by_token_hash(&token_hash).await?;
@@ -437,7 +477,7 @@ where
             return Ok(None);
         }
 
-        Ok(Some(user))
+        Ok(Some(AuthContext { user, session }))
     }
 
     pub async fn logout(&self, token: &SessionToken) -> Result<(), ApiError> {
@@ -785,6 +825,75 @@ where
         .await;
 
         Ok(())
+    }
+
+    pub async fn list_sessions(
+        &self,
+        user_id: &Uuid,
+        current_session_id: Option<Uuid>,
+    ) -> Result<Vec<crate::auth::contracts::ActiveSessionResponse>, ApiError> {
+        let sessions = self
+            .storage
+            .get_active_sessions_for_user(user_id, Utc::now())
+            .await?;
+
+        Ok(sessions
+            .into_iter()
+            .map(|session| crate::auth::contracts::ActiveSessionResponse {
+                id: session.id,
+                created_at: session.created_at,
+                expires_at: session.expires_at,
+                last_seen_at: session.last_seen_at,
+                ip_address: session.ip_address.clone(),
+                user_agent: session.user_agent.clone(),
+                current: current_session_id == Some(session.id),
+            })
+            .collect())
+    }
+
+    pub async fn revoke_session(
+        &self,
+        session_id: &Uuid,
+        user_id: &Uuid,
+    ) -> Result<(), ApiError> {
+        self.storage
+            .revoke_session_by_id(session_id, user_id, Utc::now())
+            .await?;
+
+        self.emit_event(SecurityEvent::SessionRevoked {
+            metadata: SecurityMetadata::new(None, None),
+            user_id: *user_id,
+            session_id: *session_id,
+        })
+        .await;
+
+        metrics::gauge!("auth_active_sessions").decrement(1.0);
+
+        Ok(())
+    }
+
+    pub async fn revoke_other_sessions(
+        &self,
+        user_id: &Uuid,
+        current_session_id: &Uuid,
+    ) -> Result<usize, ApiError> {
+        let revoked = self
+            .storage
+            .revoke_all_sessions_except(user_id, current_session_id, Utc::now())
+            .await?;
+
+        self.emit_event(SecurityEvent::AllSessionsRevoked {
+            metadata: SecurityMetadata::new(None, None),
+            user_id: *user_id,
+            revoked_count: revoked,
+        })
+        .await;
+
+        for _ in 0..revoked {
+            metrics::gauge!("auth_active_sessions").decrement(1.0);
+        }
+
+        Ok(revoked)
     }
 
     pub fn session_duration_days(&self) -> i64 {

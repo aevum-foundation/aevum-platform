@@ -8,7 +8,7 @@
 
 use async_trait::async_trait;
 
-use crate::auth::models::User;
+use crate::auth::models::AuthContext;
 use crate::auth::password::SessionToken;
 use crate::error::ApiError;
 
@@ -17,5 +17,5 @@ use crate::error::ApiError;
 /// Implemented by AuthService<S> for any AuthStorage S.
 #[async_trait]
 pub trait Authenticator: Send + Sync {
-    async fn authenticate(&self, token: &SessionToken) -> Result<Option<User>, ApiError>;
+    async fn authenticate(&self, token: &SessionToken) -> Result<Option<AuthContext>, ApiError>;
 }

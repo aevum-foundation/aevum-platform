@@ -228,6 +228,60 @@ impl AuthStorage for InMemoryAuthStorage {
         Ok(())
     }
 
+    async fn get_active_sessions_for_user(
+        &self,
+        user_id: &Uuid,
+        now: DateTime<Utc>,
+    ) -> Result<Vec<Session>, ApiError> {
+        let sessions = self.sessions.lock().await;
+        let active: Vec<Session> = sessions
+            .values()
+            .filter(|session| {
+                &session.user_id == user_id
+                    && session.revoked_at.is_none()
+                    && !session.is_expired_at(now)
+            })
+            .cloned()
+            .collect();
+        Ok(active)
+    }
+
+    async fn revoke_session_by_id(
+        &self,
+        session_id: &Uuid,
+        user_id: &Uuid,
+        revoked_at: DateTime<Utc>,
+    ) -> Result<(), ApiError> {
+        let mut sessions = self.sessions.lock().await;
+        for session in sessions.values_mut() {
+            if &session.id == session_id && &session.user_id == user_id {
+                session.revoke(revoked_at);
+                return Ok(());
+            }
+        }
+        Ok(())
+    }
+
+    async fn revoke_all_sessions_except(
+        &self,
+        user_id: &Uuid,
+        except_session_id: &Uuid,
+        revoked_at: DateTime<Utc>,
+    ) -> Result<usize, ApiError> {
+        let mut sessions = self.sessions.lock().await;
+        let mut revoked = 0;
+        for session in sessions.values_mut() {
+            if &session.user_id == user_id
+                && &session.id != except_session_id
+                && session.revoked_at.is_none()
+            {
+                session.revoke(revoked_at);
+                revoked += 1;
+            }
+        }
+        Ok(revoked)
+    }
+
     async fn revoke_session_by_token_hash(
         &self,
         token_hash: &SessionTokenHash,
