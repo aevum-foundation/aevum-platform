@@ -7,6 +7,7 @@
 //! the API layer to work without knowledge of the underlying storage.
 
 use async_trait::async_trait;
+use uuid::Uuid;
 
 use crate::auth::csrf::CsrfToken;
 use crate::auth::models::User;
@@ -20,12 +21,7 @@ use crate::error::ApiError;
 /// - AuthService<AevumDbAuthStorage>
 #[async_trait]
 pub trait AuthApi: Send + Sync {
-    async fn register(
-        &self,
-        email: &str,
-        password: &str,
-        ip: &str,
-    ) -> Result<User, ApiError>;
+    async fn register(&self, email: &str, password: &str, ip: &str) -> Result<User, ApiError>;
 
     async fn login(
         &self,
@@ -42,4 +38,11 @@ pub trait AuthApi: Send + Sync {
         &self,
         token: &SessionToken,
     ) -> Result<(SessionToken, CsrfToken), ApiError>;
+
+    async fn change_password(
+        &self,
+        user_id: &Uuid,
+        current_password: &str,
+        new_password: &str,
+    ) -> Result<SessionToken, ApiError>;
 }

@@ -7,13 +7,13 @@ use std::sync::Arc;
 use chrono::{DateTime, Duration, Utc};
 use uuid::Uuid;
 
-use crate::auth::contracts::SESSION_DURATION_DAYS;
-use crate::auth::models::{Session, SessionTokenHash, User};
-use crate::auth::password::{PasswordHasher, SessionToken};
 use crate::auth::api::AuthApi;
 use crate::auth::authenticator::Authenticator;
+use crate::auth::contracts::SESSION_DURATION_DAYS;
 use crate::auth::events::storage::SecurityEventStorage;
 use crate::auth::events::{SecurityEvent, SecurityMetadata};
+use crate::auth::models::{Session, SessionTokenHash, User};
+use crate::auth::password::{PasswordHasher, SessionToken};
 use crate::auth::rate_limit::LoginRateLimiter;
 use crate::error::ApiError;
 
@@ -34,6 +34,11 @@ pub trait AuthStorage: Send + Sync {
         user_id: &Uuid,
     ) -> impl std::future::Future<Output = Result<Option<User>, ApiError>> + Send;
     fn create_user(
+        &self,
+        user: &User,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    fn update_user(
         &self,
         user: &User,
     ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
@@ -90,12 +95,7 @@ impl<S> AuthApi for AuthService<S>
 where
     S: AuthStorage + 'static,
 {
-    async fn register(
-        &self,
-        email: &str,
-        password: &str,
-        ip: &str,
-    ) -> Result<User, ApiError> {
+    async fn register(&self, email: &str, password: &str, ip: &str) -> Result<User, ApiError> {
         AuthService::register(self, email, password, ip).await
     }
 
@@ -124,6 +124,15 @@ where
     ) -> Result<(SessionToken, crate::auth::csrf::CsrfToken), ApiError> {
         AuthService::rotate_session(self, token).await
     }
+
+    async fn change_password(
+        &self,
+        user_id: &Uuid,
+        current_password: &str,
+        new_password: &str,
+    ) -> Result<SessionToken, ApiError> {
+        AuthService::change_password(self, user_id, current_password, new_password).await
+    }
 }
 
 #[async_trait::async_trait]
@@ -131,10 +140,7 @@ impl<S> Authenticator for AuthService<S>
 where
     S: AuthStorage + 'static,
 {
-    async fn authenticate(
-        &self,
-        token: &SessionToken,
-    ) -> Result<Option<User>, ApiError> {
+    async fn authenticate(&self, token: &SessionToken) -> Result<Option<User>, ApiError> {
         AuthService::authenticate(self, token).await
     }
 }
@@ -331,10 +337,7 @@ where
         Ok((user, session_token))
     }
 
-    pub async fn authenticate(
-        &self,
-        token: &SessionToken,
-    ) -> Result<Option<User>, ApiError> {
+    pub async fn authenticate(&self, token: &SessionToken) -> Result<Option<User>, ApiError> {
         self.authenticate_at(token, Utc::now()).await
     }
 
@@ -379,11 +382,7 @@ where
     ) -> Result<(), ApiError> {
         let token_hash = SessionTokenHash::from_token(token);
 
-        if let Some(session) = self
-            .storage
-            .get_session_by_token_hash(&token_hash)
-            .await?
-        {
+        if let Some(session) = self.storage.get_session_by_token_hash(&token_hash).await? {
             self.storage
                 .revoke_session_by_token_hash(&token_hash, now)
                 .await?;
@@ -454,14 +453,81 @@ where
         Ok((new_session_token, new_csrf_token))
     }
 
+    /// Change the password for the currently authenticated user.
+    ///
+    /// AUTH-20 — Password Change
+    pub async fn change_password(
+        &self,
+        user_id: &Uuid,
+        current_password: &str,
+        new_password: &str,
+    ) -> Result<SessionToken, ApiError> {
+        let user = self
+            .storage
+            .get_user_by_id(user_id)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        // Verify current password
+        let password_valid = self
+            .password_hasher
+            .verify(current_password, &user.password_hash)
+            .map_err(|_| ApiError::Unauthorized)?;
+
+        if !password_valid {
+            return Err(ApiError::Unauthorized);
+        }
+
+        // Hash new password
+        let new_password_hash = self
+            .password_hasher
+            .hash(new_password)
+            .map_err(|_| ApiError::Internal)?;
+
+        // Update user
+        let mut updated_user = user.clone();
+        updated_user.password_hash = new_password_hash;
+        updated_user.updated_at = Utc::now();
+
+        self.storage.update_user(&updated_user).await?;
+
+        // Revoke all sessions
+        let revoked_count = self
+            .storage
+            .revoke_all_sessions_for_user(user_id, Utc::now())
+            .await?;
+
+        // Create new session
+        let (_, session_token) = self.create_session_for_user(updated_user).await?;
+
+        // Emit security event
+        self.emit_event(SecurityEvent::PasswordChanged {
+            metadata: SecurityMetadata::new(None, None),
+            user_id: *user_id,
+        })
+        .await;
+
+        // Update active sessions gauge
+        for _ in 0..revoked_count {
+            metrics::gauge!("auth_active_sessions").decrement(1.0);
+        }
+
+        Ok(session_token)
+    }
+
     pub fn session_duration_days(&self) -> i64 {
         self.session_duration_days
     }
 
     /// Record a security event without failing the auth flow.
     async fn emit_event(&self, event: crate::auth::events::SecurityEvent) {
+        let event_name = event.event_name();
         if let Err(error) = self.events.record_event(event).await {
-            log::error!("audit event failed: {}", error);
+            tracing::error!(
+                error = %error,
+                event = %event_name,
+                "audit event failed"
+            );
         }
     }
 }

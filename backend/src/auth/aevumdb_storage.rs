@@ -105,6 +105,18 @@ impl AuthStorage for AevumDbAuthStorage {
         data.map(|d| Self::deserialize(&d)).transpose()
     }
 
+    async fn update_user(&self, user: &User) -> Result<(), ApiError> {
+        let email_key = Self::user_email_key(&user.email);
+        let id_key = Self::user_id_key(&user.id);
+        let user_data = Self::serialize(user)?;
+
+        let mut batch = self.db.batch();
+        batch.put(email_key.as_bytes(), &user_data);
+        batch.put(id_key.as_bytes(), &user_data);
+        batch.commit().map_err(Self::map_db_error)?;
+        Ok(())
+    }
+
     async fn create_user(&self, user: &User) -> Result<(), ApiError> {
         let email_key = Self::user_email_key(&user.email);
         let id_key = Self::user_id_key(&user.id);
@@ -190,7 +202,11 @@ impl AuthStorage for AevumDbAuthStorage {
             let token_hash_str = String::from_utf8_lossy(&token_hash_bytes);
 
             let token_key = Self::session_token_key_from_hash(&token_hash_str);
-            let Some(data) = self.db.get(token_key.as_bytes()).map_err(Self::map_db_error)? else {
+            let Some(data) = self
+                .db
+                .get(token_key.as_bytes())
+                .map_err(Self::map_db_error)?
+            else {
                 // Stale index: no corresponding session exists
                 batch.delete(&index_key);
                 continue;

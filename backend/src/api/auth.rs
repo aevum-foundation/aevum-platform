@@ -14,8 +14,8 @@ use std::sync::Arc;
 
 use crate::auth::api::AuthApi;
 use crate::auth::contracts::{
-    LoginRequest, LoginResponse, LogoutResponse, MeResponse, RegisterRequest, RegisterResponse,
-    SESSION_COOKIE_NAME, SESSION_DURATION_DAYS,
+    LoginRequest, LoginResponse, LogoutResponse, MeResponse, PasswordChangeRequest,
+    RegisterRequest, RegisterResponse, SESSION_COOKIE_NAME, SESSION_DURATION_DAYS,
 };
 use crate::auth::csrf::{build_csrf_cookie, build_csrf_removal_cookie, CsrfConfig, CsrfToken};
 use crate::auth::models::User;
@@ -158,13 +158,51 @@ pub async fn rotate(
         .cookie(crate::auth::contracts::SESSION_COOKIE_NAME)
         .ok_or(ApiError::Unauthorized)?;
 
-    let session_token =
-        crate::auth::password::SessionToken::from_secret(cookie.value().to_owned());
+    let session_token = crate::auth::password::SessionToken::from_secret(cookie.value().to_owned());
 
     let (new_session_token, new_csrf_token) = service.rotate_session(&session_token).await?;
 
     let session_cookie = build_session_cookie(new_session_token.expose());
     let csrf_cookie = build_csrf_cookie(&new_csrf_token, &CsrfConfig::default());
+
+    let response = serde_json::json!({
+        "success": true,
+    });
+
+    let mut http_response = HttpResponse::Ok().json(response);
+
+    http_response
+        .add_cookie(&session_cookie)
+        .map_err(|_| ApiError::Internal)?;
+
+    http_response
+        .add_cookie(&csrf_cookie)
+        .map_err(|_| ApiError::Internal)?;
+
+    Ok(http_response)
+}
+
+#[post("/api/v1/auth/change-password")]
+pub async fn change_password(
+    req: web::Json<PasswordChangeRequest>,
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    req.validate().map_err(|_| ApiError::BadRequest)?;
+
+    let user = http_req
+        .extensions()
+        .get::<User>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    let new_session_token = service
+        .change_password(&user.id, &req.current_password, &req.new_password)
+        .await?;
+
+    let session_cookie = build_session_cookie(new_session_token.expose());
+    let csrf_token = CsrfToken::generate();
+    let csrf_cookie = build_csrf_cookie(&csrf_token, &CsrfConfig::default());
 
     let response = serde_json::json!({
         "success": true,
@@ -212,6 +250,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(login)
         .service(logout)
         .service(rotate)
+        .service(change_password)
         .service(me);
 }
 

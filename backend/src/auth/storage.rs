@@ -98,6 +98,17 @@ impl AuthStorage for InMemoryAuthStorage {
         Ok(users.get(email).cloned())
     }
 
+    async fn update_user(&self, user: &User) -> Result<(), ApiError> {
+        let mut users = self.users.lock().await;
+
+        if let Some(existing) = users.get_mut(&user.email) {
+            *existing = user.clone();
+            Ok(())
+        } else {
+            Err(ApiError::NotFound)
+        }
+    }
+
     async fn create_user(&self, user: &User) -> Result<(), ApiError> {
         // IMPORTANT:
         // Lock order is identical to get_user_by_id():

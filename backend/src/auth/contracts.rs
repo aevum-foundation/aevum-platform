@@ -22,6 +22,12 @@ pub struct LoginRequest {
     pub password: String,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct PasswordChangeRequest {
+    pub current_password: String,
+    pub new_password: String,
+}
+
 // ============================================================
 // RESPONSE DTOs
 // ============================================================
@@ -89,6 +95,16 @@ impl LoginRequest {
         if self.password.len() > MAX_PASSWORD_LENGTH {
             return Err(ContractValidationError::PasswordTooLong);
         }
+        Ok(())
+    }
+}
+
+impl PasswordChangeRequest {
+    pub fn validate(&self) -> Result<(), ContractValidationError> {
+        if self.current_password.is_empty() {
+            return Err(ContractValidationError::EmptyPassword);
+        }
+        validate_password(&self.new_password)?;
         Ok(())
     }
 }

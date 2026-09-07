@@ -5,6 +5,9 @@
 //! This middleware validates CSRF tokens for state-changing requests
 //! (POST, PUT, PATCH, DELETE). Exempt paths are public authentication
 //! endpoints where no CSRF cookie exists yet.
+//!
+//! CSRF violations return HTTP 403 as a normal response, not as an
+//! error that panics test helpers.
 
 use std::{
     rc::Rc,
@@ -12,16 +15,14 @@ use std::{
 };
 
 use actix_web::{
-    body::MessageBody,
+    body::{EitherBody, MessageBody},
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
     http::Method,
-    web, Error, HttpMessage,
+    web, Error, HttpMessage, HttpResponse,
 };
 use futures_util::future::{ready, LocalBoxFuture, Ready};
 
 use crate::auth::csrf::{validate_csrf_tokens, CSRF_COOKIE_NAME, CSRF_HEADER_NAME};
-use crate::auth::models::User;
-use crate::error::ApiError;
 
 /// Paths exempt from CSRF validation (pre-authentication endpoints).
 const CSRF_EXEMPT_PATHS: &[&str] = &[
@@ -55,7 +56,7 @@ where
     T::Future: 'static,
     B: MessageBody + 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<EitherBody<B>>;
     type Error = Error;
     type InitError = ();
     type Transform = CsrfMiddlewareService<T>;
@@ -74,7 +75,7 @@ where
     T::Future: 'static,
     B: MessageBody + 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<EitherBody<B>>;
     type Error = Error;
     type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
@@ -86,11 +87,18 @@ where
         let service = Rc::clone(&self.service);
 
         Box::pin(async move {
-            if requires_csrf(req.method()) && !CsrfMiddleware::is_exempt(req.path()) {
-                validate_csrf(&req)?;
+            let should_validate =
+                requires_csrf(req.method()) && !CsrfMiddleware::is_exempt(req.path());
+
+            if should_validate && !csrf_tokens_valid(&req) {
+                let response = HttpResponse::Forbidden().finish();
+                return Ok(req.into_response(response).map_into_right_body());
             }
 
-            service.call(req).await
+            service
+                .call(req)
+                .await
+                .map(|response| response.map_into_left_body())
         })
     }
 }
@@ -102,7 +110,7 @@ fn requires_csrf(method: &Method) -> bool {
     )
 }
 
-fn validate_csrf(req: &ServiceRequest) -> Result<(), Error> {
+fn csrf_tokens_valid(req: &ServiceRequest) -> bool {
     let cookie_token = req
         .cookie(CSRF_COOKIE_NAME)
         .map(|cookie| cookie.value().to_owned());
@@ -114,8 +122,8 @@ fn validate_csrf(req: &ServiceRequest) -> Result<(), Error> {
         .map(|value| value.to_owned());
 
     match (cookie_token, header_token) {
-        (Some(cookie), Some(header)) if validate_csrf_tokens(&cookie, &header) => Ok(()),
-        _ => Err(ApiError::Forbidden.into()),
+        (Some(cookie), Some(header)) => validate_csrf_tokens(&cookie, &header),
+        _ => false,
     }
 }
 

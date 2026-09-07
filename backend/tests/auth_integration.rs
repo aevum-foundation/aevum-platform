@@ -21,13 +21,11 @@ use aevum_platform_api::{
 const TEST_EMAIL: &str = "integration@example.com";
 const TEST_PASSWORD: &str = "correct-horse-battery-staple";
 
-type TestApp = actix_web::dev::ServiceResponse<actix_web::body::BoxBody>;
+type TestApp = actix_web::dev::ServiceResponse<actix_web::body::EitherBody<actix_web::body::BoxBody>>;
 
-async fn build_test_app() -> impl actix_web::dev::Service<
-    actix_http::Request,
-    Response = TestApp,
-    Error = actix_web::Error,
-> {
+async fn build_test_app(
+) -> impl actix_web::dev::Service<actix_http::Request, Response = TestApp, Error = actix_web::Error>
+{
     let storage = Arc::new(MockStorage::new());
     let config = Config::from_env();
     let app_state = AppState::new(config, storage);
@@ -49,7 +47,10 @@ async fn build_test_app() -> impl actix_web::dev::Service<
     .await
 }
 
-fn extract_cookie(response: &actix_web::dev::ServiceResponse, name: &str) -> Option<String> {
+fn extract_cookie(
+    response: &actix_web::dev::ServiceResponse<actix_web::body::EitherBody<actix_web::body::BoxBody>>,
+    name: &str,
+) -> Option<String> {
     response
         .headers()
         .get_all("set-cookie")
@@ -333,4 +334,215 @@ async fn session_rotation_invalidates_old_token() {
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), StatusCode::OK);
     }
+}
+
+#[actix_web::test]
+async fn change_password_flow() {
+    let app = build_test_app().await;
+
+    // Register
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "password-change@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    // Login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "password-change@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let csrf_token = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    // Change password
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/change-password")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .set_json(serde_json::json!({
+            "current_password": TEST_PASSWORD,
+            "new_password": "new-secure-password-123"
+        }))
+        .to_request();
+
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // New session token should be in response
+    let new_session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    assert_ne!(new_session_token, session_token);
+
+    // Old session must be invalid
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/me")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+
+    // New session must work
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/me")
+        .cookie(cookie_header("__Host-aevum_session", &new_session_token))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Old password should no longer work
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "password-change@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+
+    // New password should work
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "password-change@example.com",
+            "password": "new-secure-password-123"
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+}
+
+#[actix_web::test]
+async fn change_password_wrong_current_password() {
+    let app = build_test_app().await;
+
+    // Register + Login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "wrong-current@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "wrong-current@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let csrf_token = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    // Change password with wrong current
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/change-password")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .set_json(serde_json::json!({
+            "current_password": "wrong-password",
+            "new_password": "new-secure-password-123"
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+
+    // Old password should still work
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "wrong-current@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+}
+
+#[actix_web::test]
+async fn change_password_weak_new_password() {
+    let app = build_test_app().await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "weak-new@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "weak-new@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let csrf_token = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/change-password")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .set_json(serde_json::json!({
+            "current_password": TEST_PASSWORD,
+            "new_password": "123"
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+}
+
+#[actix_web::test]
+async fn change_password_requires_csrf() {
+    let app = build_test_app().await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "csrf-change@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "csrf-change@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+
+    // No CSRF cookie and header
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/change-password")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .set_json(serde_json::json!({
+            "current_password": TEST_PASSWORD,
+            "new_password": "new-secure-password-123"
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::FORBIDDEN);
 }
