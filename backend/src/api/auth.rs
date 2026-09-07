@@ -149,6 +149,40 @@ pub async fn logout(
     Ok(http_response)
 }
 
+#[post("/api/v1/auth/rotate")]
+pub async fn rotate(
+    req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let cookie = req
+        .cookie(crate::auth::contracts::SESSION_COOKIE_NAME)
+        .ok_or(ApiError::Unauthorized)?;
+
+    let session_token =
+        crate::auth::password::SessionToken::from_secret(cookie.value().to_owned());
+
+    let (new_session_token, new_csrf_token) = service.rotate_session(&session_token).await?;
+
+    let session_cookie = build_session_cookie(new_session_token.expose());
+    let csrf_cookie = build_csrf_cookie(&new_csrf_token, &CsrfConfig::default());
+
+    let response = serde_json::json!({
+        "success": true,
+    });
+
+    let mut http_response = HttpResponse::Ok().json(response);
+
+    http_response
+        .add_cookie(&session_cookie)
+        .map_err(|_| ApiError::Internal)?;
+
+    http_response
+        .add_cookie(&csrf_cookie)
+        .map_err(|_| ApiError::Internal)?;
+
+    Ok(http_response)
+}
+
 #[get("/api/v1/auth/me")]
 pub async fn me(req: HttpRequest) -> ApiResult<HttpResponse> {
     let user = req
@@ -177,15 +211,16 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(register)
         .service(login)
         .service(logout)
+        .service(rotate)
         .service(me);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use actix_web::{http::StatusCode, test, App};
     use crate::auth::service::AuthService;
     use crate::auth::storage::InMemoryAuthStorage;
+    use actix_web::{http::StatusCode, test, App};
 
     const TEST_EMAIL: &str = "test@example.com";
     const TEST_PASSWORD: &str = "correct-horse-battery-staple";
@@ -436,10 +471,16 @@ mod tests {
             .await
             .unwrap();
 
-        let app = test::init_service(App::new().app_data(web::Data::new(service.clone())).service(logout)).await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(service.clone()))
+                .service(logout),
+        )
+        .await;
 
         let cookie = build_session_cookie(token.expose());
-        let session_token = crate::auth::password::SessionToken::from_secret(token.expose().to_string());
+        let session_token =
+            crate::auth::password::SessionToken::from_secret(token.expose().to_string());
 
         let req = test::TestRequest::post()
             .uri("/api/v1/auth/logout")
@@ -466,10 +507,16 @@ mod tests {
             .await
             .unwrap();
 
-        let app = test::init_service(App::new().app_data(web::Data::new(service.clone())).service(logout)).await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(service.clone()))
+                .service(logout),
+        )
+        .await;
 
         let cookie = build_session_cookie(token.expose());
-        let session_token = crate::auth::password::SessionToken::from_secret(token.expose().to_string());
+        let session_token =
+            crate::auth::password::SessionToken::from_secret(token.expose().to_string());
 
         // First logout
         let req1 = test::TestRequest::post()
