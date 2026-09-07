@@ -799,3 +799,80 @@ async fn password_reset_enumeration_responses_identical() {
     // Responses must be identical
     assert_eq!(resp_unknown.status(), resp_known.status());
 }
+
+
+#[actix_web::test]
+async fn email_verification_full_flow() {
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    // Register
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "verify-flow@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    // Login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "verify-flow@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let csrf_token = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    // Request verification
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/email/verification/request")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .set_json(serde_json::json!({}))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Get token from MockEmailProvider
+    let sent = ctx.email_provider.sent_emails.lock().unwrap();
+    assert_eq!(sent.len(), 1);
+    let verification_token = sent[0].1.clone();
+    drop(sent);
+
+    // Confirm verification (public endpoint)
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/email/verification/confirm")
+        .set_json(serde_json::json!({
+            "token": verification_token
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Token reuse should fail
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/email/verification/confirm")
+        .set_json(serde_json::json!({
+            "token": verification_token
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}

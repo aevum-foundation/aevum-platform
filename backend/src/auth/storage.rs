@@ -23,7 +23,7 @@ use chrono::{DateTime, Utc};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::auth::models::{PasswordResetToken, Session, SessionTokenHash, User};
+use crate::auth::models::{EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User};
 use crate::auth::service::AuthStorage;
 use crate::error::ApiError;
 
@@ -49,6 +49,9 @@ pub struct InMemoryAuthStorage {
 
     /// Password reset tokens indexed by token hash.
     password_reset_tokens: Arc<Mutex<HashMap<String, PasswordResetToken>>>,
+
+    /// Email verification tokens indexed by token hash.
+    email_verification_tokens: Arc<Mutex<HashMap<String, EmailVerificationToken>>>,
 }
 
 impl InMemoryAuthStorage {
@@ -186,6 +189,37 @@ impl AuthStorage for InMemoryAuthStorage {
         used_at: DateTime<Utc>,
     ) -> Result<(), ApiError> {
         let mut tokens = self.password_reset_tokens.lock().await;
+        if let Some(token) = tokens.get_mut(token_hash) {
+            if token.used_at.is_none() {
+                token.used_at = Some(used_at);
+            }
+        }
+        Ok(())
+    }
+
+    async fn create_email_verification_token(
+        &self,
+        token: &EmailVerificationToken,
+    ) -> Result<(), ApiError> {
+        let mut tokens = self.email_verification_tokens.lock().await;
+        tokens.insert(token.token_hash.clone(), token.clone());
+        Ok(())
+    }
+
+    async fn get_email_verification_token_by_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<EmailVerificationToken>, ApiError> {
+        let tokens = self.email_verification_tokens.lock().await;
+        Ok(tokens.get(token_hash).cloned())
+    }
+
+    async fn consume_email_verification_token(
+        &self,
+        token_hash: &str,
+        used_at: DateTime<Utc>,
+    ) -> Result<(), ApiError> {
+        let mut tokens = self.email_verification_tokens.lock().await;
         if let Some(token) = tokens.get_mut(token_hash) {
             if token.used_at.is_none() {
                 token.used_at = Some(used_at);

@@ -19,9 +19,7 @@ use actix_web::{
 use futures_util::future::{ready, LocalBoxFuture, Ready};
 
 use crate::auth::{
-    authenticator::Authenticator,
-    contracts::SESSION_COOKIE_NAME,
-    models::User,
+    authenticator::Authenticator, contracts::SESSION_COOKIE_NAME, models::User,
     password::SessionToken,
 };
 

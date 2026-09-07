@@ -15,6 +15,8 @@ pub struct User {
     pub email: String,
     pub password_hash: String,
     pub status: UserStatus,
+    pub email_verified: bool,
+    pub email_verified_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -122,6 +124,40 @@ pub struct LoginCredentials {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmailVerificationToken {
+    pub user_id: Uuid,
+    pub token_hash: String,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+    pub used_at: Option<DateTime<Utc>>,
+}
+
+impl EmailVerificationToken {
+    pub fn new(user_id: Uuid, token_hash: String, ttl_minutes: i64) -> Self {
+        let now = Utc::now();
+        Self {
+            user_id,
+            token_hash,
+            created_at: now,
+            expires_at: now + chrono::Duration::minutes(ttl_minutes),
+            used_at: None,
+        }
+    }
+
+    pub fn is_expired_at(&self, now: DateTime<Utc>) -> bool {
+        now >= self.expires_at
+    }
+
+    pub fn is_used(&self) -> bool {
+        self.used_at.is_some()
+    }
+
+    pub fn is_valid_at(&self, now: DateTime<Utc>) -> bool {
+        !self.is_expired_at(now) && !self.is_used()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PasswordResetToken {
     pub user_id: Uuid,
     pub token_hash: String,
@@ -189,6 +225,8 @@ impl User {
             email,
             password_hash,
             status: UserStatus::Active,
+            email_verified: false,
+            email_verified_at: None,
             created_at: now,
             updated_at: now,
         }

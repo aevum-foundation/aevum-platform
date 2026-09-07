@@ -53,4 +53,11 @@ pub trait AuthApi: Send + Sync {
         token: &str,
         new_password: &str,
     ) -> Result<(), ApiError>;
+
+    async fn request_email_verification(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<(), ApiError>;
+
+    async fn verify_email(&self, token: &str) -> Result<(), ApiError>;
 }

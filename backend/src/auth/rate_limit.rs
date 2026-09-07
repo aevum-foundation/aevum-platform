@@ -145,14 +145,8 @@ impl InMemoryRateLimiter {
     }
 
     /// Remove stale buckets that are no longer relevant.
-    fn cleanup_expired(
-        map: &mut HashMap<String, AttemptBucket>,
-        window: Duration,
-        now: Instant,
-    ) {
-        map.retain(|_, bucket| {
-            !bucket.is_locked_at(now) && !bucket.window_elapsed(window, now)
-        });
+    fn cleanup_expired(map: &mut HashMap<String, AttemptBucket>, window: Duration, now: Instant) {
+        map.retain(|_, bucket| !bucket.is_locked_at(now) && !bucket.window_elapsed(window, now));
     }
 }
 
@@ -277,9 +271,7 @@ impl LoginRateLimiter for InMemoryRateLimiter {
 
     async fn record_successful_registration(&self, ip: &str) {
         let mut map = self.register_ip.lock().await;
-        let bucket = map
-            .entry(ip.to_owned())
-            .or_insert_with(AttemptBucket::new);
+        let bucket = map.entry(ip.to_owned()).or_insert_with(AttemptBucket::new);
         bucket.record_attempt();
     }
 }

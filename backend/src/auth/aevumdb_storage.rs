@@ -1,6 +1,6 @@
 //! AevumDB-backed authentication storage.
 
-use crate::auth::models::{PasswordResetToken, Session, SessionTokenHash, User};
+use crate::auth::models::{EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User};
 use crate::auth::service::AuthStorage;
 use crate::error::ApiError;
 use aevum_db::{AevumDb, DbConfig, DbError, DbRuntime};
@@ -14,6 +14,7 @@ const SESSION_TOKEN_PREFIX: &str = "platform:session:token:";
 const SESSION_ID_PREFIX: &str = "platform:session:id:";
 const SESSION_BY_USER_PREFIX: &str = "platform:session:by_user:";
 const PASSWORD_RESET_PREFIX: &str = "platform:auth:password_reset:";
+const EMAIL_VERIFICATION_PREFIX: &str = "platform:auth:email_verification:";
 
 #[derive(Clone)]
 pub struct AevumDbAuthStorage {
@@ -67,6 +68,10 @@ impl AevumDbAuthStorage {
 
     fn password_reset_key(token_hash: &str) -> String {
         format!("{}{}", PASSWORD_RESET_PREFIX, token_hash)
+    }
+
+    fn email_verification_key(token_hash: &str) -> String {
+        format!("{}{}", EMAIL_VERIFICATION_PREFIX, token_hash)
     }
 
     fn serialize<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, ApiError> {
@@ -191,6 +196,45 @@ impl AuthStorage for AevumDbAuthStorage {
 
         if let Some(data) = data {
             let mut token: PasswordResetToken = Self::deserialize(&data)?;
+            if token.used_at.is_none() {
+                token.used_at = Some(used_at);
+                let updated = Self::serialize(&token)?;
+                self.db.put(key.as_bytes(), &updated).map_err(Self::map_db_error)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn create_email_verification_token(
+        &self,
+        token: &EmailVerificationToken,
+    ) -> Result<(), ApiError> {
+        let key = Self::email_verification_key(&token.token_hash);
+        let data = Self::serialize(token)?;
+        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        Ok(())
+    }
+
+    async fn get_email_verification_token_by_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<EmailVerificationToken>, ApiError> {
+        let key = Self::email_verification_key(token_hash);
+        let data = self.db.get(key.as_bytes()).map_err(Self::map_db_error)?;
+        data.map(|d| Self::deserialize(&d)).transpose()
+    }
+
+    async fn consume_email_verification_token(
+        &self,
+        token_hash: &str,
+        used_at: DateTime<Utc>,
+    ) -> Result<(), ApiError> {
+        let key = Self::email_verification_key(token_hash);
+        let data = self.db.get(key.as_bytes()).map_err(Self::map_db_error)?;
+
+        if let Some(data) = data {
+            let mut token: EmailVerificationToken = Self::deserialize(&data)?;
             if token.used_at.is_none() {
                 token.used_at = Some(used_at);
                 let updated = Self::serialize(&token)?;

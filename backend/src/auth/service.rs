@@ -12,7 +12,7 @@ use crate::auth::authenticator::Authenticator;
 use crate::auth::contracts::SESSION_DURATION_DAYS;
 use crate::auth::events::storage::SecurityEventStorage;
 use crate::auth::events::{SecurityEvent, SecurityMetadata};
-use crate::auth::models::{PasswordResetToken, Session, SessionTokenHash, User};
+use crate::auth::models::{EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User};
 use crate::auth::password::{PasswordHasher, SessionToken};
 use crate::auth::rate_limit::LoginRateLimiter;
 use crate::error::ApiError;
@@ -73,6 +73,22 @@ pub trait AuthStorage: Send + Sync {
     ) -> impl std::future::Future<Output = Result<Option<PasswordResetToken>, ApiError>> + Send;
 
     fn consume_password_reset_token(
+        &self,
+        token_hash: &str,
+        used_at: DateTime<Utc>,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    fn create_email_verification_token(
+        &self,
+        token: &EmailVerificationToken,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    fn get_email_verification_token_by_hash(
+        &self,
+        token_hash: &str,
+    ) -> impl std::future::Future<Output = Result<Option<EmailVerificationToken>, ApiError>> + Send;
+
+    fn consume_email_verification_token(
         &self,
         token_hash: &str,
         used_at: DateTime<Utc>,
@@ -162,6 +178,17 @@ where
         new_password: &str,
     ) -> Result<(), ApiError> {
         AuthService::confirm_password_reset(self, token, new_password).await
+    }
+
+    async fn request_email_verification(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<(), ApiError> {
+        AuthService::request_email_verification(self, user_id).await
+    }
+
+    async fn verify_email(&self, token: &str) -> Result<(), ApiError> {
+        AuthService::verify_email(self, token).await
     }
 }
 
@@ -660,6 +687,98 @@ where
 
         // Audit event
         self.emit_event(SecurityEvent::PasswordResetCompleted {
+            metadata: SecurityMetadata::new(None, None),
+            user_id: user.id,
+        })
+        .await;
+
+        Ok(())
+    }
+
+    /// Request email verification.
+    ///
+    /// AUTH-22 — Email Verification
+    ///
+    /// If already verified, returns Ok without creating a token.
+    pub async fn request_email_verification(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<(), ApiError> {
+        let user = self
+            .storage
+            .get_user_by_id(user_id)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        if user.email_verified {
+            return Ok(());
+        }
+
+        // Generate verification token
+        let verification_token = SessionToken::generate();
+        let verification_hash = SessionTokenHash::from_token(&verification_token);
+        let verification_model = EmailVerificationToken::new(
+            user.id,
+            verification_hash.as_str().to_owned(),
+            24 * 60, // 24 hours TTL
+        );
+
+        self.storage
+            .create_email_verification_token(&verification_model)
+            .await?;
+
+        let _ = self
+            .email_provider
+            .send_email_verification(&user.email, verification_token.expose())
+            .await;
+
+        self.emit_event(SecurityEvent::EmailVerificationRequested {
+            metadata: SecurityMetadata::new(None, None),
+            user_id: user.id,
+            email: user.email.clone(),
+        })
+        .await;
+
+        Ok(())
+    }
+
+    /// Verify email using the emailed token.
+    ///
+    /// AUTH-22 — Email Verification
+    pub async fn verify_email(&self, token: &str) -> Result<(), ApiError> {
+        let temp_token = SessionToken::from_secret(token.to_owned());
+        let token_hash = SessionTokenHash::from_token(&temp_token);
+        let token_hash_str = token_hash.as_str();
+
+        let verification_token = self
+            .storage
+            .get_email_verification_token_by_hash(token_hash_str)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        if !verification_token.is_valid_at(Utc::now()) {
+            return Err(ApiError::Unauthorized);
+        }
+
+        // Consume token
+        self.storage
+            .consume_email_verification_token(token_hash_str, Utc::now())
+            .await?;
+
+        // Update user
+        let user = self
+            .storage
+            .get_user_by_id(&verification_token.user_id)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        let mut updated_user = user.clone();
+        updated_user.email_verified = true;
+        updated_user.email_verified_at = Some(Utc::now());
+        updated_user.updated_at = Utc::now();
+        self.storage.update_user(&updated_user).await?;
+
+        self.emit_event(SecurityEvent::EmailVerified {
             metadata: SecurityMetadata::new(None, None),
             user_id: user.id,
         })

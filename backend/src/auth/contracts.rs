@@ -39,6 +39,19 @@ pub struct PasswordResetConfirm {
     pub new_password: String,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct EmailVerificationRequest {}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct EmailVerificationConfirm {
+    pub token: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmailVerificationResponse {
+    pub success: bool,
+}
+
 // ============================================================
 // RESPONSE DTOs
 // ============================================================
@@ -139,6 +152,21 @@ impl PasswordResetConfirm {
     }
 }
 
+impl EmailVerificationRequest {
+    pub fn validate(&self) -> Result<(), ContractValidationError> {
+        Ok(())
+    }
+}
+
+impl EmailVerificationConfirm {
+    pub fn validate(&self) -> Result<(), ContractValidationError> {
+        if self.token.is_empty() {
+            return Err(ContractValidationError::EmptyVerificationToken);
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContractValidationError {
     EmptyEmail,
@@ -147,6 +175,7 @@ pub enum ContractValidationError {
     PasswordTooShort,
     PasswordTooLong,
     EmptyResetToken,
+    EmptyVerificationToken,
 }
 
 fn validate_email(email: &str) -> Result<(), ContractValidationError> {

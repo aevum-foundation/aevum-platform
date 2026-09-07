@@ -21,6 +21,12 @@ pub trait EmailProvider: Send + Sync {
         email: &str,
         reset_token: &str,
     ) -> Result<(), ApiError>;
+
+    async fn send_email_verification(
+        &self,
+        email: &str,
+        verification_token: &str,
+    ) -> Result<(), ApiError>;
 }
 
 /// Mock email provider for development and tests.
@@ -43,6 +49,17 @@ impl MockEmailProvider {
 
 #[async_trait]
 impl EmailProvider for MockEmailProvider {
+    async fn send_email_verification(
+        &self,
+        email: &str,
+        verification_token: &str,
+    ) -> Result<(), ApiError> {
+        let mut sent = self.sent_emails.lock().unwrap();
+        sent.push((email.to_string(), verification_token.to_string()));
+        tracing::info!("mock email verification sent to {}", email);
+        Ok(())
+    }
+
     async fn send_password_reset(
         &self,
         email: &str,

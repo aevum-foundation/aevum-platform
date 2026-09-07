@@ -17,8 +17,5 @@ use crate::error::ApiError;
 /// Implemented by AuthService<S> for any AuthStorage S.
 #[async_trait]
 pub trait Authenticator: Send + Sync {
-    async fn authenticate(
-        &self,
-        token: &SessionToken,
-    ) -> Result<Option<User>, ApiError>;
+    async fn authenticate(&self, token: &SessionToken) -> Result<Option<User>, ApiError>;
 }

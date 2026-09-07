@@ -14,6 +14,7 @@ use std::sync::Arc;
 
 use crate::auth::api::AuthApi;
 use crate::auth::contracts::{
+    EmailVerificationConfirm, EmailVerificationRequest, EmailVerificationResponse,
     LoginRequest, LoginResponse, LogoutResponse, MeResponse, PasswordChangeRequest,
     PasswordResetRequest, PasswordResetConfirm, RegisterRequest, RegisterResponse,
     SESSION_COOKIE_NAME, SESSION_DURATION_DAYS,
@@ -259,6 +260,43 @@ pub async fn confirm_password_reset(
     })))
 }
 
+#[post("/api/v1/auth/email/verification/request")]
+pub async fn request_email_verification(
+    req: web::Json<EmailVerificationRequest>,
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    req.validate().map_err(|_| ApiError::BadRequest)?;
+
+    let user = http_req
+        .extensions()
+        .get::<User>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    service
+        .request_email_verification(&user.id)
+        .await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "success": true
+    })))
+}
+
+#[post("/api/v1/auth/email/verification/confirm")]
+pub async fn confirm_email_verification(
+    req: web::Json<EmailVerificationConfirm>,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    req.validate().map_err(|_| ApiError::BadRequest)?;
+
+    service.verify_email(&req.token).await?;
+
+    Ok(HttpResponse::Ok().json(EmailVerificationResponse {
+        success: true,
+    }))
+}
+
 #[get("/api/v1/auth/me")]
 pub async fn me(req: HttpRequest) -> ApiResult<HttpResponse> {
     let user = req
@@ -291,6 +329,8 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(change_password)
         .service(request_password_reset)
         .service(confirm_password_reset)
+        .service(request_email_verification)
+        .service(confirm_email_verification)
         .service(me);
 }
 

@@ -56,6 +56,8 @@ pub enum SecurityEventKind {
     PasswordChanged,
     PasswordResetRequested,
     PasswordResetCompleted,
+    EmailVerificationRequested,
+    EmailVerified,
     TwoFactorEnabled,
     TwoFactorDisabled,
     TwoFactorVerificationFailed,
@@ -79,6 +81,8 @@ impl SecurityEventKind {
             SecurityEventKind::PasswordChanged => "PASSWORD_CHANGED",
             SecurityEventKind::PasswordResetRequested => "PASSWORD_RESET_REQUESTED",
             SecurityEventKind::PasswordResetCompleted => "PASSWORD_RESET_COMPLETED",
+            SecurityEventKind::EmailVerificationRequested => "EMAIL_VERIFICATION_REQUESTED",
+            SecurityEventKind::EmailVerified => "EMAIL_VERIFIED",
             SecurityEventKind::TwoFactorEnabled => "TWO_FACTOR_ENABLED",
             SecurityEventKind::TwoFactorDisabled => "TWO_FACTOR_DISABLED",
             SecurityEventKind::TwoFactorVerificationFailed => "TWO_FACTOR_VERIFICATION_FAILED",
@@ -201,6 +205,17 @@ pub enum SecurityEvent {
         user_id: Uuid,
     },
 
+    EmailVerificationRequested {
+        metadata: SecurityMetadata,
+        user_id: Uuid,
+        email: String,
+    },
+
+    EmailVerified {
+        metadata: SecurityMetadata,
+        user_id: Uuid,
+    },
+
     // 2FA (future AUTH-23/AUTH-24)
     TwoFactorEnabled {
         metadata: SecurityMetadata,
@@ -265,10 +280,7 @@ impl SecurityEvent {
         }
     }
 
-    pub fn login_rate_limited(
-        email: Option<String>,
-        metadata: SecurityMetadata,
-    ) -> Self {
+    pub fn login_rate_limited(email: Option<String>, metadata: SecurityMetadata) -> Self {
         Self::LoginRateLimited { metadata, email }
     }
 
@@ -276,11 +288,7 @@ impl SecurityEvent {
         Self::RegisterRateLimited { metadata }
     }
 
-    pub fn session_created(
-        user_id: Uuid,
-        session_id: Uuid,
-        metadata: SecurityMetadata,
-    ) -> Self {
+    pub fn session_created(user_id: Uuid, session_id: Uuid, metadata: SecurityMetadata) -> Self {
         Self::SessionCreated {
             metadata,
             user_id,
@@ -288,11 +296,7 @@ impl SecurityEvent {
         }
     }
 
-    pub fn session_revoked(
-        user_id: Uuid,
-        session_id: Uuid,
-        metadata: SecurityMetadata,
-    ) -> Self {
+    pub fn session_revoked(user_id: Uuid, session_id: Uuid, metadata: SecurityMetadata) -> Self {
         Self::SessionRevoked {
             metadata,
             user_id,
@@ -341,7 +345,9 @@ impl SecurityEvent {
             SecurityEvent::PasswordResetRequested { .. } => {
                 SecurityEventKind::PasswordResetRequested
             }
-            SecurityEvent::PasswordResetCompleted { .. } => {
+            SecurityEvent::PasswordResetCompleted { .. }
+            | SecurityEvent::EmailVerificationRequested { .. }
+            | SecurityEvent::EmailVerified { .. } => {
                 SecurityEventKind::PasswordResetCompleted
             }
             SecurityEvent::TwoFactorEnabled { .. } => SecurityEventKind::TwoFactorEnabled,
@@ -367,6 +373,8 @@ impl SecurityEvent {
             | SecurityEvent::SessionRotated { .. }
             | SecurityEvent::PasswordChanged { .. }
             | SecurityEvent::PasswordResetCompleted { .. }
+            | SecurityEvent::EmailVerificationRequested { .. }
+            | SecurityEvent::EmailVerified { .. }
             | SecurityEvent::TwoFactorEnabled { .. }
             | SecurityEvent::TwoFactorDisabled { .. }
             | SecurityEvent::EmailChanged { .. }
@@ -398,6 +406,8 @@ impl SecurityEvent {
             | SecurityEvent::PasswordChanged { metadata, .. }
             | SecurityEvent::PasswordResetRequested { metadata, .. }
             | SecurityEvent::PasswordResetCompleted { metadata, .. }
+            | SecurityEvent::EmailVerificationRequested { metadata, .. }
+            | SecurityEvent::EmailVerified { metadata, .. }
             | SecurityEvent::TwoFactorEnabled { metadata, .. }
             | SecurityEvent::TwoFactorDisabled { metadata, .. }
             | SecurityEvent::TwoFactorVerificationFailed { metadata, .. }
@@ -421,6 +431,8 @@ impl SecurityEvent {
             | SecurityEvent::SessionRotated { user_id, .. }
             | SecurityEvent::PasswordChanged { user_id, .. }
             | SecurityEvent::PasswordResetCompleted { user_id, .. }
+            | SecurityEvent::EmailVerificationRequested { user_id, .. }
+            | SecurityEvent::EmailVerified { user_id, .. }
             | SecurityEvent::TwoFactorEnabled { user_id, .. }
             | SecurityEvent::TwoFactorDisabled { user_id, .. }
             | SecurityEvent::TwoFactorVerificationFailed { user_id, .. }
