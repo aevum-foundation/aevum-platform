@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Aevum Roadmap — protocol and platform development stages.">
+    <meta name="theme-color" content="#061426">
+    <meta name="color-scheme" content="dark light">
+    <title>Aevum — Roadmap</title>
+
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/app-shell.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <script src="/js/theme.js"></script>
+
+    <style>
+        .roadmap-page { padding: 56px 0 88px; }
+
+        .roadmap-header { margin-bottom: 48px; }
+
+        .roadmap-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 14px;
+            color: var(--color-accent-cyan);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+        }
+
+        .roadmap-kicker::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+            box-shadow: 0 0 0 4px var(--color-accent-cyan-dim), 0 0 14px rgba(32, 217, 255, 0.35);
+        }
+
+        .roadmap-header h1 {
+            margin: 0 0 12px;
+            color: var(--color-text-primary);
+            font-size: clamp(38px, 5vw, 58px);
+            font-weight: 700;
+            line-height: 1.02;
+            letter-spacing: -0.045em;
+        }
+
+        .roadmap-header p {
+            max-width: 650px;
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 16px;
+            line-height: 1.7;
+        }
+
+        .roadmap-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 48px;
+        }
+
+        .status-card {
+            padding: 20px;
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            text-align: center;
+        }
+
+        .status-card h3 {
+            margin: 0 0 8px;
+            color: var(--color-text-primary);
+            font-size: 13px;
+            font-weight: 650;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .status-alpha {
+            background: var(--color-accent-cyan-dim);
+            color: var(--color-accent-cyan);
+        }
+
+        .status-beta {
+            background: var(--color-accent-gold-dim);
+            color: var(--color-accent-gold);
+        }
+
+        .status-planned {
+            background: var(--color-bg-surface-light);
+            color: var(--color-text-muted);
+        }
+
+        .roadmap-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .roadmap-section {
+            background: var(--color-bg-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 30px;
+        }
+
+        .roadmap-section h2 {
+            margin: 0 0 20px;
+            color: var(--color-text-primary);
+            font-size: 24px;
+            font-weight: 650;
+            letter-spacing: -0.02em;
+        }
+
+        .roadmap-phase {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .roadmap-phase:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .roadmap-phase h3 {
+            margin: 0 0 8px;
+            color: var(--color-text-primary);
+            font-size: 16px;
+            font-weight: 650;
+        }
+
+        .roadmap-phase p {
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .roadmap-phase ul {
+            margin: 10px 0 0;
+            padding-left: 18px;
+            list-style: none;
+        }
+
+        .roadmap-phase li {
+            margin-bottom: 5px;
+            color: var(--color-text-secondary);
+            font-size: 13px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .roadmap-phase li::before {
+            content: "";
+            position: absolute;
+            left: -14px;
+            top: 8px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--color-accent-cyan);
+        }
+
+        .requirement {
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: var(--color-bg-surface-light);
+            border-left: 3px solid var(--color-accent-gold);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .roadmap-page { padding: 40px 0 64px; }
+            .roadmap-header h1 { font-size: 34px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="header-container" aria-busy="true"></div>
+
+    <main class="roadmap-page" id="main-content">
+        <div class="container">
+            <header class="roadmap-header">
+                <div class="roadmap-kicker">Development</div>
+                <h1>Aevum Roadmap.</h1>
+                <p>Protocol and platform development stages. Built for stability, security, and long-term growth.</p>
+            </header>
+
+            <div class="roadmap-status">
+                <div class="status-card">
+                    <h3>Protocol</h3>
+                    <span class="status-badge status-alpha">Alpha</span>
+                </div>
+                <div class="status-card">
+                    <h3>AevumDB</h3>
+                    <span class="status-badge status-alpha">Alpha</span>
+                </div>
+                <div class="status-card">
+                    <h3>Platform</h3>
+                    <span class="status-badge status-beta">Beta</span>
+                </div>
+                <div class="status-card">
+                    <h3>Testnet</h3>
+                    <span class="status-badge status-planned">Planned</span>
+                </div>
+                <div class="status-card">
+                    <h3>Mainnet</h3>
+                    <span class="status-badge status-planned">Not Started</span>
+                </div>
+            </div>
+
+            <div class="roadmap-sections">
+                <section class="roadmap-section">
+                    <h2>Protocol Roadmap</h2>
+
+                    <div class="roadmap-phase">
+                        <h3>1. L1 Core Freeze</h3>
+                        <p>Заморозка фундамента. Менять только через RFC.</p>
+                        <ul>
+                            <li>Архитектурный аудит</li>
+                            <li>MAINNET_CONSTITUTION.md</li>
+                            <li>Критические сценарии</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>2. P2P Network</h3>
+                        <p>Node-to-node стабильность.</p>
+                        <ul>
+                            <li>Handshake, peer discovery</li>
+                            <li>Presence, snapshot propagation</li>
+                            <li>Sync, recovery</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>3. Bootstrap Infrastructure</h3>
+                        <p>Тестовая сеть с мониторингом.</p>
+                        <ul>
+                            <li>Bootstrap nodes: EU, US, Asia</li>
+                            <li>Prometheus + Grafana</li>
+                            <li>Метрики: peers, epochs, latency</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>4. Block Explorer</h3>
+                        <p>Обозреватель поверх AevumDB.</p>
+                        <ul>
+                            <li>Explorer API</li>
+                            <li>Индексатор</li>
+                            <li>Latest epoch, slot, supply</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>5. Wallet Layer</h3>
+                        <p>SDK + CLI до GUI.</p>
+                        <ul>
+                            <li>aevum-wallet crate</li>
+                            <li>Create/import, sign, verify</li>
+                            <li>CLI: create, send, balance</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>6. Public Testnet</h3>
+                        <p>50+ чужих узлов.</p>
+                        <ul>
+                            <li>Sync, recovery</li>
+                            <li>Partitions, upgrades</li>
+                            <li>Long run testing</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>7. Mobile Wallet v1</h3>
+                        <p>Мобильный кошелёк.</p>
+                        <ul>
+                            <li>Create/import, balance</li>
+                            <li>Send, receive, QR</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>8. L2 Foundation</h3>
+                        <p>Масштабирование.</p>
+                        <ul>
+                            <li>Bridge, settlement</li>
+                            <li>Proof system, batching</li>
+                            <li>Sequencer</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>9. Developer Ecosystem</h3>
+                        <p>SDK и инструменты.</p>
+                        <ul>
+                            <li>Rust SDK, TypeScript SDK</li>
+                            <li>REST API, RPC API</li>
+                            <li>Документация, примеры</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>10. Mainnet Readiness</h3>
+                        <p>Готовность к запуску.</p>
+                        <ul>
+                            <li>Security audit</li>
+                            <li>Load test, recovery test</li>
+                            <li>Upgrade test, key rotation</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section class="roadmap-section">
+                    <h2>Platform Roadmap</h2>
+
+                    <div class="roadmap-phase">
+                        <h3>Phase A — Platform Foundation</h3>
+                        <p>Фундамент аккаунтов.</p>
+                        <ul>
+                            <li>Register, login, logout</li>
+                            <li>Password change, reset</li>
+                            <li>Email verification</li>
+                            <li>Session management</li>
+                        </ul>
+                        <div class="requirement">Status: In progress</div>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>Phase B — Community</h3>
+                        <p>Сообщество и контент.</p>
+                        <ul>
+                            <li>Профиль пользователя</li>
+                            <li>Форум, комментарии</li>
+                            <li>Уведомления, поиск</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>Phase C — Developer Portal</h3>
+                        <p>Инструменты разработчика.</p>
+                        <ul>
+                            <li>Docs, API Reference</li>
+                            <li>Protocol Constitution</li>
+                            <li>GitHub, Downloads</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>Phase D — Explorer Integration</h3>
+                        <p>Реальные данные после P2P.</p>
+                        <ul>
+                            <li>Explorer UI</li>
+                            <li>Индексация AevumDB</li>
+                        </ul>
+                        <div class="requirement">Requires: P2P Network + Indexer + Explorer API</div>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>Phase E — Wallet Integration</h3>
+                        <p>Интеграция кошелька.</p>
+                        <ul>
+                            <li>Connect wallet</li>
+                            <li>Sign transactions</li>
+                        </ul>
+                        <div class="requirement">Requires: Wallet SDK + Testnet</div>
+                    </div>
+
+                    <div class="roadmap-phase">
+                        <h3>Phase F — Mainnet Launch Portal</h3>
+                        <p>Портал запуска сети.</p>
+                        <ul>
+                            <li>Network status</li>
+                            <li>Mainnet announcement</li>
+                        </ul>
+                        <div class="requirement">Requires: Mainnet Readiness</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-container" aria-busy="true"></div>
+
+    <script>
+        (() => {
+            'use strict';
+            const componentCache = new Map();
+
+            async function loadComponent(id, url) {
+                const el = document.getElementById(id);
+                if (!el) return false;
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+                try {
+                    let html = componentCache.get(url);
+                    if (!html) {
+                        const response = await fetch(url, { cache: 'default', signal: controller.signal });
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        html = await response.text();
+                        componentCache.set(url, html);
+                    }
+                    el.innerHTML = html;
+                    el.setAttribute('aria-busy', 'false');
+                    return true;
+                } catch (error) {
+                    console.error(`[Aevum] Component failed: ${url}`, error);
+                    el.innerHTML = '';
+                    el.setAttribute('aria-busy', 'false');
+                    return false;
+                } finally {
+                    clearTimeout(timeout);
+                }
+            }
+
+            async function boot() {
+                await loadComponent('header-container', '/components/header.html');
+                await loadComponent('footer-container', '/components/footer.html');
+            }
+
+            boot();
+        })();
+    </script>
+</body>
+</html>
