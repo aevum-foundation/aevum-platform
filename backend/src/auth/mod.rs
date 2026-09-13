@@ -4,6 +4,7 @@ pub mod aevumdb_secret_cipher;
 pub mod aevumdb_storage;
 pub mod api;
 pub mod authenticator;
+pub mod avatar;
 pub mod backup_codes;
 pub mod contracts;
 pub mod csrf;
