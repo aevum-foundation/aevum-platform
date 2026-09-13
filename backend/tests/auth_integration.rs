@@ -1386,6 +1386,24 @@ async fn setup_2fa_user(
     (app, secret_base32, session_token, backup_codes)
 }
 
+/// Wait until we are safely inside a fresh 30-second TOTP step.
+///
+/// This avoids flakiness when a test happens to run on a step boundary.
+/// Production replay protection must not be weakened for tests.
+async fn wait_for_fresh_totp_step() {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let seconds_into_step = now % 30;
+
+    // Leave at least 5 seconds before the next boundary.
+    if seconds_into_step > 25 {
+        let wait = 30 - seconds_into_step + 1;
+        tokio::time::sleep(tokio::time::Duration::from_secs(wait)).await;
+    }
+}
+
 #[actix_web::test]
 async fn two_factor_rejects_replayed_totp() {
     let ctx = create_test_context().await;
@@ -1404,7 +1422,10 @@ async fn two_factor_rejects_replayed_totp() {
     let body: serde_json::Value = test::read_body_json(resp).await;
     let pre_auth_token = body["pre_auth_token"].as_str().unwrap().to_string();
 
-    // Same timestep as /enable was accepted — replay must fail
+    // Wait for a fresh TOTP step before generating the code,
+    // so both verify calls stay inside the same step.
+    wait_for_fresh_totp_step().await;
+
     use totp_rs::{Algorithm, Secret, TOTP};
     let secret = Secret::Encoded(secret_base32);
     let totp = TOTP::new(
@@ -1415,10 +1436,33 @@ async fn two_factor_rejects_replayed_totp() {
     ).unwrap();
     let code = totp.generate_current().unwrap();
 
+    // First verify — should succeed and consume the step.
     let req = test::TestRequest::post()
         .uri("/api/v1/auth/2fa/verify")
         .set_json(serde_json::json!({
             "pre_auth_token": pre_auth_token,
+            "code": code
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Replay: get a new pre-auth token, then reuse the SAME code.
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "2fa-replay@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    let pre_auth_token2 = body["pre_auth_token"].as_str().unwrap().to_string();
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/verify")
+        .set_json(serde_json::json!({
+            "pre_auth_token": pre_auth_token2,
             "code": code
         }))
         .to_request();
@@ -1879,4 +1923,214 @@ async fn avatar_requires_authentication() {
         .to_request();
     let resp = test::call_service(&app, req).await;
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+
+#[actix_web::test]
+async fn security_center_default_state() {
+    let ctx = create_test_context().await;
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    // Register + login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "sec-default@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "sec-default@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/security-center")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    assert_eq!(body["email_verified"], false);
+    assert_eq!(body["two_factor_enabled"], false);
+    assert_eq!(body["backup_codes_remaining"], 0);
+    assert_eq!(body["active_sessions"], 1);
+    // score: 0 (no email, no 2FA, no backup codes, no recent password change event)
+    assert_eq!(body["security_score"], 0);
+}
+
+#[actix_web::test]
+async fn security_center_consistent_after_2fa_enrollment() {
+    let ctx = create_test_context().await;
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    // Register + login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "sec-2fa@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "sec-2fa@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let csrf_token = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    // Setup + enable 2FA
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/setup")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    let secret_base32 = body["secret_base32"].as_str().unwrap().to_string();
+
+    use totp_rs::{Algorithm, Secret, TOTP};
+    let secret = Secret::Encoded(secret_base32);
+    let totp = TOTP::new(
+        Algorithm::SHA1, 6, 1, 30,
+        secret.to_bytes().unwrap(),
+        Some("Aevum".to_string()),
+        "sec-2fa@example.com".to_string(),
+    ).unwrap();
+    let code = totp.generate_current().unwrap();
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/enable")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .set_json(serde_json::json!({ "code": code }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Check Security Center reflects new state
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/security-center")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let body: serde_json::Value = test::read_body_json(resp).await;
+
+    assert_eq!(body["two_factor_enabled"], true);
+    assert_eq!(body["backup_codes_remaining"], 10);
+    // score = 35 (2FA) + 15 (backup codes) = 50
+    assert_eq!(body["security_score"], 50);
+}
+
+#[actix_web::test]
+async fn security_center_requires_authentication() {
+    let ctx = create_test_context().await;
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/security-center")
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[actix_web::test]
+async fn security_center_is_read_only() {
+    let ctx = create_test_context().await;
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "sec-readonly@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "sec-readonly@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+
+    // Fetch twice — state must be identical
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/security-center")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .to_request();
+    let resp1 = test::call_service(&app, req).await;
+    let body1: serde_json::Value = test::read_body_json(resp1).await;
+
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/security-center")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .to_request();
+    let resp2 = test::call_service(&app, req).await;
+    let body2: serde_json::Value = test::read_body_json(resp2).await;
+
+    assert_eq!(body1["security_score"], body2["security_score"]);
+    assert_eq!(body1["active_sessions"], body2["active_sessions"]);
+    assert_eq!(body1["backup_codes_remaining"], body2["backup_codes_remaining"]);
+    assert_eq!(body1["two_factor_enabled"], body2["two_factor_enabled"]);
 }

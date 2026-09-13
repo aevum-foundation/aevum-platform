@@ -135,4 +135,9 @@ pub trait AuthApi: Send + Sync {
     ) -> Result<Option<(crate::auth::avatar::Avatar, zeroize::Zeroizing<Vec<u8>>)>, ApiError>;
 
     async fn delete_avatar(&self, user_id: &Uuid) -> Result<(), ApiError>;
+
+    async fn get_security_center(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::auth::security_center::SecurityCenterResponse, ApiError>;
 }

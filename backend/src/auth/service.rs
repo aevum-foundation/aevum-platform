@@ -432,6 +432,13 @@ where
     async fn delete_avatar(&self, user_id: &Uuid) -> Result<(), ApiError> {
         AuthService::delete_avatar(self, user_id).await
     }
+
+    async fn get_security_center(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::auth::security_center::SecurityCenterResponse, ApiError> {
+        AuthService::get_security_center(self, user_id).await
+    }
 }
 
 #[async_trait::async_trait]
@@ -1368,7 +1375,10 @@ where
             return Err(ApiError::Unauthorized);
         }
 
-        let valid = self.verify_totp_and_mark_step(&mut settings, code).await?;
+        // Enrollment confirmation: verify TOTP but do NOT consume the
+        // time step. Replay protection applies to authentication
+        // attempts (/2fa/verify), not to enrollment.
+        let valid = self.check_totp_code(&settings, code).await?;
 
         if !valid {
             self.emit_event(SecurityEvent::TwoFactorVerificationFailed {
@@ -1503,6 +1513,44 @@ where
     ///    before releasing the lock.
     ///
     /// Without both, replay protection is not enforced.
+    /// Check a TOTP code without mutating replay state.
+    ///
+    /// Used by enrollment (`/2fa/enable`), where consuming a time step
+    /// would incorrectly prevent the user from immediately logging in
+    /// with the same authenticator code.
+    async fn check_totp_code(
+        &self,
+        settings: &crate::auth::two_factor::TwoFactorSettings,
+        code: &str,
+    ) -> Result<bool, ApiError> {
+        use totp_rs::TOTP;
+
+        use crate::auth::two_factor::profile;
+
+        let secret_bytes = self
+            .secret_cipher
+            .decrypt(&settings.encrypted_secret)
+            .await?;
+
+        let totp = TOTP::new(
+            profile::ALGORITHM,
+            profile::DIGITS,
+            profile::SKEW,
+            profile::STEP_SECONDS,
+            secret_bytes.to_vec(),
+            Some(profile::ISSUER.to_string()),
+            settings.user_id.to_string(),
+        )
+        .map_err(|_| ApiError::Internal)?;
+
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| ApiError::Internal)?
+            .as_secs();
+
+        Ok(totp.check(code, now))
+    }
+
     async fn verify_totp_and_mark_step(
         &self,
         settings: &mut crate::auth::two_factor::TwoFactorSettings,
@@ -1782,6 +1830,89 @@ where
         self.storage.delete_avatar(user_id).await?;
 
         Ok(())
+    }
+
+    /// Read-only security posture summary for the authenticated account.
+    ///
+    /// AUTH-28 — Security Center
+    ///
+    /// Pure aggregation: reads existing state, computes score.
+    /// Performs no mutations, no new persistence.
+    pub async fn get_security_center(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::auth::security_center::SecurityCenterResponse, ApiError> {
+        use crate::auth::events::SecurityEventKind;
+        use crate::auth::security_center::{
+            calculate_security_score, password_changed_recently, EventSummary,
+            SecurityCenterResponse, SecurityScoreInput,
+            SECURITY_CENTER_EVENT_LIMIT,
+        };
+
+        // User (email_verified)
+        let user = self
+            .storage
+            .get_user_by_id(user_id)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        // 2FA state
+        let two_factor_enabled = matches!(
+            self.storage
+                .get_two_factor_settings(user_id)
+                .await?
+                .map(|s| s.state),
+            Some(crate::auth::two_factor::TwoFactorState::Enabled)
+        );
+
+        // Backup codes remaining
+        let backup_codes = self.storage.list_backup_codes(user_id).await?;
+        let backup_codes_remaining = backup_codes.iter().filter(|c| c.is_active()).count();
+        let has_backup_codes = backup_codes_remaining > 0;
+
+        // Active sessions
+        let active_sessions = self
+            .storage
+            .get_active_sessions_for_user(user_id, Utc::now())
+            .await?
+            .len();
+
+        // Latest PasswordChanged event
+        let password_changed_at = self
+            .events
+            .get_latest_event_for_user(*user_id, SecurityEventKind::PasswordChanged)
+            .await?
+            .map(|event| event.timestamp());
+
+        let password_changed_recently =
+            password_changed_recently(password_changed_at, Utc::now());
+
+        // Recent events (client-safe summaries)
+        let recent_events = self
+            .events
+            .get_events_for_user(*user_id, SECURITY_CENTER_EVENT_LIMIT)
+            .await?
+            .iter()
+            .map(EventSummary::from_event)
+            .collect();
+
+        // Deterministic score
+        let security_score = calculate_security_score(SecurityScoreInput {
+            email_verified: user.email_verified,
+            two_factor_enabled,
+            has_backup_codes,
+            password_changed_recently,
+        });
+
+        Ok(SecurityCenterResponse {
+            email_verified: user.email_verified,
+            two_factor_enabled,
+            backup_codes_remaining,
+            active_sessions,
+            password_changed_at,
+            security_score,
+            recent_events,
+        })
     }
 
     pub fn session_duration_days(&self) -> i64 {

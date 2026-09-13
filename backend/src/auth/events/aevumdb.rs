@@ -290,6 +290,38 @@ impl SecurityEventStorage for AevumDbSecurityEventStorage {
         Ok(events)
     }
 
+    async fn get_latest_event_for_user(
+        &self,
+        user_id: Uuid,
+        kind: SecurityEventKind,
+    ) -> Result<Option<SecurityEvent>, ApiError> {
+        let prefix = Self::user_index_prefix(&user_id);
+        let entries = self
+            .db
+            .prefix_scan(prefix.as_bytes())
+            .map_err(Self::map_db_error)?;
+
+        for (_, event_id_bytes) in entries.iter().rev() {
+            let Ok(event_id) = Uuid::from_slice(event_id_bytes) else {
+                continue;
+            };
+
+            let event_key = Self::event_key(&event_id);
+            if let Some(data) = self
+                .db
+                .get(event_key.as_bytes())
+                .map_err(Self::map_db_error)?
+            {
+                let record: SecurityEventRecord = Self::deserialize(&data)?;
+                if record.event.kind() == kind {
+                    return Ok(Some(record.event));
+                }
+            }
+        }
+
+        Ok(None)
+    }
+
     async fn flush(&self) -> Result<(), ApiError> {
         self.db.flush().map_err(Self::map_db_error)
     }

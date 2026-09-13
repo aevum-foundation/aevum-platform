@@ -48,6 +48,13 @@ pub trait SecurityEventStorage: Send + Sync {
     async fn prune_before(&self, timestamp: DateTime<Utc>) -> Result<usize, ApiError>;
 
     async fn flush(&self) -> Result<(), ApiError>;
+
+    /// Return the most recent event of a given kind for a user, if any.
+    async fn get_latest_event_for_user(
+        &self,
+        user_id: Uuid,
+        kind: SecurityEventKind,
+    ) -> Result<Option<SecurityEvent>, ApiError>;
 }
 
 /// Internal index container for atomic read/write.
@@ -155,6 +162,23 @@ impl SecurityEventStorage for InMemorySecurityEventStorage {
             .map(|record| record.event.clone())
             .collect();
         Ok(recent)
+    }
+
+    async fn get_latest_event_for_user(
+        &self,
+        user_id: Uuid,
+        kind: SecurityEventKind,
+    ) -> Result<Option<SecurityEvent>, ApiError> {
+        let inner = self.inner.read().unwrap();
+
+        Ok(inner
+            .events
+            .iter()
+            .rev()
+            .find(|record| {
+                record.event.user_id() == Some(user_id) && record.event.kind() == kind
+            })
+            .map(|record| record.event.clone()))
     }
 
     async fn get_events_since(

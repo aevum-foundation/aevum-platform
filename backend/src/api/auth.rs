@@ -663,6 +663,24 @@ pub async fn delete_avatar(
     Ok(HttpResponse::Ok().json(serde_json::json!({ "success": true })))
 }
 
+#[get("/api/v1/auth/security-center")]
+pub async fn get_security_center(
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    let response = service.get_security_center(&auth.user.id).await?;
+
+    Ok(HttpResponse::Ok()
+        .insert_header(("Cache-Control", "no-store"))
+        .json(response))
+}
+
 #[get("/api/v1/auth/me")]
 pub async fn me(req: HttpRequest) -> ApiResult<HttpResponse> {
     let auth = req
@@ -714,6 +732,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(upload_avatar)
         .service(get_avatar)
         .service(delete_avatar)
+        .service(get_security_center)
         .service(me);
 }
 
