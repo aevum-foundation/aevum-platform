@@ -16,11 +16,7 @@ use crate::error::ApiError;
 /// - ProductionEmailProvider (future)
 #[async_trait]
 pub trait EmailProvider: Send + Sync {
-    async fn send_password_reset(
-        &self,
-        email: &str,
-        reset_token: &str,
-    ) -> Result<(), ApiError>;
+    async fn send_password_reset(&self, email: &str, reset_token: &str) -> Result<(), ApiError>;
 
     async fn send_email_verification(
         &self,
@@ -60,11 +56,7 @@ impl EmailProvider for MockEmailProvider {
         Ok(())
     }
 
-    async fn send_password_reset(
-        &self,
-        email: &str,
-        reset_token: &str,
-    ) -> Result<(), ApiError> {
+    async fn send_password_reset(&self, email: &str, reset_token: &str) -> Result<(), ApiError> {
         let mut sent = self.sent_emails.lock().unwrap();
         sent.push((email.to_string(), reset_token.to_string()));
         tracing::info!("mock password reset email sent to {}", email);

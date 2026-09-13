@@ -23,7 +23,9 @@ use chrono::{DateTime, Utc};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::auth::models::{EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User};
+use crate::auth::models::{
+    BackupCode, EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User,
+};
 use crate::auth::service::AuthStorage;
 use crate::error::ApiError;
 
@@ -52,6 +54,9 @@ pub struct InMemoryAuthStorage {
 
     /// Email verification tokens indexed by token hash.
     email_verification_tokens: Arc<Mutex<HashMap<String, EmailVerificationToken>>>,
+
+    /// Backup codes indexed by code id.
+    backup_codes: Arc<Mutex<HashMap<Uuid, BackupCode>>>,
 }
 
 impl InMemoryAuthStorage {
@@ -169,7 +174,10 @@ impl AuthStorage for InMemoryAuthStorage {
         Ok(sessions.get(token_hash.as_str()).cloned())
     }
 
-    async fn create_password_reset_token(&self, token: &PasswordResetToken) -> Result<(), ApiError> {
+    async fn create_password_reset_token(
+        &self,
+        token: &PasswordResetToken,
+    ) -> Result<(), ApiError> {
         let mut tokens = self.password_reset_tokens.lock().await;
         tokens.insert(token.token_hash.clone(), token.clone());
         Ok(())
@@ -282,6 +290,56 @@ impl AuthStorage for InMemoryAuthStorage {
         Ok(revoked)
     }
 
+    async fn create_backup_code(&self, code: &BackupCode) -> Result<(), ApiError> {
+        let mut codes = self.backup_codes.lock().await;
+        codes.insert(code.id, code.clone());
+        Ok(())
+    }
+
+    async fn list_backup_codes(&self, user_id: &Uuid) -> Result<Vec<BackupCode>, ApiError> {
+        let codes = self.backup_codes.lock().await;
+        Ok(codes
+            .values()
+            .filter(|c| &c.user_id == user_id)
+            .cloned()
+            .collect())
+    }
+
+    async fn consume_backup_code(
+        &self,
+        user_id: &Uuid,
+        code_hash: &str,
+        used_at: DateTime<Utc>,
+    ) -> Result<bool, ApiError> {
+        let mut codes = self.backup_codes.lock().await;
+
+        // Atomic find-and-consume in one lock
+        for code in codes.values_mut() {
+            if &code.user_id == user_id && code.code_hash == code_hash && code.is_active() {
+                code.used_at = Some(used_at);
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
+    }
+
+    async fn revoke_all_backup_codes(
+        &self,
+        user_id: &Uuid,
+        revoked_at: DateTime<Utc>,
+    ) -> Result<usize, ApiError> {
+        let mut codes = self.backup_codes.lock().await;
+        let mut revoked = 0;
+        for code in codes.values_mut() {
+            if &code.user_id == user_id && code.is_active() {
+                code.revoked_at = Some(revoked_at);
+                revoked += 1;
+            }
+        }
+        Ok(revoked)
+    }
+
     async fn revoke_session_by_token_hash(
         &self,
         token_hash: &SessionTokenHash,
@@ -382,6 +440,8 @@ mod tests {
             email: "second@example.com".to_string(),
             password_hash: "hash".to_string(),
             status: user.status,
+            email_verified: false,
+            email_verified_at: None,
             created_at: user.created_at,
             updated_at: user.updated_at,
         };

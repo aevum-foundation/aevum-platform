@@ -130,6 +130,39 @@ pub struct LoginCredentials {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackupCode {
+    pub id: Uuid,
+    pub set_id: Uuid,
+    pub user_id: Uuid,
+    pub code_hash: String,
+    pub created_at: DateTime<Utc>,
+    pub used_at: Option<DateTime<Utc>>,
+    pub revoked_at: Option<DateTime<Utc>>,
+}
+
+impl BackupCode {
+    pub fn new(user_id: Uuid, set_id: Uuid, code_hash: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            set_id,
+            user_id,
+            code_hash,
+            created_at: Utc::now(),
+            used_at: None,
+            revoked_at: None,
+        }
+    }
+
+    pub fn is_used(&self) -> bool {
+        self.used_at.is_some()
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.used_at.is_none() && self.revoked_at.is_none()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EmailVerificationToken {
     pub user_id: Uuid,
     pub token_hash: String,

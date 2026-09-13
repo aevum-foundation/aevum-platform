@@ -3,6 +3,7 @@
 pub mod aevumdb_storage;
 pub mod api;
 pub mod authenticator;
+pub mod backup_codes;
 pub mod contracts;
 pub mod csrf;
 pub mod csrf_middleware;

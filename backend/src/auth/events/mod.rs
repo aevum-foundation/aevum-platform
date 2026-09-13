@@ -58,6 +58,10 @@ pub enum SecurityEventKind {
     PasswordResetCompleted,
     EmailVerificationRequested,
     EmailVerified,
+    BackupCodesGenerated,
+    BackupCodeUsed,
+    BackupCodesRevoked,
+    BackupCodeVerificationFailed,
     TwoFactorEnabled,
     TwoFactorDisabled,
     TwoFactorVerificationFailed,
@@ -83,6 +87,10 @@ impl SecurityEventKind {
             SecurityEventKind::PasswordResetCompleted => "PASSWORD_RESET_COMPLETED",
             SecurityEventKind::EmailVerificationRequested => "EMAIL_VERIFICATION_REQUESTED",
             SecurityEventKind::EmailVerified => "EMAIL_VERIFIED",
+            SecurityEventKind::BackupCodesGenerated => "BACKUP_CODES_GENERATED",
+            SecurityEventKind::BackupCodeUsed => "BACKUP_CODE_USED",
+            SecurityEventKind::BackupCodesRevoked => "BACKUP_CODES_REVOKED",
+            SecurityEventKind::BackupCodeVerificationFailed => "BACKUP_CODE_VERIFICATION_FAILED",
             SecurityEventKind::TwoFactorEnabled => "TWO_FACTOR_ENABLED",
             SecurityEventKind::TwoFactorDisabled => "TWO_FACTOR_DISABLED",
             SecurityEventKind::TwoFactorVerificationFailed => "TWO_FACTOR_VERIFICATION_FAILED",
@@ -216,6 +224,28 @@ pub enum SecurityEvent {
         user_id: Uuid,
     },
 
+    BackupCodesGenerated {
+        metadata: SecurityMetadata,
+        user_id: Uuid,
+        count: usize,
+    },
+
+    BackupCodeUsed {
+        metadata: SecurityMetadata,
+        user_id: Uuid,
+        remaining: usize,
+    },
+
+    BackupCodesRevoked {
+        metadata: SecurityMetadata,
+        user_id: Uuid,
+    },
+
+    BackupCodeVerificationFailed {
+        metadata: SecurityMetadata,
+        user_id: Uuid,
+    },
+
     // 2FA (future AUTH-23/AUTH-24)
     TwoFactorEnabled {
         metadata: SecurityMetadata,
@@ -345,10 +375,18 @@ impl SecurityEvent {
             SecurityEvent::PasswordResetRequested { .. } => {
                 SecurityEventKind::PasswordResetRequested
             }
-            SecurityEvent::PasswordResetCompleted { .. }
-            | SecurityEvent::EmailVerificationRequested { .. }
-            | SecurityEvent::EmailVerified { .. } => {
+            SecurityEvent::PasswordResetCompleted { .. } => {
                 SecurityEventKind::PasswordResetCompleted
+            }
+            SecurityEvent::EmailVerificationRequested { .. } => {
+                SecurityEventKind::EmailVerificationRequested
+            }
+            SecurityEvent::EmailVerified { .. } => SecurityEventKind::EmailVerified,
+            SecurityEvent::BackupCodesGenerated { .. } => SecurityEventKind::BackupCodesGenerated,
+            SecurityEvent::BackupCodeUsed { .. } => SecurityEventKind::BackupCodeUsed,
+            SecurityEvent::BackupCodesRevoked { .. } => SecurityEventKind::BackupCodesRevoked,
+            SecurityEvent::BackupCodeVerificationFailed { .. } => {
+                SecurityEventKind::BackupCodeVerificationFailed
             }
             SecurityEvent::TwoFactorEnabled { .. } => SecurityEventKind::TwoFactorEnabled,
             SecurityEvent::TwoFactorDisabled { .. } => SecurityEventKind::TwoFactorDisabled,
@@ -375,6 +413,9 @@ impl SecurityEvent {
             | SecurityEvent::PasswordResetCompleted { .. }
             | SecurityEvent::EmailVerificationRequested { .. }
             | SecurityEvent::EmailVerified { .. }
+            | SecurityEvent::BackupCodesGenerated { .. }
+            | SecurityEvent::BackupCodeUsed { .. }
+            | SecurityEvent::BackupCodesRevoked { .. }
             | SecurityEvent::TwoFactorEnabled { .. }
             | SecurityEvent::TwoFactorDisabled { .. }
             | SecurityEvent::EmailChanged { .. }
@@ -385,6 +426,7 @@ impl SecurityEvent {
             | SecurityEvent::RegisterRateLimited { .. }
             | SecurityEvent::TwoFactorVerificationFailed { .. }
             | SecurityEvent::PasswordResetRequested { .. } => SecuritySeverity::Warning,
+            SecurityEvent::BackupCodeVerificationFailed { .. } => SecuritySeverity::Warning,
 
             SecurityEvent::SessionRevoked { .. }
             | SecurityEvent::AllSessionsRevoked { .. }
@@ -408,6 +450,10 @@ impl SecurityEvent {
             | SecurityEvent::PasswordResetCompleted { metadata, .. }
             | SecurityEvent::EmailVerificationRequested { metadata, .. }
             | SecurityEvent::EmailVerified { metadata, .. }
+            | SecurityEvent::BackupCodesGenerated { metadata, .. }
+            | SecurityEvent::BackupCodeUsed { metadata, .. }
+            | SecurityEvent::BackupCodesRevoked { metadata, .. }
+            | SecurityEvent::BackupCodeVerificationFailed { metadata, .. }
             | SecurityEvent::TwoFactorEnabled { metadata, .. }
             | SecurityEvent::TwoFactorDisabled { metadata, .. }
             | SecurityEvent::TwoFactorVerificationFailed { metadata, .. }
@@ -433,6 +479,10 @@ impl SecurityEvent {
             | SecurityEvent::PasswordResetCompleted { user_id, .. }
             | SecurityEvent::EmailVerificationRequested { user_id, .. }
             | SecurityEvent::EmailVerified { user_id, .. }
+            | SecurityEvent::BackupCodesGenerated { user_id, .. }
+            | SecurityEvent::BackupCodeUsed { user_id, .. }
+            | SecurityEvent::BackupCodesRevoked { user_id, .. }
+            | SecurityEvent::BackupCodeVerificationFailed { user_id, .. }
             | SecurityEvent::TwoFactorEnabled { user_id, .. }
             | SecurityEvent::TwoFactorDisabled { user_id, .. }
             | SecurityEvent::TwoFactorVerificationFailed { user_id, .. }

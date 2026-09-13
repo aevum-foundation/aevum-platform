@@ -16,10 +16,11 @@ use std::sync::Arc;
 
 use crate::auth::api::AuthApi;
 use crate::auth::contracts::{
-    EmailVerificationConfirm, EmailVerificationRequest, EmailVerificationResponse,
-    LoginRequest, LoginResponse, LogoutResponse, MeResponse, PasswordChangeRequest,
-    PasswordResetRequest, PasswordResetConfirm, RegisterRequest, RegisterResponse,
-    SESSION_COOKIE_NAME, SESSION_DURATION_DAYS,
+    BackupCodeVerifyRequest, BackupCodesGenerateResponse, BackupCodeStatusResponse,
+    EmailVerificationConfirm, EmailVerificationRequest, EmailVerificationResponse, LoginRequest,
+    LoginResponse, LogoutResponse, MeResponse, PasswordChangeRequest, PasswordResetConfirm,
+    PasswordResetRequest, RegisterRequest, RegisterResponse, SESSION_COOKIE_NAME,
+    SESSION_DURATION_DAYS,
 };
 use crate::auth::csrf::{build_csrf_cookie, build_csrf_removal_cookie, CsrfConfig, CsrfToken};
 use crate::auth::models::User;
@@ -278,9 +279,7 @@ pub async fn request_email_verification(
         .ok_or(ApiError::Unauthorized)?;
     let user = auth.user;
 
-    service
-        .request_email_verification(&user.id)
-        .await?;
+    service.request_email_verification(&user.id).await?;
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "success": true
@@ -296,9 +295,7 @@ pub async fn confirm_email_verification(
 
     service.verify_email(&req.token).await?;
 
-    Ok(HttpResponse::Ok().json(EmailVerificationResponse {
-        success: true,
-    }))
+    Ok(HttpResponse::Ok().json(EmailVerificationResponse { success: true }))
 }
 
 #[get("/api/v1/auth/sessions")]
@@ -313,14 +310,9 @@ pub async fn list_sessions(
         .ok_or(ApiError::Unauthorized)?;
     let user = auth.user;
 
-    let current_session_id = http_req
-        .extensions()
-        .get::<Uuid>()
-        .copied();
+    let current_session_id = http_req.extensions().get::<Uuid>().copied();
 
-    let sessions = service
-        .list_sessions(&user.id, current_session_id)
-        .await?;
+    let sessions = service.list_sessions(&user.id, current_session_id).await?;
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "sessions": sessions
@@ -372,6 +364,63 @@ pub async fn revoke_other_sessions(
     })))
 }
 
+#[post("/api/v1/auth/backup-codes/generate")]
+pub async fn generate_backup_codes(
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    let codes = service.generate_backup_codes(&auth.user.id).await?;
+
+    Ok(HttpResponse::Ok().json(BackupCodesGenerateResponse { codes }))
+}
+
+#[post("/api/v1/auth/backup-codes/verify")]
+pub async fn verify_backup_code(
+    req: web::Json<BackupCodeVerifyRequest>,
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    req.validate().map_err(|_| ApiError::BadRequest)?;
+
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    let valid = service
+        .verify_backup_code(&auth.user.id, &req.code)
+        .await?;
+
+    if valid {
+        Ok(HttpResponse::Ok().json(serde_json::json!({ "valid": true })))
+    } else {
+        Err(ApiError::Unauthorized)
+    }
+}
+
+#[get("/api/v1/auth/backup-codes/status")]
+pub async fn backup_codes_status(
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    let status: BackupCodeStatusResponse = service.backup_codes_status(&auth.user.id).await?;
+
+    Ok(HttpResponse::Ok().json(status))
+}
+
 #[get("/api/v1/auth/me")]
 pub async fn me(req: HttpRequest) -> ApiResult<HttpResponse> {
     let auth = req
@@ -410,6 +459,9 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(list_sessions)
         .service(revoke_session)
         .service(revoke_other_sessions)
+        .service(generate_backup_codes)
+        .service(verify_backup_code)
+        .service(backup_codes_status)
         .service(me);
 }
 
@@ -420,7 +472,7 @@ mod tests {
     use crate::auth::storage::InMemoryAuthStorage;
     use uuid::Uuid;
 
-use actix_web::{http::StatusCode, test, App};
+    use actix_web::{http::StatusCode, test, App};
 
     const TEST_EMAIL: &str = "test@example.com";
     const TEST_PASSWORD: &str = "correct-horse-battery-staple";
@@ -588,7 +640,7 @@ use actix_web::{http::StatusCode, test, App};
         assert!(!user.id.is_nil());
 
         let authenticated = service.authenticate(&token).await.unwrap().unwrap();
-        assert_eq!(authenticated.id, user.id);
+        assert_eq!(authenticated.user.id, user.id);
     }
 
     #[actix_web::test]

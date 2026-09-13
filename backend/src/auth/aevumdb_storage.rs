@@ -1,11 +1,15 @@
 //! AevumDB-backed authentication storage.
 
-use crate::auth::models::{EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User};
+use crate::auth::models::{
+    BackupCode, EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User,
+};
 use crate::auth::service::AuthStorage;
 use crate::error::ApiError;
 use aevum_db::{AevumDb, DbConfig, DbError, DbRuntime};
 use chrono::{DateTime, Utc};
+use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 const USER_EMAIL_PREFIX: &str = "platform:user:email:";
@@ -15,16 +19,22 @@ const SESSION_ID_PREFIX: &str = "platform:session:id:";
 const SESSION_BY_USER_PREFIX: &str = "platform:session:by_user:";
 const PASSWORD_RESET_PREFIX: &str = "platform:auth:password_reset:";
 const EMAIL_VERIFICATION_PREFIX: &str = "platform:auth:email_verification:";
+const BACKUP_CODE_PREFIX: &str = "platform:auth:backup_code:";
 
 #[derive(Clone)]
 pub struct AevumDbAuthStorage {
     db: Arc<AevumDb>,
+    /// Per-user locks for serializing critical backup code operations.
+    /// AevumDB does not expose CAS/transaction API, so application-level
+    /// locking guarantees single-use semantics for security-critical flows.
+    backup_code_locks: Arc<Mutex<HashMap<Uuid, Arc<Mutex<()>>>>>,
 }
 
 impl std::fmt::Debug for AevumDbAuthStorage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AevumDbAuthStorage")
             .field("db", &"<redacted>")
+            .field("backup_code_locks", &"<redacted>")
             .finish()
     }
 }
@@ -35,7 +45,18 @@ impl AevumDbAuthStorage {
             log::error!("AevumDB open failed: {}", error);
             ApiError::Internal
         })?;
-        Ok(Self { db: Arc::new(db) })
+        Ok(Self {
+            db: Arc::new(db),
+            backup_code_locks: Arc::new(Mutex::new(HashMap::new())),
+        })
+    }
+
+    async fn get_backup_code_lock(&self, user_id: &Uuid) -> Arc<Mutex<()>> {
+        let mut locks = self.backup_code_locks.lock().await;
+        locks
+            .entry(*user_id)
+            .or_insert_with(|| Arc::new(Mutex::new(())))
+            .clone()
     }
 
     fn user_email_key(email: &str) -> String {
@@ -72,6 +93,14 @@ impl AevumDbAuthStorage {
 
     fn email_verification_key(token_hash: &str) -> String {
         format!("{}{}", EMAIL_VERIFICATION_PREFIX, token_hash)
+    }
+
+    fn backup_code_key(id: &Uuid) -> String {
+        format!("{}{}", BACKUP_CODE_PREFIX, id)
+    }
+
+    fn backup_code_prefix() -> &'static str {
+        BACKUP_CODE_PREFIX
     }
 
     fn serialize<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, ApiError> {
@@ -170,10 +199,15 @@ impl AuthStorage for AevumDbAuthStorage {
         data.map(|d| Self::deserialize(&d)).transpose()
     }
 
-    async fn create_password_reset_token(&self, token: &PasswordResetToken) -> Result<(), ApiError> {
+    async fn create_password_reset_token(
+        &self,
+        token: &PasswordResetToken,
+    ) -> Result<(), ApiError> {
         let key = Self::password_reset_key(&token.token_hash);
         let data = Self::serialize(token)?;
-        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        self.db
+            .put(key.as_bytes(), &data)
+            .map_err(Self::map_db_error)?;
         Ok(())
     }
 
@@ -199,7 +233,9 @@ impl AuthStorage for AevumDbAuthStorage {
             if token.used_at.is_none() {
                 token.used_at = Some(used_at);
                 let updated = Self::serialize(&token)?;
-                self.db.put(key.as_bytes(), &updated).map_err(Self::map_db_error)?;
+                self.db
+                    .put(key.as_bytes(), &updated)
+                    .map_err(Self::map_db_error)?;
             }
         }
 
@@ -212,7 +248,9 @@ impl AuthStorage for AevumDbAuthStorage {
     ) -> Result<(), ApiError> {
         let key = Self::email_verification_key(&token.token_hash);
         let data = Self::serialize(token)?;
-        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        self.db
+            .put(key.as_bytes(), &data)
+            .map_err(Self::map_db_error)?;
         Ok(())
     }
 
@@ -238,7 +276,9 @@ impl AuthStorage for AevumDbAuthStorage {
             if token.used_at.is_none() {
                 token.used_at = Some(used_at);
                 let updated = Self::serialize(&token)?;
-                self.db.put(key.as_bytes(), &updated).map_err(Self::map_db_error)?;
+                self.db
+                    .put(key.as_bytes(), &updated)
+                    .map_err(Self::map_db_error)?;
             }
         }
 
@@ -261,7 +301,11 @@ impl AuthStorage for AevumDbAuthStorage {
             let token_hash_str = String::from_utf8_lossy(&token_hash_bytes);
             let token_key = Self::session_token_key_from_hash(&token_hash_str);
 
-            if let Some(data) = self.db.get(token_key.as_bytes()).map_err(Self::map_db_error)? {
+            if let Some(data) = self
+                .db
+                .get(token_key.as_bytes())
+                .map_err(Self::map_db_error)?
+            {
                 let session: Session = Self::deserialize(&data)?;
                 if session.revoked_at.is_none() && !session.is_expired_at(now) {
                     sessions.push(session);
@@ -313,7 +357,11 @@ impl AuthStorage for AevumDbAuthStorage {
             let token_hash_str = String::from_utf8_lossy(&token_hash_bytes);
             let token_key = Self::session_token_key_from_hash(&token_hash_str);
 
-            if let Some(data) = self.db.get(token_key.as_bytes()).map_err(Self::map_db_error)? {
+            if let Some(data) = self
+                .db
+                .get(token_key.as_bytes())
+                .map_err(Self::map_db_error)?
+            {
                 let mut session: Session = Self::deserialize(&data)?;
                 if &session.user_id == user_id
                     && &session.id != except_session_id
@@ -330,6 +378,89 @@ impl AuthStorage for AevumDbAuthStorage {
         }
 
         batch.commit().map_err(Self::map_db_error)?;
+        Ok(revoked)
+    }
+
+    async fn create_backup_code(&self, code: &BackupCode) -> Result<(), ApiError> {
+        let key = Self::backup_code_key(&code.id);
+        let data = Self::serialize(code)?;
+        self.db
+            .put(key.as_bytes(), &data)
+            .map_err(Self::map_db_error)?;
+        Ok(())
+    }
+
+    async fn list_backup_codes(&self, user_id: &Uuid) -> Result<Vec<BackupCode>, ApiError> {
+        let entries = self
+            .db
+            .prefix_scan(Self::backup_code_prefix().as_bytes())
+            .map_err(Self::map_db_error)?;
+
+        let mut codes = Vec::new();
+        for (_, value) in entries {
+            let code: BackupCode = Self::deserialize(&value)?;
+            if &code.user_id == user_id {
+                codes.push(code);
+            }
+        }
+        Ok(codes)
+    }
+
+    async fn consume_backup_code(
+        &self,
+        user_id: &Uuid,
+        code_hash: &str,
+        used_at: DateTime<Utc>,
+    ) -> Result<bool, ApiError> {
+        // Serialize all consume operations for this user.
+        // AevumDB does not expose CAS, so we guarantee single-use via
+        // application-level per-user locking.
+        let lock = self.get_backup_code_lock(user_id).await;
+        let _guard = lock.lock().await;
+
+        let entries = self
+            .db
+            .prefix_scan(Self::backup_code_prefix().as_bytes())
+            .map_err(Self::map_db_error)?;
+
+        for (key, value) in entries {
+            let mut code: BackupCode = Self::deserialize(&value)?;
+
+            if &code.user_id == user_id && code.code_hash == code_hash && code.is_active() {
+                code.used_at = Some(used_at);
+                let updated = Self::serialize(&code)?;
+                self.db.put(&key, &updated).map_err(Self::map_db_error)?;
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
+    }
+
+    async fn revoke_all_backup_codes(
+        &self,
+        user_id: &Uuid,
+        revoked_at: DateTime<Utc>,
+    ) -> Result<usize, ApiError> {
+        let lock = self.get_backup_code_lock(user_id).await;
+        let _guard = lock.lock().await;
+
+        let entries = self
+            .db
+            .prefix_scan(Self::backup_code_prefix().as_bytes())
+            .map_err(Self::map_db_error)?;
+
+        let mut revoked = 0;
+        for (key, value) in entries {
+            let mut code: BackupCode = Self::deserialize(&value)?;
+            if &code.user_id == user_id && code.is_active() {
+                code.revoked_at = Some(revoked_at);
+                let updated = Self::serialize(&code)?;
+                self.db.put(&key, &updated).map_err(Self::map_db_error)?;
+                revoked += 1;
+            }
+        }
+
         Ok(revoked)
     }
 

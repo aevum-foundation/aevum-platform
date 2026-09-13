@@ -48,16 +48,10 @@ pub trait AuthApi: Send + Sync {
 
     async fn request_password_reset(&self, email: &str, ip: &str) -> Result<(), ApiError>;
 
-    async fn confirm_password_reset(
-        &self,
-        token: &str,
-        new_password: &str,
-    ) -> Result<(), ApiError>;
+    async fn confirm_password_reset(&self, token: &str, new_password: &str)
+        -> Result<(), ApiError>;
 
-    async fn request_email_verification(
-        &self,
-        user_id: &Uuid,
-    ) -> Result<(), ApiError>;
+    async fn request_email_verification(&self, user_id: &Uuid) -> Result<(), ApiError>;
 
     async fn verify_email(&self, token: &str) -> Result<(), ApiError>;
 
@@ -74,4 +68,20 @@ pub trait AuthApi: Send + Sync {
         user_id: &Uuid,
         current_session_id: &Uuid,
     ) -> Result<usize, ApiError>;
+
+    async fn generate_backup_codes(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<String>, ApiError>;
+
+    async fn verify_backup_code(
+        &self,
+        user_id: &Uuid,
+        code: &str,
+    ) -> Result<bool, ApiError>;
+
+    async fn backup_codes_status(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::auth::contracts::BackupCodeStatusResponse, ApiError>;
 }

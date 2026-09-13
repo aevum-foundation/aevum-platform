@@ -52,6 +52,26 @@ pub struct EmailVerificationResponse {
     pub success: bool,
 }
 
+/// Plaintext backup codes are returned only once at generation.
+/// They are never stored in plaintext.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackupCodesGenerateResponse {
+    pub codes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct BackupCodeVerifyRequest {
+    pub code: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackupCodeStatusResponse {
+    pub enabled: bool,
+    pub remaining: usize,
+    pub total: usize,
+    pub generated_at: Option<DateTime<Utc>>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActiveSessionResponse {
     pub id: Uuid,
@@ -111,6 +131,10 @@ pub const MAX_USER_AGENT_LENGTH: usize = 512;
 pub const MAX_IP_ADDRESS_LENGTH: usize = 64;
 pub const PASSWORD_RESET_TOKEN_BYTES: usize = 32;
 pub const PASSWORD_RESET_TOKEN_TTL_MINUTES: i64 = 30;
+pub const BACKUP_CODES_PER_SET: usize = 10;
+pub const BACKUP_CODE_GROUP_SIZE: usize = 5;
+pub const BACKUP_CODE_GROUPS: usize = 2;
+pub const BACKUP_CODE_LENGTH: usize = BACKUP_CODE_GROUP_SIZE * BACKUP_CODE_GROUPS;
 
 // ============================================================
 // CONTRACT VALIDATION HELPERS
@@ -178,6 +202,22 @@ impl EmailVerificationConfirm {
     }
 }
 
+impl BackupCodeVerifyRequest {
+    pub fn validate(&self) -> Result<(), ContractValidationError> {
+        if self.code.is_empty() {
+            return Err(ContractValidationError::EmptyBackupCode);
+        }
+
+        let normalized: String = self.code.chars().filter(|c| *c != '-').collect();
+
+        if normalized.len() != BACKUP_CODE_LENGTH {
+            return Err(ContractValidationError::InvalidBackupCode);
+        }
+
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContractValidationError {
     EmptyEmail,
@@ -187,6 +227,8 @@ pub enum ContractValidationError {
     PasswordTooLong,
     EmptyResetToken,
     EmptyVerificationToken,
+    EmptyBackupCode,
+    InvalidBackupCode,
 }
 
 fn validate_email(email: &str) -> Result<(), ContractValidationError> {

@@ -12,7 +12,10 @@ use crate::auth::authenticator::Authenticator;
 use crate::auth::contracts::SESSION_DURATION_DAYS;
 use crate::auth::events::storage::SecurityEventStorage;
 use crate::auth::events::{SecurityEvent, SecurityMetadata};
-use crate::auth::models::{AuthContext, EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User};
+use crate::auth::models::{
+    AuthContext, BackupCode, EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash,
+    User,
+};
 use crate::auth::password::{PasswordHasher, SessionToken};
 use crate::auth::rate_limit::LoginRateLimiter;
 use crate::error::ApiError;
@@ -67,6 +70,29 @@ pub trait AuthStorage: Send + Sync {
         user_id: &Uuid,
         now: DateTime<Utc>,
     ) -> impl std::future::Future<Output = Result<Vec<Session>, ApiError>> + Send;
+
+    fn create_backup_code(
+        &self,
+        code: &BackupCode,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    fn list_backup_codes(
+        &self,
+        user_id: &Uuid,
+    ) -> impl std::future::Future<Output = Result<Vec<BackupCode>, ApiError>> + Send;
+
+    fn consume_backup_code(
+        &self,
+        user_id: &Uuid,
+        code_hash: &str,
+        used_at: DateTime<Utc>,
+    ) -> impl std::future::Future<Output = Result<bool, ApiError>> + Send;
+
+    fn revoke_all_backup_codes(
+        &self,
+        user_id: &Uuid,
+        revoked_at: DateTime<Utc>,
+    ) -> impl std::future::Future<Output = Result<usize, ApiError>> + Send;
 
     fn revoke_session_by_id(
         &self,
@@ -200,10 +226,7 @@ where
         AuthService::confirm_password_reset(self, token, new_password).await
     }
 
-    async fn request_email_verification(
-        &self,
-        user_id: &Uuid,
-    ) -> Result<(), ApiError> {
+    async fn request_email_verification(&self, user_id: &Uuid) -> Result<(), ApiError> {
         AuthService::request_email_verification(self, user_id).await
     }
 
@@ -229,6 +252,21 @@ where
         current_session_id: &Uuid,
     ) -> Result<usize, ApiError> {
         AuthService::revoke_other_sessions(self, user_id, current_session_id).await
+    }
+
+    async fn generate_backup_codes(&self, user_id: &Uuid) -> Result<Vec<String>, ApiError> {
+        AuthService::generate_backup_codes(self, user_id).await
+    }
+
+    async fn verify_backup_code(&self, user_id: &Uuid, code: &str) -> Result<bool, ApiError> {
+        AuthService::verify_backup_code(self, user_id, code).await
+    }
+
+    async fn backup_codes_status(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::auth::contracts::BackupCodeStatusResponse, ApiError> {
+        AuthService::backup_codes_status(self, user_id).await
     }
 }
 
@@ -446,7 +484,10 @@ where
         Ok((user, session_token))
     }
 
-    pub async fn authenticate(&self, token: &SessionToken) -> Result<Option<AuthContext>, ApiError> {
+    pub async fn authenticate(
+        &self,
+        token: &SessionToken,
+    ) -> Result<Option<AuthContext>, ApiError> {
         self.authenticate_at(token, Utc::now()).await
     }
 
@@ -740,10 +781,7 @@ where
     /// AUTH-22 — Email Verification
     ///
     /// If already verified, returns Ok without creating a token.
-    pub async fn request_email_verification(
-        &self,
-        user_id: &Uuid,
-    ) -> Result<(), ApiError> {
+    pub async fn request_email_verification(&self, user_id: &Uuid) -> Result<(), ApiError> {
         let user = self
             .storage
             .get_user_by_id(user_id)
@@ -851,11 +889,7 @@ where
             .collect())
     }
 
-    pub async fn revoke_session(
-        &self,
-        session_id: &Uuid,
-        user_id: &Uuid,
-    ) -> Result<(), ApiError> {
+    pub async fn revoke_session(&self, session_id: &Uuid, user_id: &Uuid) -> Result<(), ApiError> {
         self.storage
             .revoke_session_by_id(session_id, user_id, Utc::now())
             .await?;
@@ -894,6 +928,133 @@ where
         }
 
         Ok(revoked)
+    }
+
+    /// Generate a new set of backup codes for the user.
+    ///
+    /// AUTH-24 — Backup Codes
+    ///
+    /// Old active codes are revoked, new codes are hashed with Argon2id,
+    /// and plaintext codes are returned to the caller exactly once.
+    pub async fn generate_backup_codes(&self, user_id: &Uuid) -> Result<Vec<String>, ApiError> {
+        // Revoke all existing active backup codes
+        let revoked = self
+            .storage
+            .revoke_all_backup_codes(user_id, Utc::now())
+            .await?;
+
+        if revoked > 0 {
+            self.emit_event(SecurityEvent::BackupCodesRevoked {
+                metadata: SecurityMetadata::new(None, None),
+                user_id: *user_id,
+            })
+            .await;
+        }
+
+        let plaintext_codes = crate::auth::backup_codes::generate_set();
+        let set_id = Uuid::new_v4();
+        let mut count = 0;
+
+        for plaintext in &plaintext_codes {
+            let normalized = crate::auth::backup_codes::normalize_code(plaintext);
+            let code_hash = self
+                .password_hasher
+                .hash(&normalized)
+                .map_err(|_| ApiError::Internal)?;
+
+            let code = BackupCode::new(*user_id, set_id, code_hash);
+            self.storage.create_backup_code(&code).await?;
+            count += 1;
+        }
+
+        self.emit_event(SecurityEvent::BackupCodesGenerated {
+            metadata: SecurityMetadata::new(None, None),
+            user_id: *user_id,
+            count,
+        })
+        .await;
+
+        Ok(plaintext_codes)
+    }
+
+    /// Verify and consume a backup code.
+    pub async fn verify_backup_code(&self, user_id: &Uuid, code: &str) -> Result<bool, ApiError> {
+        let normalized = crate::auth::backup_codes::normalize_code(code);
+
+        if !crate::auth::backup_codes::is_valid_normalized_code(&normalized) {
+            self.emit_event(SecurityEvent::BackupCodeVerificationFailed {
+                metadata: SecurityMetadata::new(None, None),
+                user_id: *user_id,
+            })
+            .await;
+            return Ok(false);
+        }
+
+        let codes = self.storage.list_backup_codes(user_id).await?;
+
+        for stored in codes {
+            if !stored.is_active() {
+                continue;
+            }
+
+            let matches = self
+                .password_hasher
+                .verify(&normalized, &stored.code_hash)
+                .map_err(|_| ApiError::Internal)?;
+
+            if matches {
+                let consumed = self
+                    .storage
+                    .consume_backup_code(user_id, &stored.code_hash, Utc::now())
+                    .await?;
+
+                if consumed {
+                    let remaining = self
+                        .storage
+                        .list_backup_codes(user_id)
+                        .await?
+                        .iter()
+                        .filter(|c| c.is_active())
+                        .count();
+
+                    self.emit_event(SecurityEvent::BackupCodeUsed {
+                        metadata: SecurityMetadata::new(None, None),
+                        user_id: *user_id,
+                        remaining,
+                    })
+                    .await;
+
+                    return Ok(true);
+                }
+            }
+        }
+
+        self.emit_event(SecurityEvent::BackupCodeVerificationFailed {
+            metadata: SecurityMetadata::new(None, None),
+            user_id: *user_id,
+        })
+        .await;
+
+        Ok(false)
+    }
+
+    /// Get backup codes status for the user.
+    pub async fn backup_codes_status(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::auth::contracts::BackupCodeStatusResponse, ApiError> {
+        let codes = self.storage.list_backup_codes(user_id).await?;
+
+        let total = codes.len();
+        let remaining = codes.iter().filter(|c| c.is_active()).count();
+        let generated_at = codes.iter().map(|c| c.created_at).max();
+
+        Ok(crate::auth::contracts::BackupCodeStatusResponse {
+            enabled: total > 0,
+            remaining,
+            total,
+            generated_at,
+        })
     }
 
     pub fn session_duration_days(&self) -> i64 {

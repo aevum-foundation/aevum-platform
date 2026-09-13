@@ -25,14 +25,10 @@ use aevum_platform_api::{
 const TEST_EMAIL: &str = "integration@example.com";
 const TEST_PASSWORD: &str = "correct-horse-battery-staple";
 
-
-
-
-
-
-
 fn extract_cookie(
-    response: &actix_web::dev::ServiceResponse<actix_web::body::EitherBody<actix_web::body::BoxBody>>,
+    response: &actix_web::dev::ServiceResponse<
+        actix_web::body::EitherBody<actix_web::body::BoxBody>,
+    >,
     name: &str,
 ) -> Option<String> {
     response
@@ -252,7 +248,6 @@ async fn login_failures() {
 }
 
 #[actix_web::test]
-#[ignore = "requires protected csrf endpoint"]
 async fn csrf_rejects_missing_header() {
     let ctx = create_test_context().await;
 
@@ -268,15 +263,130 @@ async fn csrf_rejects_missing_header() {
     )
     .await;
 
+    // Register + login to obtain a valid session
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "csrf-protected@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
     let req = test::TestRequest::post()
         .uri("/api/v1/auth/login")
         .set_json(serde_json::json!({
-            "email": "nonexistent@example.com",
+            "email": "csrf-protected@example.com",
             "password": TEST_PASSWORD
         }))
         .to_request();
     let resp = test::call_service(&app, req).await;
-    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+
+    // POST to a CSRF-protected endpoint WITHOUT X-CSRF-Token header.
+    // Middleware must reject with 403 Forbidden.
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/sessions/revoke-all")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+}
+
+#[actix_web::test]
+async fn csrf_rejects_mismatched_token() {
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    // Register + login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "csrf-mismatch@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "csrf-mismatch@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let real_csrf = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    // Send a cookie CSRF token that does NOT match the header value.
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/sessions/revoke-all")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &real_csrf))
+        .insert_header(("X-CSRF-Token", "wrong-token-value"))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+}
+
+#[actix_web::test]
+async fn csrf_accepts_matching_token() {
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    // Register + login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "csrf-ok@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "csrf-ok@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let csrf_token = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    // Correct cookie + matching header → should pass CSRF middleware
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/sessions/revoke-all")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
 }
 
 #[actix_web::test]
@@ -663,7 +773,6 @@ async fn change_password_requires_csrf() {
     assert_eq!(resp.status(), StatusCode::FORBIDDEN);
 }
 
-
 #[actix_web::test]
 async fn password_reset_full_flow_with_real_token() {
     let ctx = create_test_context().await;
@@ -751,7 +860,6 @@ async fn password_reset_full_flow_with_real_token() {
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }
 
-
 #[actix_web::test]
 async fn password_reset_enumeration_responses_identical() {
     let ctx = create_test_context().await;
@@ -799,7 +907,6 @@ async fn password_reset_enumeration_responses_identical() {
     // Responses must be identical
     assert_eq!(resp_unknown.status(), resp_known.status());
 }
-
 
 #[actix_web::test]
 async fn email_verification_full_flow() {
@@ -877,7 +984,6 @@ async fn email_verification_full_flow() {
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }
 
-
 #[actix_web::test]
 async fn session_management_flow() {
     let ctx = create_test_context().await;
@@ -932,4 +1038,102 @@ async fn session_management_flow() {
         .to_request();
     let resp = test::call_service(&app, req).await;
     assert_eq!(resp.status(), StatusCode::OK);
+}
+
+
+#[actix_web::test]
+async fn backup_codes_full_flow() {
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    // Register + login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "backup@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "backup@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let csrf_token = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    // Generate codes
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/backup-codes/generate")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    let codes = body["codes"].as_array().unwrap();
+    assert_eq!(codes.len(), 10);
+    let first_code = codes[0].as_str().unwrap().to_string();
+
+    // Status — should show 10 remaining
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/backup-codes/status")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    assert_eq!(body["remaining"], 10);
+    assert_eq!(body["total"], 10);
+    assert_eq!(body["enabled"], true);
+
+    // Verify first code
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/backup-codes/verify")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .set_json(serde_json::json!({ "code": first_code }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Verify same code again — should fail (single-use)
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/backup-codes/verify")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .set_json(serde_json::json!({ "code": first_code }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+
+    // Status — should show 9 remaining
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/backup-codes/status")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    assert_eq!(body["remaining"], 9);
 }
