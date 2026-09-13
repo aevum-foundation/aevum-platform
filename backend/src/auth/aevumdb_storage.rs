@@ -1,7 +1,8 @@
 //! AevumDB-backed authentication storage.
 
 use crate::auth::models::{
-    BackupCode, EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User,
+    BackupCode, EmailVerificationToken, PasswordResetToken, PreAuthToken, Session,
+    SessionTokenHash, User,
 };
 use crate::auth::two_factor::TwoFactorSettings;
 use crate::auth::service::AuthStorage;
@@ -22,6 +23,7 @@ const PASSWORD_RESET_PREFIX: &str = "platform:auth:password_reset:";
 const EMAIL_VERIFICATION_PREFIX: &str = "platform:auth:email_verification:";
 const BACKUP_CODE_PREFIX: &str = "platform:auth:backup_code:";
 const TWO_FACTOR_PREFIX: &str = "platform:auth:two_factor:";
+const PRE_AUTH_PREFIX: &str = "platform:auth:pre_auth:";
 
 #[derive(Clone)]
 pub struct AevumDbAuthStorage {
@@ -107,6 +109,10 @@ impl AevumDbAuthStorage {
 
     fn two_factor_key(user_id: &Uuid) -> String {
         format!("{}{}", TWO_FACTOR_PREFIX, user_id)
+    }
+
+    fn pre_auth_key(token_hash: &str) -> String {
+        format!("{}{}", PRE_AUTH_PREFIX, token_hash)
     }
 
     fn serialize<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, ApiError> {
@@ -475,6 +481,43 @@ impl AuthStorage for AevumDbAuthStorage {
         user_id: &Uuid,
     ) -> Arc<tokio::sync::Mutex<()>> {
         self.get_user_lock(user_id).await
+    }
+
+    async fn create_pre_auth_token(&self, token: &PreAuthToken) -> Result<(), ApiError> {
+        let key = Self::pre_auth_key(&token.token_hash);
+        let data = Self::serialize(token)?;
+        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        Ok(())
+    }
+
+    async fn get_pre_auth_token_by_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<PreAuthToken>, ApiError> {
+        let key = Self::pre_auth_key(token_hash);
+        let data = self.db.get(key.as_bytes()).map_err(Self::map_db_error)?;
+        data.map(|d| Self::deserialize(&d)).transpose()
+    }
+
+    async fn consume_pre_auth_token(
+        &self,
+        token_hash: &str,
+        consumed_at: DateTime<Utc>,
+    ) -> Result<(), ApiError> {
+        let key = Self::pre_auth_key(token_hash);
+        let data = self.db.get(key.as_bytes()).map_err(Self::map_db_error)?;
+
+        if let Some(data) = data {
+            let mut token: PreAuthToken = Self::deserialize(&data)?;
+            if token.consumed_at.is_none() {
+                token.consumed_at = Some(consumed_at);
+                let updated = Self::serialize(&token)?;
+                self.db
+                    .put(key.as_bytes(), &updated)
+                    .map_err(Self::map_db_error)?;
+            }
+        }
+        Ok(())
     }
 
     async fn create_two_factor_settings(

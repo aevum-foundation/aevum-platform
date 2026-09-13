@@ -117,6 +117,52 @@ impl std::fmt::Debug for SessionTokenHash {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PreAuthToken {
+    pub token_hash: String,
+    pub user_id: Uuid,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+    pub consumed_at: Option<DateTime<Utc>>,
+}
+
+impl PreAuthToken {
+    pub fn new(user_id: Uuid, token_hash: String, ttl_seconds: i64) -> Self {
+        let now = Utc::now();
+        Self {
+            token_hash,
+            user_id,
+            created_at: now,
+            expires_at: now + chrono::Duration::seconds(ttl_seconds),
+            consumed_at: None,
+        }
+    }
+
+    pub fn is_expired_at(&self, now: DateTime<Utc>) -> bool {
+        now >= self.expires_at
+    }
+
+    pub fn is_consumed(&self) -> bool {
+        self.consumed_at.is_some()
+    }
+
+    pub fn is_valid_at(&self, now: DateTime<Utc>) -> bool {
+        !self.is_expired_at(now) && !self.is_consumed()
+    }
+}
+
+#[derive(Debug)]
+pub enum LoginResult {
+    Session {
+        user: User,
+        session_token: SessionToken,
+    },
+    RequiresTwoFactor {
+        pre_auth_token: String,
+        expires_in_seconds: i64,
+    },
+}
+
 #[derive(Debug, Clone)]
 pub struct AuthContext {
     pub user: User,

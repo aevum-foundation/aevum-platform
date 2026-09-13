@@ -17,7 +17,8 @@ use std::sync::Arc;
 use crate::auth::api::AuthApi;
 use crate::auth::contracts::{
     BackupCodeVerifyRequest, BackupCodesGenerateResponse, BackupCodeStatusResponse,
-    TwoFactorDisableRequest, TwoFactorEnableRequest, TwoFactorSetupResponse,
+    TwoFactorDisableRequest, TwoFactorEnableRequest, TwoFactorEnableResponse, TwoFactorSetupResponse,
+    TwoFactorVerifyRequest,
     TwoFactorStatusResponse,
     EmailVerificationConfirm, EmailVerificationRequest, EmailVerificationResponse, LoginRequest,
     LoginResponse, LogoutResponse, MeResponse, PasswordChangeRequest, PasswordResetConfirm,
@@ -97,27 +98,49 @@ pub async fn login(
         .unwrap_or("unknown")
         .to_string();
 
-    let (user, session_token, csrf_token) = service.login(&req.email, &req.password, &ip).await?;
+    let result = service.login(&req.email, &req.password, &ip).await?;
 
-    let response = LoginResponse {
-        user_id: user.id,
-        email: user.email,
-    };
+    match result {
+        crate::auth::models::LoginResult::Session {
+            user,
+            session_token,
+        } => {
+            let response = LoginResponse {
+                user_id: user.id,
+                email: user.email,
+            };
 
-    let session_cookie = build_session_cookie(session_token.expose());
-    let csrf_cookie = build_csrf_cookie(&csrf_token, &CsrfConfig::default());
+            let csrf_token = CsrfToken::generate();
+            let session_cookie = build_session_cookie(session_token.expose());
+            let csrf_cookie = build_csrf_cookie(&csrf_token, &CsrfConfig::default());
 
-    let mut http_response = HttpResponse::Ok().json(response);
+            let mut http_response = HttpResponse::Ok().json(response);
 
-    http_response
-        .add_cookie(&session_cookie)
-        .map_err(|_| ApiError::Internal)?;
+            http_response
+                .add_cookie(&session_cookie)
+                .map_err(|_| ApiError::Internal)?;
 
-    http_response
-        .add_cookie(&csrf_cookie)
-        .map_err(|_| ApiError::Internal)?;
+            http_response
+                .add_cookie(&csrf_cookie)
+                .map_err(|_| ApiError::Internal)?;
 
-    Ok(http_response)
+            Ok(http_response)
+        }
+        crate::auth::models::LoginResult::RequiresTwoFactor {
+            pre_auth_token,
+            expires_in_seconds,
+        } => {
+            let response = serde_json::json!({
+                "status": "requires_two_factor",
+                "pre_auth_token": pre_auth_token,
+                "expires_in_seconds": expires_in_seconds,
+            });
+
+            Ok(HttpResponse::Ok()
+                .insert_header(("Cache-Control", "no-store"))
+                .json(response))
+        }
+    }
 }
 
 #[post("/api/v1/auth/logout")]
@@ -457,11 +480,13 @@ pub async fn two_factor_enable(
         .cloned()
         .ok_or(ApiError::Unauthorized)?;
 
-    service
+    let backup_codes = service
         .enable_two_factor(&auth.user.id, &req.code)
         .await?;
 
-    Ok(HttpResponse::Ok().json(serde_json::json!({ "success": true })))
+    Ok(HttpResponse::Ok()
+        .insert_header(("Cache-Control", "no-store"))
+        .json(TwoFactorEnableResponse { backup_codes }))
 }
 
 #[post("/api/v1/auth/2fa/disable")]
@@ -499,6 +524,40 @@ pub async fn two_factor_status(
     let status: TwoFactorStatusResponse = service.two_factor_status(&auth.user.id).await?;
 
     Ok(HttpResponse::Ok().json(status))
+}
+
+#[post("/api/v1/auth/2fa/verify")]
+pub async fn two_factor_verify(
+    req: web::Json<TwoFactorVerifyRequest>,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    req.validate().map_err(|_| ApiError::BadRequest)?;
+
+    let (user, session_token) = service
+        .verify_two_factor(&req.pre_auth_token, &req.code)
+        .await?;
+
+    let csrf_token = CsrfToken::generate();
+    let session_cookie = build_session_cookie(session_token.expose());
+    let csrf_cookie = build_csrf_cookie(&csrf_token, &CsrfConfig::default());
+
+    let response = serde_json::json!({
+        "status": "authenticated",
+        "user_id": user.id,
+        "email": user.email,
+    });
+
+    let mut http_response = HttpResponse::Ok().json(response);
+
+    http_response
+        .add_cookie(&session_cookie)
+        .map_err(|_| ApiError::Internal)?;
+
+    http_response
+        .add_cookie(&csrf_cookie)
+        .map_err(|_| ApiError::Internal)?;
+
+    Ok(http_response)
 }
 
 #[get("/api/v1/auth/me")]
@@ -546,6 +605,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(two_factor_enable)
         .service(two_factor_disable)
         .service(two_factor_status)
+        .service(two_factor_verify)
         .service(me);
 }
 
@@ -717,10 +777,17 @@ mod tests {
         let service: Arc<dyn AuthApi> = auth_service.clone();
         register_test_user(&service).await;
 
-        let (user, token, _csrf_token) = service
+        let result = service
             .login(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1")
             .await
             .unwrap();
+
+        let (user, token) = match result {
+            crate::auth::models::LoginResult::Session { user, session_token } => (user, session_token),
+            crate::auth::models::LoginResult::RequiresTwoFactor { .. } => {
+                panic!("2FA not enabled in this test");
+            }
+        };
         assert!(!user.id.is_nil());
 
         let authenticated = service.authenticate(&token).await.unwrap().unwrap();
@@ -813,10 +880,17 @@ mod tests {
         let service: Arc<dyn AuthApi> = auth_service.clone();
         register_test_user(&service).await;
 
-        let (_, token, _csrf_token) = service
+        let result = service
             .login(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1")
             .await
             .unwrap();
+
+        let token = match result {
+            crate::auth::models::LoginResult::Session { session_token, .. } => session_token,
+            crate::auth::models::LoginResult::RequiresTwoFactor { .. } => {
+                panic!("2FA not enabled in this test");
+            }
+        };
 
         let app = test::init_service(
             App::new()
@@ -849,10 +923,17 @@ mod tests {
         let service: Arc<dyn AuthApi> = auth_service.clone();
         register_test_user(&service).await;
 
-        let (_, token, _csrf_token) = service
+        let result = service
             .login(TEST_EMAIL, TEST_PASSWORD, "127.0.0.1")
             .await
             .unwrap();
+
+        let token = match result {
+            crate::auth::models::LoginResult::Session { session_token, .. } => session_token,
+            crate::auth::models::LoginResult::RequiresTwoFactor { .. } => {
+                panic!("2FA not enabled in this test");
+            }
+        };
 
         let app = test::init_service(
             App::new()

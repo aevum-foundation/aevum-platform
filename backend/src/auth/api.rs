@@ -28,7 +28,7 @@ pub trait AuthApi: Send + Sync {
         email: &str,
         password: &str,
         ip: &str,
-    ) -> Result<(User, SessionToken, CsrfToken), ApiError>;
+    ) -> Result<crate::auth::models::LoginResult, ApiError>;
 
     async fn logout(&self, token: &SessionToken) -> Result<(), ApiError>;
 
@@ -91,7 +91,7 @@ pub trait AuthApi: Send + Sync {
         email: &str,
     ) -> Result<crate::auth::contracts::TwoFactorSetupResponse, ApiError>;
 
-    async fn enable_two_factor(&self, user_id: &Uuid, code: &str) -> Result<(), ApiError>;
+    async fn enable_two_factor(&self, user_id: &Uuid, code: &str) -> Result<Vec<String>, ApiError>;
 
     async fn disable_two_factor(
         &self,
@@ -104,4 +104,10 @@ pub trait AuthApi: Send + Sync {
         &self,
         user_id: &Uuid,
     ) -> Result<crate::auth::contracts::TwoFactorStatusResponse, ApiError>;
+
+    async fn verify_two_factor(
+        &self,
+        pre_auth_token: &str,
+        code: &str,
+    ) -> Result<(crate::auth::models::User, SessionToken), ApiError>;
 }

@@ -24,7 +24,8 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::auth::models::{
-    BackupCode, EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User,
+    BackupCode, EmailVerificationToken, PasswordResetToken, PreAuthToken, Session,
+    SessionTokenHash, User,
 };
 use crate::auth::two_factor::TwoFactorSettings;
 use crate::auth::service::AuthStorage;
@@ -65,6 +66,9 @@ pub struct InMemoryAuthStorage {
     /// Per-user locks for serializing critical atomic operations.
     /// Policy: never hold two different user locks at the same time.
     user_locks: Arc<Mutex<HashMap<Uuid, Arc<Mutex<()>>>>>,
+
+    /// Pre-auth challenge tokens indexed by token hash.
+    pre_auth_tokens: Arc<Mutex<HashMap<String, PreAuthToken>>>,
 }
 
 impl InMemoryAuthStorage {
@@ -361,6 +365,34 @@ impl AuthStorage for InMemoryAuthStorage {
         user_id: &Uuid,
     ) -> Arc<tokio::sync::Mutex<()>> {
         self.get_user_lock(user_id).await
+    }
+
+    async fn create_pre_auth_token(&self, token: &PreAuthToken) -> Result<(), ApiError> {
+        let mut tokens = self.pre_auth_tokens.lock().await;
+        tokens.insert(token.token_hash.clone(), token.clone());
+        Ok(())
+    }
+
+    async fn get_pre_auth_token_by_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<PreAuthToken>, ApiError> {
+        let tokens = self.pre_auth_tokens.lock().await;
+        Ok(tokens.get(token_hash).cloned())
+    }
+
+    async fn consume_pre_auth_token(
+        &self,
+        token_hash: &str,
+        consumed_at: DateTime<Utc>,
+    ) -> Result<(), ApiError> {
+        let mut tokens = self.pre_auth_tokens.lock().await;
+        if let Some(token) = tokens.get_mut(token_hash) {
+            if token.consumed_at.is_none() {
+                token.consumed_at = Some(consumed_at);
+            }
+        }
+        Ok(())
     }
 
     async fn create_two_factor_settings(

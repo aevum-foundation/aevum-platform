@@ -13,8 +13,8 @@ use crate::auth::contracts::SESSION_DURATION_DAYS;
 use crate::auth::events::storage::SecurityEventStorage;
 use crate::auth::events::{SecurityEvent, SecurityMetadata};
 use crate::auth::models::{
-    AuthContext, BackupCode, EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash,
-    User,
+    AuthContext, BackupCode, EmailVerificationToken, PasswordResetToken, PreAuthToken, Session,
+    SessionTokenHash, User,
 };
 use crate::auth::password::{PasswordHasher, SessionToken};
 use crate::auth::rate_limit::LoginRateLimiter;
@@ -105,6 +105,22 @@ pub trait AuthStorage: Send + Sync {
         &self,
         user_id: &Uuid,
     ) -> impl std::future::Future<Output = Arc<tokio::sync::Mutex<()>>> + Send;
+
+    fn create_pre_auth_token(
+        &self,
+        token: &PreAuthToken,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    fn get_pre_auth_token_by_hash(
+        &self,
+        token_hash: &str,
+    ) -> impl std::future::Future<Output = Result<Option<PreAuthToken>, ApiError>> + Send;
+
+    fn consume_pre_auth_token(
+        &self,
+        token_hash: &str,
+        consumed_at: DateTime<Utc>,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
 
     fn list_backup_codes(
         &self,
@@ -216,10 +232,8 @@ where
         email: &str,
         password: &str,
         ip: &str,
-    ) -> Result<(User, SessionToken, crate::auth::csrf::CsrfToken), ApiError> {
-        let (user, session_token) = AuthService::login(self, email, password, ip).await?;
-        let csrf_token = crate::auth::csrf::CsrfToken::generate();
-        Ok((user, session_token, csrf_token))
+    ) -> Result<crate::auth::models::LoginResult, ApiError> {
+        AuthService::login(self, email, password, ip).await
     }
 
     async fn logout(&self, token: &SessionToken) -> Result<(), ApiError> {
@@ -309,7 +323,7 @@ where
         AuthService::setup_two_factor(self, user_id, email).await
     }
 
-    async fn enable_two_factor(&self, user_id: &Uuid, code: &str) -> Result<(), ApiError> {
+    async fn enable_two_factor(&self, user_id: &Uuid, code: &str) -> Result<Vec<String>, ApiError> {
         AuthService::enable_two_factor(self, user_id, code).await
     }
 
@@ -327,6 +341,14 @@ where
         user_id: &Uuid,
     ) -> Result<crate::auth::contracts::TwoFactorStatusResponse, ApiError> {
         AuthService::two_factor_status(self, user_id).await
+    }
+
+    async fn verify_two_factor(
+        &self,
+        pre_auth_token: &str,
+        code: &str,
+    ) -> Result<(User, SessionToken), ApiError> {
+        AuthService::verify_two_factor(self, pre_auth_token, code).await
     }
 }
 
@@ -453,7 +475,7 @@ where
         email: &str,
         password: &str,
         ip: &str,
-    ) -> Result<(User, SessionToken), ApiError> {
+    ) -> Result<crate::auth::models::LoginResult, ApiError> {
         let normalized_email = Self::normalize_email(email);
         let metadata = SecurityMetadata::new(Some(ip.to_string()), None);
 
@@ -535,7 +557,43 @@ where
         ))
         .await;
 
-        self.create_session_for_user(user).await
+        // Check 2FA
+        let settings = self.storage.get_two_factor_settings(&user.id).await?;
+        let requires_2fa = matches!(
+            settings.map(|s| s.state),
+            Some(crate::auth::two_factor::TwoFactorState::Enabled)
+        );
+
+        if requires_2fa {
+            // Issue PreAuthToken
+            let pre_auth_token = SessionToken::generate();
+            let token_hash = SessionTokenHash::from_token(&pre_auth_token);
+            let model = crate::auth::models::PreAuthToken::new(
+                user.id,
+                token_hash.as_str().to_owned(),
+                crate::auth::contracts::PRE_AUTH_TOKEN_TTL_SECONDS,
+            );
+
+            self.storage.create_pre_auth_token(&model).await?;
+
+            self.emit_event(SecurityEvent::TwoFactorChallengeIssued {
+                metadata: metadata.clone(),
+                user_id: user.id,
+            })
+            .await;
+
+            return Ok(crate::auth::models::LoginResult::RequiresTwoFactor {
+                pre_auth_token: pre_auth_token.expose().to_owned(),
+                expires_in_seconds: crate::auth::contracts::PRE_AUTH_TOKEN_TTL_SECONDS,
+            });
+        }
+
+        let (user, session_token) = self.create_session_for_user(user).await?;
+
+        Ok(crate::auth::models::LoginResult::Session {
+            user,
+            session_token,
+        })
     }
 
     async fn create_session_for_user(&self, user: User) -> Result<(User, SessionToken), ApiError> {
@@ -1205,7 +1263,7 @@ where
     /// AUTH-25.3 — Two-Factor Enable
     ///
     /// On success, transitions Pending → Enabled and generates backup codes.
-    pub async fn enable_two_factor(&self, user_id: &Uuid, code: &str) -> Result<(), ApiError> {
+    pub async fn enable_two_factor(&self, user_id: &Uuid, code: &str) -> Result<Vec<String>, ApiError> {
         // Serialize per-user atomic operations.
         let lock = self.storage.lock_for_user(user_id).await;
         let _guard = lock.lock().await;
@@ -1247,9 +1305,9 @@ where
         self.storage.update_two_factor_settings(&settings).await?;
 
         // Generate backup codes atomically with enable.
-        // Storage failure here leaves 2FA enabled without recovery codes;
-        // generate_backup_codes is best-effort but must not be skipped.
-        let _plaintext_codes = self.generate_backup_codes(user_id).await?;
+        // Plaintext codes are returned to the caller exactly once
+        // and never persisted or logged.
+        let plaintext_codes = self.generate_backup_codes(user_id).await?;
 
         self.emit_event(SecurityEvent::TwoFactorEnabled {
             metadata: SecurityMetadata::new(None, None),
@@ -1257,7 +1315,7 @@ where
         })
         .await;
 
-        Ok(())
+        Ok(plaintext_codes)
     }
 
     /// Disable two-factor authentication.
@@ -1409,6 +1467,112 @@ where
 
         settings.last_accepted_step = Some(step);
         Ok(true)
+    }
+
+    /// Verify a 2FA challenge and create a real session.
+    ///
+    /// AUTH-25.4 — 2FA Verify
+    ///
+    /// Flow:
+    /// 1. Load PreAuthToken by hash
+    /// 2. Validate TTL and consumed state
+    /// 3. Verify TOTP (with replay protection under user lock)
+    /// 4. Fallback to backup code if TOTP fails
+    /// 5. Create Session
+    /// 6. Consume PreAuthToken (only after success)
+    pub async fn verify_two_factor(
+        &self,
+        pre_auth_token: &str,
+        code: &str,
+    ) -> Result<(User, SessionToken), ApiError> {
+        // Decode pre-auth token
+        let token = SessionToken::from_secret(pre_auth_token.to_owned());
+        let token_hash = SessionTokenHash::from_token(&token);
+        let token_hash_str = token_hash.as_str().to_owned();
+
+        // Load PreAuthToken
+        let pre_auth = self
+            .storage
+            .get_pre_auth_token_by_hash(&token_hash_str)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        if !pre_auth.is_valid_at(Utc::now()) {
+            return Err(ApiError::Unauthorized);
+        }
+
+        let user_id = pre_auth.user_id;
+
+        // Rate limit: per-user 2FA attempts
+        self.rate_limiter.check_two_factor_attempts(&user_id).await?;
+
+        // Acquire per-user lock for atomic verify + consume
+        let lock = self.storage.lock_for_user(&user_id).await;
+        let _guard = lock.lock().await;
+
+        // Load user
+        let user = self
+            .storage
+            .get_user_by_id(&user_id)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        if !user.status.can_authenticate() {
+            return Err(ApiError::Unauthorized);
+        }
+
+        // Try TOTP
+        let totp_valid = if let Some(mut settings) =
+            self.storage.get_two_factor_settings(&user_id).await?
+        {
+            if !matches!(
+                settings.state,
+                crate::auth::two_factor::TwoFactorState::Enabled
+            ) {
+                false
+            } else {
+                let valid = self.verify_totp_and_mark_step(&mut settings, code).await?;
+                if valid {
+                    self.storage.update_two_factor_settings(&settings).await?;
+                }
+                valid
+            }
+        } else {
+            false
+        };
+
+        if totp_valid {
+            self.emit_event(SecurityEvent::TwoFactorVerificationSucceeded {
+                metadata: SecurityMetadata::new(None, None),
+                user_id,
+            })
+            .await;
+        } else {
+            // Fallback to backup code
+            let backup_valid = self.verify_backup_code(&user_id, code).await?;
+
+            if !backup_valid {
+                self.rate_limiter.record_two_factor_failure(&user_id).await;
+
+                self.emit_event(SecurityEvent::TwoFactorVerificationFailed {
+                    metadata: SecurityMetadata::new(None, None),
+                    user_id,
+                })
+                .await;
+                return Err(ApiError::Unauthorized);
+            }
+        }
+
+        // Success: clear 2FA attempt counter
+        self.rate_limiter.record_two_factor_success(&user_id).await;
+
+        // Consume pre-auth token ONLY after successful verification
+        self.storage
+            .consume_pre_auth_token(&token_hash_str, Utc::now())
+            .await?;
+
+        // Create real session
+        self.create_session_for_user(user).await
     }
 
     pub fn session_duration_days(&self) -> i64 {

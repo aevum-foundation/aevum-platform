@@ -1298,3 +1298,221 @@ async fn two_factor_rejects_invalid_code() {
     let resp = test::call_service(&app, req).await;
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }
+
+
+
+
+/// Common helper: set up 2FA for a fresh user and return:
+/// (app, email, session_token, csrf_token, secret_base32, backup_codes)
+async fn setup_2fa_user(
+    ctx: &support::TestContext,
+    email: &str,
+) -> (
+    impl actix_web::dev::Service<
+        actix_http::Request,
+        Response = actix_web::dev::ServiceResponse<actix_web::body::EitherBody<actix_web::body::BoxBody>>,
+        Error = actix_web::Error,
+    >,
+    String,
+    String,
+    Vec<String>,
+) {
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({ "email": email, "password": TEST_PASSWORD }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({ "email": email, "password": TEST_PASSWORD }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let csrf_token = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    // Setup
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/setup")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    let secret_base32 = body["secret_base32"].as_str().unwrap().to_string();
+
+    // Enable with a valid code
+    use totp_rs::{Algorithm, Secret, TOTP};
+    let secret = Secret::Encoded(secret_base32.clone());
+    let totp = TOTP::new(
+        Algorithm::SHA1, 6, 1, 30,
+        secret.to_bytes().unwrap(),
+        Some("Aevum".to_string()),
+        email.to_string(),
+    ).unwrap();
+    let code = totp.generate_current().unwrap();
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/enable")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .set_json(serde_json::json!({ "code": code }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    let backup_codes: Vec<String> = body["backup_codes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap().to_string())
+        .collect();
+
+    (app, secret_base32, session_token, backup_codes)
+}
+
+#[actix_web::test]
+async fn two_factor_rejects_replayed_totp() {
+    let ctx = create_test_context().await;
+    let (app, secret_base32, _session, _codes) =
+        setup_2fa_user(&ctx, "2fa-replay@example.com").await;
+
+    // New login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "2fa-replay@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    let pre_auth_token = body["pre_auth_token"].as_str().unwrap().to_string();
+
+    // Same timestep as /enable was accepted — replay must fail
+    use totp_rs::{Algorithm, Secret, TOTP};
+    let secret = Secret::Encoded(secret_base32);
+    let totp = TOTP::new(
+        Algorithm::SHA1, 6, 1, 30,
+        secret.to_bytes().unwrap(),
+        Some("Aevum".to_string()),
+        "2fa-replay@example.com".to_string(),
+    ).unwrap();
+    let code = totp.generate_current().unwrap();
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/verify")
+        .set_json(serde_json::json!({
+            "pre_auth_token": pre_auth_token,
+            "code": code
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[actix_web::test]
+async fn two_factor_pre_auth_survives_failed_verification() {
+    let ctx = create_test_context().await;
+    let (app, _secret, _session, backup_codes) =
+        setup_2fa_user(&ctx, "2fa-survive@example.com").await;
+
+    // New login → pre-auth token
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "2fa-survive@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    let pre_auth_token = body["pre_auth_token"].as_str().unwrap().to_string();
+
+    // Bad code
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/verify")
+        .set_json(serde_json::json!({
+            "pre_auth_token": pre_auth_token,
+            "code": "000000"
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+
+    // Same pre-auth token must still work with a valid backup code
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/verify")
+        .set_json(serde_json::json!({
+            "pre_auth_token": pre_auth_token,
+            "code": backup_codes[0]
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let session = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    assert!(!session.is_empty());
+}
+
+#[actix_web::test]
+async fn two_factor_allows_backup_code_fallback() {
+    let ctx = create_test_context().await;
+    let (app, _secret, _session, backup_codes) =
+        setup_2fa_user(&ctx, "2fa-backup@example.com").await;
+
+    // New login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "2fa-backup@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    assert_eq!(body["status"], "requires_two_factor");
+    let pre_auth_token = body["pre_auth_token"].as_str().unwrap().to_string();
+
+    // Use backup code
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/verify")
+        .set_json(serde_json::json!({
+            "pre_auth_token": pre_auth_token,
+            "code": backup_codes[0]
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let session = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    assert!(!session.is_empty());
+
+    // Backup code reuse must fail
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/verify")
+        .set_json(serde_json::json!({
+            "pre_auth_token": pre_auth_token,
+            "code": backup_codes[0]
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}

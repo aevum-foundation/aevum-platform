@@ -65,6 +65,8 @@ pub enum SecurityEventKind {
     TwoFactorEnabled,
     TwoFactorDisabled,
     TwoFactorVerificationFailed,
+    TwoFactorChallengeIssued,
+    TwoFactorVerificationSucceeded,
     EmailChanged,
     AccountLocked,
     AccountUnlocked,
@@ -94,6 +96,8 @@ impl SecurityEventKind {
             SecurityEventKind::TwoFactorEnabled => "TWO_FACTOR_ENABLED",
             SecurityEventKind::TwoFactorDisabled => "TWO_FACTOR_DISABLED",
             SecurityEventKind::TwoFactorVerificationFailed => "TWO_FACTOR_VERIFICATION_FAILED",
+            SecurityEventKind::TwoFactorChallengeIssued => "TWO_FACTOR_CHALLENGE_ISSUED",
+            SecurityEventKind::TwoFactorVerificationSucceeded => "TWO_FACTOR_VERIFICATION_SUCCEEDED",
             SecurityEventKind::EmailChanged => "EMAIL_CHANGED",
             SecurityEventKind::AccountLocked => "ACCOUNT_LOCKED",
             SecurityEventKind::AccountUnlocked => "ACCOUNT_UNLOCKED",
@@ -262,6 +266,16 @@ pub enum SecurityEvent {
         user_id: Uuid,
     },
 
+    TwoFactorChallengeIssued {
+        metadata: SecurityMetadata,
+        user_id: Uuid,
+    },
+
+    TwoFactorVerificationSucceeded {
+        metadata: SecurityMetadata,
+        user_id: Uuid,
+    },
+
     // Account modifications
     EmailChanged {
         metadata: SecurityMetadata,
@@ -393,6 +407,12 @@ impl SecurityEvent {
             SecurityEvent::TwoFactorVerificationFailed { .. } => {
                 SecurityEventKind::TwoFactorVerificationFailed
             }
+            SecurityEvent::TwoFactorChallengeIssued { .. } => {
+                SecurityEventKind::TwoFactorChallengeIssued
+            }
+            SecurityEvent::TwoFactorVerificationSucceeded { .. } => {
+                SecurityEventKind::TwoFactorVerificationSucceeded
+            }
             SecurityEvent::EmailChanged { .. } => SecurityEventKind::EmailChanged,
             SecurityEvent::AccountLocked { .. } => SecurityEventKind::AccountLocked,
             SecurityEvent::AccountUnlocked { .. } => SecurityEventKind::AccountUnlocked,
@@ -418,6 +438,8 @@ impl SecurityEvent {
             | SecurityEvent::BackupCodesRevoked { .. }
             | SecurityEvent::TwoFactorEnabled { .. }
             | SecurityEvent::TwoFactorDisabled { .. }
+            | SecurityEvent::TwoFactorChallengeIssued { .. }
+            | SecurityEvent::TwoFactorVerificationSucceeded { .. }
             | SecurityEvent::EmailChanged { .. }
             | SecurityEvent::AccountUnlocked { .. } => SecuritySeverity::Info,
 
@@ -457,6 +479,8 @@ impl SecurityEvent {
             | SecurityEvent::TwoFactorEnabled { metadata, .. }
             | SecurityEvent::TwoFactorDisabled { metadata, .. }
             | SecurityEvent::TwoFactorVerificationFailed { metadata, .. }
+            | SecurityEvent::TwoFactorChallengeIssued { metadata, .. }
+            | SecurityEvent::TwoFactorVerificationSucceeded { metadata, .. }
             | SecurityEvent::EmailChanged { metadata, .. }
             | SecurityEvent::AccountLocked { metadata, .. }
             | SecurityEvent::AccountUnlocked { metadata, .. } => metadata,
@@ -486,6 +510,8 @@ impl SecurityEvent {
             | SecurityEvent::TwoFactorEnabled { user_id, .. }
             | SecurityEvent::TwoFactorDisabled { user_id, .. }
             | SecurityEvent::TwoFactorVerificationFailed { user_id, .. }
+            | SecurityEvent::TwoFactorChallengeIssued { user_id, .. }
+            | SecurityEvent::TwoFactorVerificationSucceeded { user_id, .. }
             | SecurityEvent::EmailChanged { user_id, .. }
             | SecurityEvent::AccountLocked { user_id, .. }
             | SecurityEvent::AccountUnlocked { user_id, .. } => Some(*user_id),

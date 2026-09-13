@@ -79,6 +79,19 @@ pub struct TwoFactorEnableRequest {
     pub code: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TwoFactorEnableResponse {
+    /// Plaintext backup codes. Returned exactly once.
+    /// Never stored in plaintext, never logged.
+    pub backup_codes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct TwoFactorVerifyRequest {
+    pub pre_auth_token: String,
+    pub code: String,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct TwoFactorDisableRequest {
     pub password: String,
@@ -162,6 +175,8 @@ pub const BACKUP_CODES_PER_SET: usize = 10;
 pub const BACKUP_CODE_GROUP_SIZE: usize = 5;
 pub const BACKUP_CODE_GROUPS: usize = 2;
 pub const BACKUP_CODE_LENGTH: usize = BACKUP_CODE_GROUP_SIZE * BACKUP_CODE_GROUPS;
+pub const PRE_AUTH_TOKEN_TTL_SECONDS: i64 = 300;
+pub const PRE_AUTH_TOKEN_BYTES: usize = 32;
 
 // ============================================================
 // CONTRACT VALIDATION HELPERS
@@ -231,6 +246,18 @@ impl EmailVerificationConfirm {
 
 impl TwoFactorEnableRequest {
     pub fn validate(&self) -> Result<(), ContractValidationError> {
+        if self.code.is_empty() {
+            return Err(ContractValidationError::EmptyVerificationToken);
+        }
+        Ok(())
+    }
+}
+
+impl TwoFactorVerifyRequest {
+    pub fn validate(&self) -> Result<(), ContractValidationError> {
+        if self.pre_auth_token.is_empty() {
+            return Err(ContractValidationError::EmptyVerificationToken);
+        }
         if self.code.is_empty() {
             return Err(ContractValidationError::EmptyVerificationToken);
         }

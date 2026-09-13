@@ -13,6 +13,7 @@ use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 use crate::error::ApiError;
 
@@ -25,10 +26,14 @@ pub struct RateLimitConfig {
     pub login_email_limit: u32,
     /// Maximum registration attempts per IP in the tracking window.
     pub register_ip_limit: u32,
+    /// Maximum 2FA verification attempts per user in the tracking window.
+    pub two_factor_attempts_limit: u32,
     /// Tracking window for login attempts.
     pub login_window: Duration,
     /// Tracking window for registration attempts.
     pub register_window: Duration,
+    /// Tracking window for 2FA verification attempts.
+    pub two_factor_window: Duration,
 }
 
 impl Default for RateLimitConfig {
@@ -37,8 +42,10 @@ impl Default for RateLimitConfig {
             login_ip_limit: 20,
             login_email_limit: 5,
             register_ip_limit: 5,
+            two_factor_attempts_limit: 5,
             login_window: Duration::from_secs(15 * 60),
             register_window: Duration::from_secs(15 * 60),
+            two_factor_window: Duration::from_secs(5 * 60),
         }
     }
 }
@@ -121,6 +128,12 @@ pub trait LoginRateLimiter: Send + Sync {
     async fn check_register_ip(&self, ip: &str) -> Result<(), ApiError>;
 
     async fn record_successful_registration(&self, ip: &str);
+
+    async fn check_two_factor_attempts(&self, user_id: &Uuid) -> Result<(), ApiError>;
+
+    async fn record_two_factor_failure(&self, user_id: &Uuid);
+
+    async fn record_two_factor_success(&self, user_id: &Uuid);
 }
 
 /// In-memory rate limiter for development and tests.
@@ -131,6 +144,7 @@ pub struct InMemoryRateLimiter {
     login_ip: Arc<Mutex<HashMap<String, AttemptBucket>>>,
     login_email: Arc<Mutex<HashMap<String, AttemptBucket>>>,
     register_ip: Arc<Mutex<HashMap<String, AttemptBucket>>>,
+    two_factor_user: Arc<Mutex<HashMap<Uuid, AttemptBucket>>>,
     config: RateLimitConfig,
 }
 
@@ -140,12 +154,17 @@ impl InMemoryRateLimiter {
             login_ip: Arc::new(Mutex::new(HashMap::new())),
             login_email: Arc::new(Mutex::new(HashMap::new())),
             register_ip: Arc::new(Mutex::new(HashMap::new())),
+            two_factor_user: Arc::new(Mutex::new(HashMap::new())),
             config,
         }
     }
 
     /// Remove stale buckets that are no longer relevant.
-    fn cleanup_expired(map: &mut HashMap<String, AttemptBucket>, window: Duration, now: Instant) {
+    fn cleanup_expired<K: std::hash::Hash + Eq>(
+        map: &mut HashMap<K, AttemptBucket>,
+        window: Duration,
+        now: Instant,
+    ) {
         map.retain(|_, bucket| !bucket.is_locked_at(now) && !bucket.window_elapsed(window, now));
     }
 }
@@ -273,6 +292,46 @@ impl LoginRateLimiter for InMemoryRateLimiter {
         let mut map = self.register_ip.lock().await;
         let bucket = map.entry(ip.to_owned()).or_insert_with(AttemptBucket::new);
         bucket.record_attempt();
+    }
+
+    async fn check_two_factor_attempts(&self, user_id: &Uuid) -> Result<(), ApiError> {
+        let mut map = self.two_factor_user.lock().await;
+        let now = Instant::now();
+
+        Self::cleanup_expired(&mut map, self.config.two_factor_window, now);
+
+        let bucket = map.entry(*user_id).or_insert_with(AttemptBucket::new);
+
+        if bucket.unlock_if_expired(now) {
+            return Ok(());
+        }
+
+        if bucket.is_locked_at(now) {
+            return Err(ApiError::RateLimited);
+        }
+
+        if bucket.window_elapsed(self.config.two_factor_window, now) {
+            bucket.reset();
+            return Ok(());
+        }
+
+        if bucket.count >= self.config.two_factor_attempts_limit {
+            bucket.locked_until = Some(now + self.config.two_factor_window);
+            return Err(ApiError::RateLimited);
+        }
+
+        Ok(())
+    }
+
+    async fn record_two_factor_failure(&self, user_id: &Uuid) {
+        let mut map = self.two_factor_user.lock().await;
+        let bucket = map.entry(*user_id).or_insert_with(AttemptBucket::new);
+        bucket.record_attempt();
+    }
+
+    async fn record_two_factor_success(&self, user_id: &Uuid) {
+        let mut map = self.two_factor_user.lock().await;
+        map.remove(user_id);
     }
 }
 
