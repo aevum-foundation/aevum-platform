@@ -21,12 +21,22 @@ pub enum ApiError {
     NotFound,
     #[error("Bad request")]
     BadRequest,
+    #[error("{message}")]
+    ValidationFailed {
+        code: &'static str,
+        message: &'static str,
+    },
     #[error("Unauthorized")]
     Unauthorized,
     #[error("Forbidden")]
     Forbidden,
     #[error("Conflict")]
     Conflict,
+    #[error("{message}")]
+    ConflictDetailed {
+        code: &'static str,
+        message: &'static str,
+    },
     #[error("Too many requests")]
     RateLimited,
     #[error("Service unavailable")]
@@ -39,9 +49,11 @@ impl ApiError {
             Self::Internal => "INTERNAL_ERROR",
             Self::NotFound => "NOT_FOUND",
             Self::BadRequest => "BAD_REQUEST",
+            Self::ValidationFailed { code, .. } => code,
             Self::Unauthorized => "UNAUTHORIZED",
             Self::Forbidden => "FORBIDDEN",
             Self::Conflict => "CONFLICT",
+            Self::ConflictDetailed { code, .. } => code,
             Self::RateLimited => "RATE_LIMITED",
             Self::ServiceUnavailable => "SERVICE_UNAVAILABLE",
         }
@@ -52,9 +64,11 @@ impl ApiError {
             Self::Internal => "Internal server error",
             Self::NotFound => "Resource not found",
             Self::BadRequest => "Bad request",
+            Self::ValidationFailed { message, .. } => message,
             Self::Unauthorized => "Authentication required",
             Self::Forbidden => "Access denied",
             Self::Conflict => "Resource conflict",
+            Self::ConflictDetailed { message, .. } => message,
             Self::RateLimited => "Too many requests",
             Self::ServiceUnavailable => "Service temporarily unavailable",
         }
@@ -64,10 +78,10 @@ impl ApiError {
         match self {
             Self::Internal => StatusCode::INTERNAL_SERVER_ERROR,
             Self::NotFound => StatusCode::NOT_FOUND,
-            Self::BadRequest => StatusCode::BAD_REQUEST,
+            Self::BadRequest | Self::ValidationFailed { .. } => StatusCode::BAD_REQUEST,
             Self::Unauthorized => StatusCode::UNAUTHORIZED,
             Self::Forbidden => StatusCode::FORBIDDEN,
-            Self::Conflict => StatusCode::CONFLICT,
+            Self::Conflict | Self::ConflictDetailed { .. } => StatusCode::CONFLICT,
             Self::RateLimited => StatusCode::TOO_MANY_REQUESTS,
             Self::ServiceUnavailable => StatusCode::SERVICE_UNAVAILABLE,
         }
