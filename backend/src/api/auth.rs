@@ -15,19 +15,17 @@ use actix_web::{
 use std::sync::Arc;
 
 use crate::auth::api::AuthApi;
-use crate::auth::preferences::{UserPreferences, UserPreferencesUpdate};
 use crate::auth::contracts::{
-    BackupCodeVerifyRequest, BackupCodesGenerateResponse, BackupCodeStatusResponse,
-    TwoFactorDisableRequest, TwoFactorEnableRequest, TwoFactorEnableResponse, TwoFactorSetupResponse,
-    TwoFactorVerifyRequest,
-    TwoFactorStatusResponse,
+    BackupCodeStatusResponse, BackupCodeVerifyRequest, BackupCodesGenerateResponse,
     EmailVerificationConfirm, EmailVerificationRequest, EmailVerificationResponse, LoginRequest,
     LoginResponse, LogoutResponse, MeResponse, PasswordChangeRequest, PasswordResetConfirm,
-    PasswordResetRequest, RegisterRequest, RegisterResponse, SESSION_COOKIE_NAME,
-    SESSION_DURATION_DAYS,
+    PasswordResetRequest, RegisterRequest, RegisterResponse, TwoFactorDisableRequest,
+    TwoFactorEnableRequest, TwoFactorEnableResponse, TwoFactorSetupResponse,
+    TwoFactorStatusResponse, TwoFactorVerifyRequest, SESSION_COOKIE_NAME, SESSION_DURATION_DAYS,
 };
 use crate::auth::csrf::{build_csrf_cookie, build_csrf_removal_cookie, CsrfConfig, CsrfToken};
 use crate::auth::models::User;
+use crate::auth::preferences::{UserPreferences, UserPreferencesUpdate};
 
 use crate::error::{ApiError, ApiResult};
 
@@ -420,9 +418,7 @@ pub async fn verify_backup_code(
         .cloned()
         .ok_or(ApiError::Unauthorized)?;
 
-    let valid = service
-        .verify_backup_code(&auth.user.id, &req.code)
-        .await?;
+    let valid = service.verify_backup_code(&auth.user.id, &req.code).await?;
 
     if valid {
         Ok(HttpResponse::Ok().json(serde_json::json!({ "valid": true })))
@@ -481,9 +477,7 @@ pub async fn two_factor_enable(
         .cloned()
         .ok_or(ApiError::Unauthorized)?;
 
-    let backup_codes = service
-        .enable_two_factor(&auth.user.id, &req.code)
-        .await?;
+    let backup_codes = service.enable_two_factor(&auth.user.id, &req.code).await?;
 
     Ok(HttpResponse::Ok()
         .insert_header(("Cache-Control", "no-store"))
@@ -910,7 +904,10 @@ mod tests {
             .unwrap();
 
         let (user, token) = match result {
-            crate::auth::models::LoginResult::Session { user, session_token } => (user, session_token),
+            crate::auth::models::LoginResult::Session {
+                user,
+                session_token,
+            } => (user, session_token),
             crate::auth::models::LoginResult::RequiresTwoFactor { .. } => {
                 panic!("2FA not enabled in this test");
             }

@@ -1040,7 +1040,6 @@ async fn session_management_flow() {
     assert_eq!(resp.status(), StatusCode::OK);
 }
 
-
 #[actix_web::test]
 async fn backup_codes_full_flow() {
     let ctx = create_test_context().await;
@@ -1137,7 +1136,6 @@ async fn backup_codes_full_flow() {
     let body: serde_json::Value = test::read_body_json(resp).await;
     assert_eq!(body["remaining"], 9);
 }
-
 
 #[actix_web::test]
 async fn two_factor_full_enrollment_flow() {
@@ -1299,9 +1297,6 @@ async fn two_factor_rejects_invalid_code() {
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }
 
-
-
-
 /// Common helper: set up 2FA for a fresh user and return:
 /// (app, email, session_token, csrf_token, secret_base32, backup_codes)
 async fn setup_2fa_user(
@@ -1310,7 +1305,9 @@ async fn setup_2fa_user(
 ) -> (
     impl actix_web::dev::Service<
         actix_http::Request,
-        Response = actix_web::dev::ServiceResponse<actix_web::body::EitherBody<actix_web::body::BoxBody>>,
+        Response = actix_web::dev::ServiceResponse<
+            actix_web::body::EitherBody<actix_web::body::BoxBody>,
+        >,
         Error = actix_web::Error,
     >,
     String,
@@ -1358,11 +1355,15 @@ async fn setup_2fa_user(
     use totp_rs::{Algorithm, Secret, TOTP};
     let secret = Secret::Encoded(secret_base32.clone());
     let totp = TOTP::new(
-        Algorithm::SHA1, 6, 1, 30,
+        Algorithm::SHA1,
+        6,
+        1,
+        30,
         secret.to_bytes().unwrap(),
         Some("Aevum".to_string()),
         email.to_string(),
-    ).unwrap();
+    )
+    .unwrap();
     let code = totp.generate_current().unwrap();
 
     let req = test::TestRequest::post()
@@ -1429,11 +1430,15 @@ async fn two_factor_rejects_replayed_totp() {
     use totp_rs::{Algorithm, Secret, TOTP};
     let secret = Secret::Encoded(secret_base32);
     let totp = TOTP::new(
-        Algorithm::SHA1, 6, 1, 30,
+        Algorithm::SHA1,
+        6,
+        1,
+        30,
         secret.to_bytes().unwrap(),
         Some("Aevum".to_string()),
         "2fa-replay@example.com".to_string(),
-    ).unwrap();
+    )
+    .unwrap();
     let code = totp.generate_current().unwrap();
 
     // First verify — should succeed and consume the step.
@@ -1560,7 +1565,6 @@ async fn two_factor_allows_backup_code_fallback() {
     let resp = test::call_service(&app, req).await;
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }
-
 
 #[actix_web::test]
 async fn preferences_default_for_new_user() {
@@ -1747,12 +1751,10 @@ async fn preferences_rejects_unknown_field() {
     assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 }
 
-
 fn minimal_png_test(width: u32, height: u32) -> Vec<u8> {
     let mut data = vec![
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-        0x00, 0x00, 0x00, 0x0D,
-        b'I', b'H', b'D', b'R',
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, b'I', b'H', b'D',
+        b'R',
     ];
     data.extend_from_slice(&width.to_be_bytes());
     data.extend_from_slice(&height.to_be_bytes());
@@ -1925,7 +1927,6 @@ async fn avatar_requires_authentication() {
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }
 
-
 #[actix_web::test]
 async fn security_center_default_state() {
     let ctx = create_test_context().await;
@@ -2027,11 +2028,15 @@ async fn security_center_consistent_after_2fa_enrollment() {
     use totp_rs::{Algorithm, Secret, TOTP};
     let secret = Secret::Encoded(secret_base32);
     let totp = TOTP::new(
-        Algorithm::SHA1, 6, 1, 30,
+        Algorithm::SHA1,
+        6,
+        1,
+        30,
         secret.to_bytes().unwrap(),
         Some("Aevum".to_string()),
         "sec-2fa@example.com".to_string(),
-    ).unwrap();
+    )
+    .unwrap();
     let code = totp.generate_current().unwrap();
 
     let req = test::TestRequest::post()
@@ -2131,6 +2136,9 @@ async fn security_center_is_read_only() {
 
     assert_eq!(body1["security_score"], body2["security_score"]);
     assert_eq!(body1["active_sessions"], body2["active_sessions"]);
-    assert_eq!(body1["backup_codes_remaining"], body2["backup_codes_remaining"]);
+    assert_eq!(
+        body1["backup_codes_remaining"],
+        body2["backup_codes_remaining"]
+    );
     assert_eq!(body1["two_factor_enabled"], body2["two_factor_enabled"]);
 }

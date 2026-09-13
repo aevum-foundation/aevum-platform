@@ -175,9 +175,7 @@ impl SecurityEventStorage for InMemorySecurityEventStorage {
             .events
             .iter()
             .rev()
-            .find(|record| {
-                record.event.user_id() == Some(user_id) && record.event.kind() == kind
-            })
+            .find(|record| record.event.user_id() == Some(user_id) && record.event.kind() == kind)
             .map(|record| record.event.clone()))
     }
 

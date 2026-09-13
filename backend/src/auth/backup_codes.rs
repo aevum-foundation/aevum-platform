@@ -19,11 +19,7 @@
 
 use rand::{rngs::OsRng, Rng};
 
-use crate::auth::contracts::{
-    BACKUP_CODE_GROUP_SIZE,
-    BACKUP_CODE_GROUPS,
-    BACKUP_CODES_PER_SET,
-};
+use crate::auth::contracts::{BACKUP_CODES_PER_SET, BACKUP_CODE_GROUPS, BACKUP_CODE_GROUP_SIZE};
 
 /// Human-readable backup-code alphabet.
 ///
@@ -38,12 +34,10 @@ use crate::auth::contracts::{
 const ALPHABET: &[u8] = b"ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
 /// Number of characters in the normalized backup code.
-pub const BACKUP_CODE_PAYLOAD_LENGTH: usize =
-    BACKUP_CODE_GROUP_SIZE * BACKUP_CODE_GROUPS;
+pub const BACKUP_CODE_PAYLOAD_LENGTH: usize = BACKUP_CODE_GROUP_SIZE * BACKUP_CODE_GROUPS;
 
 /// Number of separators in the formatted representation.
-pub const BACKUP_CODE_SEPARATOR_COUNT: usize =
-    BACKUP_CODE_GROUPS.saturating_sub(1);
+pub const BACKUP_CODE_SEPARATOR_COUNT: usize = BACKUP_CODE_GROUPS.saturating_sub(1);
 
 /// Length of the human-readable representation.
 pub const BACKUP_CODE_FORMATTED_LENGTH: usize =
@@ -69,9 +63,7 @@ pub fn generate_code() -> String {
 
 /// Generate a complete backup-code set.
 pub fn generate_set() -> Vec<String> {
-    (0..BACKUP_CODES_PER_SET)
-        .map(|_| generate_code())
-        .collect()
+    (0..BACKUP_CODES_PER_SET).map(|_| generate_code()).collect()
 }
 
 /// Normalize a user-provided backup code.

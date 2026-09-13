@@ -97,7 +97,9 @@ impl SecurityEventKind {
             SecurityEventKind::TwoFactorDisabled => "TWO_FACTOR_DISABLED",
             SecurityEventKind::TwoFactorVerificationFailed => "TWO_FACTOR_VERIFICATION_FAILED",
             SecurityEventKind::TwoFactorChallengeIssued => "TWO_FACTOR_CHALLENGE_ISSUED",
-            SecurityEventKind::TwoFactorVerificationSucceeded => "TWO_FACTOR_VERIFICATION_SUCCEEDED",
+            SecurityEventKind::TwoFactorVerificationSucceeded => {
+                "TWO_FACTOR_VERIFICATION_SUCCEEDED"
+            }
             SecurityEventKind::EmailChanged => "EMAIL_CHANGED",
             SecurityEventKind::AccountLocked => "ACCOUNT_LOCKED",
             SecurityEventKind::AccountUnlocked => "ACCOUNT_UNLOCKED",

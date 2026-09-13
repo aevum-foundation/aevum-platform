@@ -103,8 +103,7 @@ impl TotpSecretObjectId {
         let digest = hasher.finalize();
 
         u64::from_be_bytes([
-            digest[0], digest[1], digest[2], digest[3],
-            digest[4], digest[5], digest[6], digest[7],
+            digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6], digest[7],
         ])
     }
 }

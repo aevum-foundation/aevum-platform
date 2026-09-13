@@ -83,37 +83,23 @@ impl SecretCipher for AevumDbSecretCipher {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use aevum_db::config::{DbConfig, DbRuntime};
     use aevum_db::crypto::context::CryptoContext;
     use aevum_db::crypto::envelope::Envelope;
     use aevum_db::crypto::kdf::HkdfSha256Kdf;
     use aevum_db::crypto::suite::CryptoSuiteId;
-    use aevum_db::config::{DbConfig, DbRuntime};
     use zeroize::Zeroizing;
 
     fn test_runtime() -> DbRuntime {
         let master_key = Zeroizing::new([0x42u8; 32]);
-        let envelope = Envelope::new(
-            0x0001,
-            &master_key,
-            &HkdfSha256Kdf,
-        )
-        .unwrap();
-        let crypto_context = CryptoContext::new(
-            CryptoSuiteId::V1,
-            Zeroizing::new([0x42u8; 32]),
-        )
-        .unwrap();
+        let envelope = Envelope::new(0x0001, &master_key, &HkdfSha256Kdf).unwrap();
+        let crypto_context =
+            CryptoContext::new(CryptoSuiteId::V1, Zeroizing::new([0x42u8; 32])).unwrap();
 
-        DbRuntime::encrypted(
-            envelope,
-            crypto_context,
-            CryptoSuiteId::V1,
-            1,
-        )
+        DbRuntime::encrypted(envelope, crypto_context, CryptoSuiteId::V1, 1)
     }
 
     #[tokio::test]

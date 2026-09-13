@@ -21,5 +21,5 @@ pub mod rate_limit;
 pub mod secret_cipher;
 pub mod security_center;
 pub mod service;
-pub mod two_factor;
 pub mod storage;
+pub mod two_factor;

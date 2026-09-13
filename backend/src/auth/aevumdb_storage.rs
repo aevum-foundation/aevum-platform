@@ -1,13 +1,13 @@
 //! AevumDB-backed authentication storage.
 
+use crate::auth::avatar::Avatar;
 use crate::auth::models::{
     BackupCode, EmailVerificationToken, PasswordResetToken, PreAuthToken, Session,
     SessionTokenHash, User,
 };
-use crate::auth::avatar::Avatar;
 use crate::auth::preferences::UserPreferences;
-use crate::auth::two_factor::TwoFactorSettings;
 use crate::auth::service::AuthStorage;
+use crate::auth::two_factor::TwoFactorSettings;
 use crate::error::ApiError;
 use aevum_db::{AevumDb, DbConfig, DbError, DbRuntime};
 use chrono::{DateTime, Utc};
@@ -483,10 +483,7 @@ impl AuthStorage for AevumDbAuthStorage {
         Ok(revoked)
     }
 
-    async fn lock_for_user(
-        &self,
-        user_id: &Uuid,
-    ) -> Arc<tokio::sync::Mutex<()>> {
+    async fn lock_for_user(&self, user_id: &Uuid) -> Arc<tokio::sync::Mutex<()>> {
         self.get_user_lock(user_id).await
     }
 
@@ -499,7 +496,9 @@ impl AuthStorage for AevumDbAuthStorage {
     async fn upsert_avatar(&self, avatar: &Avatar) -> Result<(), ApiError> {
         let key = format!("platform:user:avatar:{}", avatar.user_id);
         let data = Self::serialize(avatar)?;
-        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        self.db
+            .put(key.as_bytes(), &data)
+            .map_err(Self::map_db_error)?;
         Ok(())
     }
 
@@ -513,7 +512,10 @@ impl AuthStorage for AevumDbAuthStorage {
         &self,
         blob_key: &str,
     ) -> Result<Option<zeroize::Zeroizing<Vec<u8>>>, ApiError> {
-        let data = self.db.get(blob_key.as_bytes()).map_err(Self::map_db_error)?;
+        let data = self
+            .db
+            .get(blob_key.as_bytes())
+            .map_err(Self::map_db_error)?;
         Ok(data.map(zeroize::Zeroizing::new))
     }
 
@@ -540,20 +542,21 @@ impl AuthStorage for AevumDbAuthStorage {
         data.map(|d| Self::deserialize(&d)).transpose()
     }
 
-    async fn upsert_user_preferences(
-        &self,
-        preferences: &UserPreferences,
-    ) -> Result<(), ApiError> {
+    async fn upsert_user_preferences(&self, preferences: &UserPreferences) -> Result<(), ApiError> {
         let key = Self::user_preferences_key(&preferences.user_id);
         let data = Self::serialize(preferences)?;
-        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        self.db
+            .put(key.as_bytes(), &data)
+            .map_err(Self::map_db_error)?;
         Ok(())
     }
 
     async fn create_pre_auth_token(&self, token: &PreAuthToken) -> Result<(), ApiError> {
         let key = Self::pre_auth_key(&token.token_hash);
         let data = Self::serialize(token)?;
-        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        self.db
+            .put(key.as_bytes(), &data)
+            .map_err(Self::map_db_error)?;
         Ok(())
     }
 
@@ -593,7 +596,9 @@ impl AuthStorage for AevumDbAuthStorage {
     ) -> Result<(), ApiError> {
         let key = Self::two_factor_key(&settings.user_id);
         let data = Self::serialize(settings)?;
-        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        self.db
+            .put(key.as_bytes(), &data)
+            .map_err(Self::map_db_error)?;
         Ok(())
     }
 
@@ -612,7 +617,9 @@ impl AuthStorage for AevumDbAuthStorage {
     ) -> Result<(), ApiError> {
         let key = Self::two_factor_key(&settings.user_id);
         let data = Self::serialize(settings)?;
-        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        self.db
+            .put(key.as_bytes(), &data)
+            .map_err(Self::map_db_error)?;
         Ok(())
     }
 

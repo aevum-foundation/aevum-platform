@@ -84,7 +84,9 @@ pub trait AuthStorage: Send + Sync {
     fn get_two_factor_settings(
         &self,
         user_id: &Uuid,
-    ) -> impl std::future::Future<Output = Result<Option<crate::auth::two_factor::TwoFactorSettings>, ApiError>> + Send;
+    ) -> impl std::future::Future<
+        Output = Result<Option<crate::auth::two_factor::TwoFactorSettings>, ApiError>,
+    > + Send;
 
     fn update_two_factor_settings(
         &self,
@@ -137,9 +139,7 @@ pub trait AuthStorage: Send + Sync {
     fn get_avatar(
         &self,
         user_id: &Uuid,
-    ) -> impl std::future::Future<
-        Output = Result<Option<crate::auth::avatar::Avatar>, ApiError>,
-    > + Send;
+    ) -> impl std::future::Future<Output = Result<Option<crate::auth::avatar::Avatar>, ApiError>> + Send;
 
     fn upsert_avatar(
         &self,
@@ -154,9 +154,7 @@ pub trait AuthStorage: Send + Sync {
     fn get_avatar_blob(
         &self,
         blob_key: &str,
-    ) -> impl std::future::Future<
-        Output = Result<Option<zeroize::Zeroizing<Vec<u8>>>, ApiError>,
-    > + Send;
+    ) -> impl std::future::Future<Output = Result<Option<zeroize::Zeroizing<Vec<u8>>>, ApiError>> + Send;
 
     fn put_avatar_blob(
         &self,
@@ -1335,10 +1333,8 @@ where
             .await?;
 
         // Store as Pending (replaces any existing pending)
-        let settings = crate::auth::two_factor::TwoFactorSettings::new_pending(
-            *user_id,
-            encrypted_secret,
-        );
+        let settings =
+            crate::auth::two_factor::TwoFactorSettings::new_pending(*user_id, encrypted_secret);
         self.storage.create_two_factor_settings(&settings).await?;
 
         Ok(crate::auth::contracts::TwoFactorSetupResponse {
@@ -1352,7 +1348,11 @@ where
     /// AUTH-25.3 — Two-Factor Enable
     ///
     /// On success, transitions Pending → Enabled and generates backup codes.
-    pub async fn enable_two_factor(&self, user_id: &Uuid, code: &str) -> Result<Vec<String>, ApiError> {
+    pub async fn enable_two_factor(
+        &self,
+        user_id: &Uuid,
+        code: &str,
+    ) -> Result<Vec<String>, ApiError> {
         // Serialize per-user atomic operations.
         let lock = self.storage.lock_for_user(user_id).await;
         let _guard = lock.lock().await;
@@ -1634,7 +1634,9 @@ where
         let user_id = pre_auth.user_id;
 
         // Rate limit: per-user 2FA attempts
-        self.rate_limiter.check_two_factor_attempts(&user_id).await?;
+        self.rate_limiter
+            .check_two_factor_attempts(&user_id)
+            .await?;
 
         // Acquire per-user lock for atomic verify + consume
         let lock = self.storage.lock_for_user(&user_id).await;
@@ -1652,24 +1654,23 @@ where
         }
 
         // Try TOTP
-        let totp_valid = if let Some(mut settings) =
-            self.storage.get_two_factor_settings(&user_id).await?
-        {
-            if !matches!(
-                settings.state,
-                crate::auth::two_factor::TwoFactorState::Enabled
-            ) {
-                false
-            } else {
-                let valid = self.verify_totp_and_mark_step(&mut settings, code).await?;
-                if valid {
-                    self.storage.update_two_factor_settings(&settings).await?;
+        let totp_valid =
+            if let Some(mut settings) = self.storage.get_two_factor_settings(&user_id).await? {
+                if !matches!(
+                    settings.state,
+                    crate::auth::two_factor::TwoFactorState::Enabled
+                ) {
+                    false
+                } else {
+                    let valid = self.verify_totp_and_mark_step(&mut settings, code).await?;
+                    if valid {
+                        self.storage.update_two_factor_settings(&settings).await?;
+                    }
+                    valid
                 }
-                valid
-            }
-        } else {
-            false
-        };
+            } else {
+                false
+            };
 
         if totp_valid {
             self.emit_event(SecurityEvent::TwoFactorVerificationSucceeded {
@@ -1774,19 +1775,14 @@ where
             hasher.update(user_id.as_bytes());
             let digest = hasher.finalize();
             u64::from_be_bytes([
-                digest[0], digest[1], digest[2], digest[3],
-                digest[4], digest[5], digest[6], digest[7],
+                digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6],
+                digest[7],
             ])
         };
 
-        let encrypted = self
-            .secret_cipher
-            .encrypt(object_id, data)
-            .await?;
+        let encrypted = self.secret_cipher.encrypt(object_id, data).await?;
 
-        self.storage
-            .put_avatar_blob(&blob_key, &encrypted)
-            .await?;
+        self.storage.put_avatar_blob(&blob_key, &encrypted).await?;
 
         let avatar = crate::auth::avatar::Avatar {
             user_id: *user_id,
@@ -1845,8 +1841,7 @@ where
         use crate::auth::events::SecurityEventKind;
         use crate::auth::security_center::{
             calculate_security_score, password_changed_recently, EventSummary,
-            SecurityCenterResponse, SecurityScoreInput,
-            SECURITY_CENTER_EVENT_LIMIT,
+            SecurityCenterResponse, SecurityScoreInput, SECURITY_CENTER_EVENT_LIMIT,
         };
 
         // User (email_verified)
@@ -1884,8 +1879,7 @@ where
             .await?
             .map(|event| event.timestamp());
 
-        let password_changed_recently =
-            password_changed_recently(password_changed_at, Utc::now());
+        let password_changed_recently = password_changed_recently(password_changed_at, Utc::now());
 
         // Recent events (client-safe summaries)
         let recent_events = self

@@ -23,14 +23,14 @@ use chrono::{DateTime, Utc};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
+use crate::auth::avatar::Avatar;
 use crate::auth::models::{
     BackupCode, EmailVerificationToken, PasswordResetToken, PreAuthToken, Session,
     SessionTokenHash, User,
 };
-use crate::auth::avatar::Avatar;
 use crate::auth::preferences::UserPreferences;
-use crate::auth::two_factor::TwoFactorSettings;
 use crate::auth::service::AuthStorage;
+use crate::auth::two_factor::TwoFactorSettings;
 use crate::error::ApiError;
 
 /// In-memory authentication storage.
@@ -371,10 +371,7 @@ impl AuthStorage for InMemoryAuthStorage {
         Ok(revoked)
     }
 
-    async fn lock_for_user(
-        &self,
-        user_id: &Uuid,
-    ) -> Arc<tokio::sync::Mutex<()>> {
+    async fn lock_for_user(&self, user_id: &Uuid) -> Arc<tokio::sync::Mutex<()>> {
         self.get_user_lock(user_id).await
     }
 
@@ -425,10 +422,7 @@ impl AuthStorage for InMemoryAuthStorage {
         Ok(map.get(user_id).cloned())
     }
 
-    async fn upsert_user_preferences(
-        &self,
-        preferences: &UserPreferences,
-    ) -> Result<(), ApiError> {
+    async fn upsert_user_preferences(&self, preferences: &UserPreferences) -> Result<(), ApiError> {
         let mut map = self.user_preferences.lock().await;
         map.insert(preferences.user_id, preferences.clone());
         Ok(())

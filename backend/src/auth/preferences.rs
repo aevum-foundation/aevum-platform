@@ -104,34 +104,21 @@ mod tests {
 
     #[test]
     fn theme_serializes_lowercase() {
-        assert_eq!(
-            serde_json::to_string(&Theme::System).unwrap(),
-            "\"system\""
-        );
-        assert_eq!(
-            serde_json::to_string(&Theme::Light).unwrap(),
-            "\"light\""
-        );
-        assert_eq!(
-            serde_json::to_string(&Theme::Dark).unwrap(),
-            "\"dark\""
-        );
+        assert_eq!(serde_json::to_string(&Theme::System).unwrap(), "\"system\"");
+        assert_eq!(serde_json::to_string(&Theme::Light).unwrap(), "\"light\"");
+        assert_eq!(serde_json::to_string(&Theme::Dark).unwrap(), "\"dark\"");
     }
 
     #[test]
     fn language_serializes_lowercase() {
-        assert_eq!(
-            serde_json::to_string(&Language::En).unwrap(),
-            "\"en\""
-        );
+        assert_eq!(serde_json::to_string(&Language::En).unwrap(), "\"en\"");
     }
 
     #[test]
     fn update_accepts_partial_fields() {
         let json = r#"{"theme":"dark"}"#;
 
-        let update: UserPreferencesUpdate =
-            serde_json::from_str(json).unwrap();
+        let update: UserPreferencesUpdate = serde_json::from_str(json).unwrap();
 
         assert_eq!(update.theme, Some(Theme::Dark));
         assert_eq!(update.language, None);
@@ -146,8 +133,7 @@ mod tests {
             "notifications_enabled":false
         }"#;
 
-        let update: UserPreferencesUpdate =
-            serde_json::from_str(json).unwrap();
+        let update: UserPreferencesUpdate = serde_json::from_str(json).unwrap();
 
         assert_eq!(update.theme, Some(Theme::Light));
         assert_eq!(update.language, Some(Language::En));
@@ -161,8 +147,7 @@ mod tests {
             "user_id":"00000000-0000-0000-0000-000000000000"
         }"#;
 
-        let result =
-            serde_json::from_str::<UserPreferencesUpdate>(json);
+        let result = serde_json::from_str::<UserPreferencesUpdate>(json);
 
         assert!(result.is_err());
     }
@@ -174,16 +159,14 @@ mod tests {
             "updated_at":"2026-01-01T00:00:00Z"
         }"#;
 
-        let result =
-            serde_json::from_str::<UserPreferencesUpdate>(json);
+        let result = serde_json::from_str::<UserPreferencesUpdate>(json);
 
         assert!(result.is_err());
     }
 
     #[test]
     fn empty_update_is_valid() {
-        let update =
-            serde_json::from_str::<UserPreferencesUpdate>("{}").unwrap();
+        let update = serde_json::from_str::<UserPreferencesUpdate>("{}").unwrap();
 
         assert_eq!(update.theme, None);
         assert_eq!(update.language, None);

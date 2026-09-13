@@ -69,16 +69,9 @@ pub trait AuthApi: Send + Sync {
         current_session_id: &Uuid,
     ) -> Result<usize, ApiError>;
 
-    async fn generate_backup_codes(
-        &self,
-        user_id: &Uuid,
-    ) -> Result<Vec<String>, ApiError>;
+    async fn generate_backup_codes(&self, user_id: &Uuid) -> Result<Vec<String>, ApiError>;
 
-    async fn verify_backup_code(
-        &self,
-        user_id: &Uuid,
-        code: &str,
-    ) -> Result<bool, ApiError>;
+    async fn verify_backup_code(&self, user_id: &Uuid, code: &str) -> Result<bool, ApiError>;
 
     async fn backup_codes_status(
         &self,

@@ -155,8 +155,8 @@ pub fn validate_avatar(
     let declared = AvatarMime::from_content_type(declared_content_type)
         .ok_or(AvatarValidationError::UnsupportedContentType)?;
 
-    let detected = AvatarMime::detect_from_bytes(data)
-        .ok_or(AvatarValidationError::UnsupportedFormat)?;
+    let detected =
+        AvatarMime::detect_from_bytes(data).ok_or(AvatarValidationError::UnsupportedFormat)?;
 
     if declared != detected {
         return Err(AvatarValidationError::ContentTypeMismatch);
@@ -168,10 +168,7 @@ pub fn validate_avatar(
 }
 
 /// Decode image header and enforce dimension limits.
-fn validate_dimensions(
-    mime: AvatarMime,
-    data: &[u8],
-) -> Result<(), AvatarValidationError> {
+fn validate_dimensions(mime: AvatarMime, data: &[u8]) -> Result<(), AvatarValidationError> {
     let (width, height) = match mime {
         AvatarMime::Jpeg => jpeg_dimensions(data),
         AvatarMime::Png => png_dimensions(data),
@@ -216,10 +213,8 @@ fn jpeg_dimensions(data: &[u8]) -> Option<(u32, u32)> {
         let marker = data[i + 1];
 
         // SOF0..SOF15 (excluding DHT=0xC4, JPG=0xC8, DAC=0xCC)
-        let is_sof = (0xC0..=0xCF).contains(&marker)
-            && marker != 0xC4
-            && marker != 0xC8
-            && marker != 0xCC;
+        let is_sof =
+            (0xC0..=0xCF).contains(&marker) && marker != 0xC4 && marker != 0xC8 && marker != 0xCC;
 
         if is_sof {
             if i + 9 >= data.len() {
@@ -303,30 +298,62 @@ mod tests {
 
     fn minimal_jpeg(width: u16, height: u16) -> Vec<u8> {
         vec![
-            0xFF, 0xD8, // SOI
-            0xFF, 0xC0, // SOF0
-            0x00, 0x11, // length
+            0xFF,
+            0xD8, // SOI
+            0xFF,
+            0xC0, // SOF0
+            0x00,
+            0x11, // length
             0x08, // precision
-            (height >> 8) as u8, (height & 0xFF) as u8,
-            (width >> 8) as u8, (width & 0xFF) as u8,
+            (height >> 8) as u8,
+            (height & 0xFF) as u8,
+            (width >> 8) as u8,
+            (width & 0xFF) as u8,
             0x03,
-            0x01, 0x11, 0x00,
-            0x02, 0x11, 0x01,
-            0x03, 0x11, 0x01,
+            0x01,
+            0x11,
+            0x00,
+            0x02,
+            0x11,
+            0x01,
+            0x03,
+            0x11,
+            0x01,
         ]
     }
 
     fn minimal_webp_vp8(width: u16, height: u16) -> Vec<u8> {
         let mut data = vec![
-            b'R', b'I', b'F', b'F',
-            0x00, 0x00, 0x00, 0x00, // size (ignored)
-            b'W', b'E', b'B', b'P',
-            b'V', b'P', b'8', b' ',
-            0x00, 0x00, 0x00, 0x00, // chunk size
-            0x00, 0x00, 0x00, // frame tag
-            0x9D, 0x01, 0x2A, // start code
-            (width & 0xFF) as u8, (width >> 8) as u8,
-            (height & 0xFF) as u8, (height >> 8) as u8,
+            b'R',
+            b'I',
+            b'F',
+            b'F',
+            0x00,
+            0x00,
+            0x00,
+            0x00, // size (ignored)
+            b'W',
+            b'E',
+            b'B',
+            b'P',
+            b'V',
+            b'P',
+            b'8',
+            b' ',
+            0x00,
+            0x00,
+            0x00,
+            0x00, // chunk size
+            0x00,
+            0x00,
+            0x00, // frame tag
+            0x9D,
+            0x01,
+            0x2A, // start code
+            (width & 0xFF) as u8,
+            (width >> 8) as u8,
+            (height & 0xFF) as u8,
+            (height >> 8) as u8,
         ];
         data.resize(30, 0);
         data

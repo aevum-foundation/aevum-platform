@@ -102,10 +102,7 @@ pub fn calculate_security_score(input: SecurityScoreInput) -> u8 {
 /// Future timestamps are treated as not recent. This prevents a
 /// malformed or clock-skewed timestamp from automatically granting
 /// the freshness points.
-pub fn password_changed_recently(
-    changed_at: Option<DateTime<Utc>>,
-    now: DateTime<Utc>,
-) -> bool {
+pub fn password_changed_recently(changed_at: Option<DateTime<Utc>>, now: DateTime<Utc>) -> bool {
     let Some(changed_at) = changed_at else {
         return false;
     };
@@ -200,10 +197,7 @@ mod tests {
 
     #[test]
     fn score_all_controls_is_100() {
-        assert_eq!(
-            calculate_security_score(input(true, true, true, true)),
-            100
-        );
+        assert_eq!(calculate_security_score(input(true, true, true, true)), 100);
     }
 
     #[test]
@@ -233,8 +227,7 @@ mod tests {
     #[test]
     fn password_older_than_90_days_is_not_recent() {
         let now = Utc::now();
-        let changed_at =
-            now - Duration::days(PASSWORD_RECENCY_DAYS + 1);
+        let changed_at = now - Duration::days(PASSWORD_RECENCY_DAYS + 1);
 
         assert!(!password_changed_recently(Some(changed_at), now));
     }
