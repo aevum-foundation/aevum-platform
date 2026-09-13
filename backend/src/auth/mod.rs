@@ -15,6 +15,7 @@ pub use events::storage::{InMemorySecurityEventStorage, SecurityEventStorage};
 pub mod middleware;
 pub mod models;
 pub mod password;
+pub mod preferences;
 pub mod rate_limit;
 pub mod secret_cipher;
 pub mod service;

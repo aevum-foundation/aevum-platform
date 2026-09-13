@@ -122,6 +122,18 @@ pub trait AuthStorage: Send + Sync {
         consumed_at: DateTime<Utc>,
     ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
 
+    fn get_user_preferences(
+        &self,
+        user_id: &Uuid,
+    ) -> impl std::future::Future<
+        Output = Result<Option<crate::auth::preferences::UserPreferences>, ApiError>,
+    > + Send;
+
+    fn upsert_user_preferences(
+        &self,
+        preferences: &crate::auth::preferences::UserPreferences,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
     fn list_backup_codes(
         &self,
         user_id: &Uuid,
@@ -349,6 +361,21 @@ where
         code: &str,
     ) -> Result<(User, SessionToken), ApiError> {
         AuthService::verify_two_factor(self, pre_auth_token, code).await
+    }
+
+    async fn get_preferences(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::auth::preferences::UserPreferences, ApiError> {
+        AuthService::get_preferences(self, user_id).await
+    }
+
+    async fn update_preferences(
+        &self,
+        user_id: &Uuid,
+        update: crate::auth::preferences::UserPreferencesUpdate,
+    ) -> Result<crate::auth::preferences::UserPreferences, ApiError> {
+        AuthService::update_preferences(self, user_id, update).await
     }
 }
 
@@ -1573,6 +1600,42 @@ where
 
         // Create real session
         self.create_session_for_user(user).await
+    }
+
+    /// Get user preferences, returning defaults if none exist.
+    ///
+    /// AUTH-26 — User Preferences
+    pub async fn get_preferences(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::auth::preferences::UserPreferences, ApiError> {
+        let stored = self.storage.get_user_preferences(user_id).await?;
+        Ok(stored.unwrap_or_else(|| crate::auth::preferences::UserPreferences::defaults(*user_id)))
+    }
+
+    /// Update user preferences (partial update, server-owned fields preserved).
+    pub async fn update_preferences(
+        &self,
+        user_id: &Uuid,
+        update: crate::auth::preferences::UserPreferencesUpdate,
+    ) -> Result<crate::auth::preferences::UserPreferences, ApiError> {
+        let mut prefs = self.get_preferences(user_id).await?;
+
+        if let Some(theme) = update.theme {
+            prefs.theme = theme;
+        }
+        if let Some(language) = update.language {
+            prefs.language = language;
+        }
+        if let Some(notifications_enabled) = update.notifications_enabled {
+            prefs.notifications_enabled = notifications_enabled;
+        }
+
+        prefs.updated_at = Utc::now();
+
+        self.storage.upsert_user_preferences(&prefs).await?;
+
+        Ok(prefs)
     }
 
     pub fn session_duration_days(&self) -> i64 {

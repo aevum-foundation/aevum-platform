@@ -110,4 +110,15 @@ pub trait AuthApi: Send + Sync {
         pre_auth_token: &str,
         code: &str,
     ) -> Result<(crate::auth::models::User, SessionToken), ApiError>;
+
+    async fn get_preferences(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::auth::preferences::UserPreferences, ApiError>;
+
+    async fn update_preferences(
+        &self,
+        user_id: &Uuid,
+        update: crate::auth::preferences::UserPreferencesUpdate,
+    ) -> Result<crate::auth::preferences::UserPreferences, ApiError>;
 }

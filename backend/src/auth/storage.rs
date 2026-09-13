@@ -27,6 +27,7 @@ use crate::auth::models::{
     BackupCode, EmailVerificationToken, PasswordResetToken, PreAuthToken, Session,
     SessionTokenHash, User,
 };
+use crate::auth::preferences::UserPreferences;
 use crate::auth::two_factor::TwoFactorSettings;
 use crate::auth::service::AuthStorage;
 use crate::error::ApiError;
@@ -69,6 +70,9 @@ pub struct InMemoryAuthStorage {
 
     /// Pre-auth challenge tokens indexed by token hash.
     pre_auth_tokens: Arc<Mutex<HashMap<String, PreAuthToken>>>,
+
+    /// User preferences indexed by user id.
+    user_preferences: Arc<Mutex<HashMap<Uuid, UserPreferences>>>,
 }
 
 impl InMemoryAuthStorage {
@@ -365,6 +369,23 @@ impl AuthStorage for InMemoryAuthStorage {
         user_id: &Uuid,
     ) -> Arc<tokio::sync::Mutex<()>> {
         self.get_user_lock(user_id).await
+    }
+
+    async fn get_user_preferences(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Option<UserPreferences>, ApiError> {
+        let map = self.user_preferences.lock().await;
+        Ok(map.get(user_id).cloned())
+    }
+
+    async fn upsert_user_preferences(
+        &self,
+        preferences: &UserPreferences,
+    ) -> Result<(), ApiError> {
+        let mut map = self.user_preferences.lock().await;
+        map.insert(preferences.user_id, preferences.clone());
+        Ok(())
     }
 
     async fn create_pre_auth_token(&self, token: &PreAuthToken) -> Result<(), ApiError> {

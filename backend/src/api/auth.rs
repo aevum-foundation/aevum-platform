@@ -9,12 +9,13 @@ use uuid::Uuid;
 
 use actix_web::{
     cookie::{Cookie, SameSite},
-    get, post, web, HttpMessage, HttpRequest, HttpResponse,
+    get, post, put, web, HttpMessage, HttpRequest, HttpResponse,
 };
 
 use std::sync::Arc;
 
 use crate::auth::api::AuthApi;
+use crate::auth::preferences::{UserPreferences, UserPreferencesUpdate};
 use crate::auth::contracts::{
     BackupCodeVerifyRequest, BackupCodesGenerateResponse, BackupCodeStatusResponse,
     TwoFactorDisableRequest, TwoFactorEnableRequest, TwoFactorEnableResponse, TwoFactorSetupResponse,
@@ -560,6 +561,41 @@ pub async fn two_factor_verify(
     Ok(http_response)
 }
 
+#[get("/api/v1/auth/preferences")]
+pub async fn get_preferences(
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    let prefs: UserPreferences = service.get_preferences(&auth.user.id).await?;
+
+    Ok(HttpResponse::Ok().json(prefs))
+}
+
+#[put("/api/v1/auth/preferences")]
+pub async fn update_preferences(
+    req: web::Json<UserPreferencesUpdate>,
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    let prefs = service
+        .update_preferences(&auth.user.id, req.into_inner())
+        .await?;
+
+    Ok(HttpResponse::Ok().json(prefs))
+}
+
 #[get("/api/v1/auth/me")]
 pub async fn me(req: HttpRequest) -> ApiResult<HttpResponse> {
     let auth = req
@@ -606,6 +642,8 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(two_factor_disable)
         .service(two_factor_status)
         .service(two_factor_verify)
+        .service(get_preferences)
+        .service(update_preferences)
         .service(me);
 }
 

@@ -4,6 +4,7 @@ use crate::auth::models::{
     BackupCode, EmailVerificationToken, PasswordResetToken, PreAuthToken, Session,
     SessionTokenHash, User,
 };
+use crate::auth::preferences::UserPreferences;
 use crate::auth::two_factor::TwoFactorSettings;
 use crate::auth::service::AuthStorage;
 use crate::error::ApiError;
@@ -24,6 +25,7 @@ const EMAIL_VERIFICATION_PREFIX: &str = "platform:auth:email_verification:";
 const BACKUP_CODE_PREFIX: &str = "platform:auth:backup_code:";
 const TWO_FACTOR_PREFIX: &str = "platform:auth:two_factor:";
 const PRE_AUTH_PREFIX: &str = "platform:auth:pre_auth:";
+const USER_PREFERENCES_PREFIX: &str = "platform:user:preferences:";
 
 #[derive(Clone)]
 pub struct AevumDbAuthStorage {
@@ -113,6 +115,10 @@ impl AevumDbAuthStorage {
 
     fn pre_auth_key(token_hash: &str) -> String {
         format!("{}{}", PRE_AUTH_PREFIX, token_hash)
+    }
+
+    fn user_preferences_key(user_id: &Uuid) -> String {
+        format!("{}{}", USER_PREFERENCES_PREFIX, user_id)
     }
 
     fn serialize<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, ApiError> {
@@ -481,6 +487,25 @@ impl AuthStorage for AevumDbAuthStorage {
         user_id: &Uuid,
     ) -> Arc<tokio::sync::Mutex<()>> {
         self.get_user_lock(user_id).await
+    }
+
+    async fn get_user_preferences(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Option<UserPreferences>, ApiError> {
+        let key = Self::user_preferences_key(user_id);
+        let data = self.db.get(key.as_bytes()).map_err(Self::map_db_error)?;
+        data.map(|d| Self::deserialize(&d)).transpose()
+    }
+
+    async fn upsert_user_preferences(
+        &self,
+        preferences: &UserPreferences,
+    ) -> Result<(), ApiError> {
+        let key = Self::user_preferences_key(&preferences.user_id);
+        let data = Self::serialize(preferences)?;
+        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        Ok(())
     }
 
     async fn create_pre_auth_token(&self, token: &PreAuthToken) -> Result<(), ApiError> {
