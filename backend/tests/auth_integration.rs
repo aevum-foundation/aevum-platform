@@ -1137,3 +1137,164 @@ async fn backup_codes_full_flow() {
     let body: serde_json::Value = test::read_body_json(resp).await;
     assert_eq!(body["remaining"], 9);
 }
+
+
+#[actix_web::test]
+async fn two_factor_full_enrollment_flow() {
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    // Register + login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "2fa-flow@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "2fa-flow@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let csrf_token = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    // Setup 2FA
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/setup")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    let otpauth_uri = body["otpauth_uri"].as_str().unwrap();
+    let secret_base32 = body["secret_base32"].as_str().unwrap();
+
+    assert!(otpauth_uri.starts_with("otpauth://totp/"));
+    assert!(!secret_base32.is_empty());
+
+    // Generate valid TOTP code from secret
+    use totp_rs::{Algorithm, Secret, TOTP};
+    let secret = Secret::Encoded(secret_base32.to_string());
+    let totp = TOTP::new(
+        Algorithm::SHA1,
+        6,
+        1,
+        30,
+        secret.to_bytes().unwrap(),
+        Some("Aevum".to_string()),
+        "2fa-flow@example.com".to_string(),
+    )
+    .unwrap();
+
+    let code = totp.generate_current().unwrap();
+
+    // Enable 2FA
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/enable")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .set_json(serde_json::json!({ "code": code }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Status should show enabled
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/2fa/status")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    assert_eq!(body["enabled"], true);
+
+    // Backup codes should have been generated
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/backup-codes/status")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let body: serde_json::Value = test::read_body_json(resp).await;
+    assert_eq!(body["total"], 10);
+}
+
+#[actix_web::test]
+async fn two_factor_rejects_invalid_code() {
+    let ctx = create_test_context().await;
+
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    // Register + login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "2fa-invalid@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "2fa-invalid@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let csrf_token = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    // Setup
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/setup")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    // Try enable with wrong code
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/2fa/enable")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .set_json(serde_json::json!({ "code": "000000" }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}

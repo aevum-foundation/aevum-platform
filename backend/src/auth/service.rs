@@ -76,6 +76,36 @@ pub trait AuthStorage: Send + Sync {
         code: &BackupCode,
     ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
 
+    fn create_two_factor_settings(
+        &self,
+        settings: &crate::auth::two_factor::TwoFactorSettings,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    fn get_two_factor_settings(
+        &self,
+        user_id: &Uuid,
+    ) -> impl std::future::Future<Output = Result<Option<crate::auth::two_factor::TwoFactorSettings>, ApiError>> + Send;
+
+    fn update_two_factor_settings(
+        &self,
+        settings: &crate::auth::two_factor::TwoFactorSettings,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    fn delete_two_factor_settings(
+        &self,
+        user_id: &Uuid,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    /// Get a per-user lock for serializing critical atomic operations.
+    ///
+    /// Returns the same `Arc<Mutex<()>>` for the same user_id.
+    ///
+    /// Policy: never hold two different user locks at the same time.
+    fn lock_for_user(
+        &self,
+        user_id: &Uuid,
+    ) -> impl std::future::Future<Output = Arc<tokio::sync::Mutex<()>>> + Send;
+
     fn list_backup_codes(
         &self,
         user_id: &Uuid,
@@ -152,6 +182,7 @@ where
     rate_limiter: Arc<dyn LoginRateLimiter + Send + Sync>,
     events: Arc<dyn SecurityEventStorage + Send + Sync>,
     email_provider: Arc<dyn crate::auth::email::EmailProvider + Send + Sync>,
+    secret_cipher: Arc<dyn crate::auth::secret_cipher::SecretCipher + Send + Sync>,
 }
 
 impl<S> std::fmt::Debug for AuthService<S>
@@ -166,6 +197,7 @@ where
             .field("rate_limiter", &"<redacted>")
             .field("events", &"<redacted>")
             .field("email_provider", &"<redacted>")
+            .field("secret_cipher", &"<redacted>")
             .finish()
     }
 }
@@ -268,6 +300,34 @@ where
     ) -> Result<crate::auth::contracts::BackupCodeStatusResponse, ApiError> {
         AuthService::backup_codes_status(self, user_id).await
     }
+
+    async fn setup_two_factor(
+        &self,
+        user_id: &Uuid,
+        email: &str,
+    ) -> Result<crate::auth::contracts::TwoFactorSetupResponse, ApiError> {
+        AuthService::setup_two_factor(self, user_id, email).await
+    }
+
+    async fn enable_two_factor(&self, user_id: &Uuid, code: &str) -> Result<(), ApiError> {
+        AuthService::enable_two_factor(self, user_id, code).await
+    }
+
+    async fn disable_two_factor(
+        &self,
+        user_id: &Uuid,
+        password: &str,
+        code: &str,
+    ) -> Result<(), ApiError> {
+        AuthService::disable_two_factor(self, user_id, password, code).await
+    }
+
+    async fn two_factor_status(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::auth::contracts::TwoFactorStatusResponse, ApiError> {
+        AuthService::two_factor_status(self, user_id).await
+    }
 }
 
 #[async_trait::async_trait]
@@ -302,6 +362,26 @@ where
             rate_limiter: Arc::new(crate::auth::rate_limit::InMemoryRateLimiter::default()),
             events: Arc::new(crate::auth::events::storage::InMemorySecurityEventStorage::new()),
             email_provider,
+            secret_cipher: Arc::new(crate::auth::secret_cipher::TestSecretCipher::new()),
+        }
+    }
+
+    /// Full constructor with all dependencies.
+    ///
+    /// Production MUST provide a non-passthrough SecretCipher.
+    pub fn with_dependencies(
+        storage: S,
+        email_provider: Arc<dyn crate::auth::email::EmailProvider + Send + Sync>,
+        secret_cipher: Arc<dyn crate::auth::secret_cipher::SecretCipher + Send + Sync>,
+    ) -> Self {
+        Self {
+            storage: Arc::new(storage),
+            password_hasher: PasswordHasher::new(),
+            session_duration_days: SESSION_DURATION_DAYS,
+            rate_limiter: Arc::new(crate::auth::rate_limit::InMemoryRateLimiter::default()),
+            events: Arc::new(crate::auth::events::storage::InMemorySecurityEventStorage::new()),
+            email_provider,
+            secret_cipher,
         }
     }
 
@@ -317,6 +397,7 @@ where
             rate_limiter: Arc::new(crate::auth::rate_limit::InMemoryRateLimiter::default()),
             events: Arc::new(crate::auth::events::storage::InMemorySecurityEventStorage::new()),
             email_provider: Arc::new(crate::auth::email::MockEmailProvider::new()),
+            secret_cipher: Arc::new(crate::auth::secret_cipher::TestSecretCipher::new()),
         })
     }
 
@@ -1055,6 +1136,279 @@ where
             total,
             generated_at,
         })
+    }
+
+    /// Start TOTP enrollment.
+    ///
+    /// AUTH-25.3 — Two-Factor Setup
+    ///
+    /// Generates a 160-bit CSPRNG secret, stores it as Pending (encrypted),
+    /// and returns the otpauth URI + base32 secret to the caller.
+    ///
+    /// Plaintext secret is returned ONCE and never logged.
+    pub async fn setup_two_factor(
+        &self,
+        user_id: &Uuid,
+        email: &str,
+    ) -> Result<crate::auth::contracts::TwoFactorSetupResponse, ApiError> {
+        use rand::rngs::OsRng;
+        use rand::RngCore;
+        use totp_rs::TOTP;
+
+        use crate::auth::two_factor::profile;
+
+        // Generate 160-bit secret via OS CSPRNG
+        let mut secret_bytes = zeroize::Zeroizing::new([0u8; profile::SECRET_BYTES]);
+        OsRng
+            .try_fill_bytes(&mut secret_bytes[..])
+            .map_err(|_| ApiError::Internal)?;
+
+        // Build TOTP object for URI generation
+        let totp = TOTP::new(
+            profile::ALGORITHM,
+            profile::DIGITS,
+            profile::SKEW,
+            profile::STEP_SECONDS,
+            secret_bytes.to_vec(),
+            Some(profile::ISSUER.to_string()),
+            email.to_string(),
+        )
+        .map_err(|_| ApiError::Internal)?;
+
+        let otpauth_uri = totp.get_url();
+        let secret_base32 = totp.get_secret_base32();
+
+        // Derive domain-separated object_id
+        let object_id = crate::auth::two_factor::TotpSecretObjectId::for_user(user_id);
+
+        // Encrypt secret via SecretCipher
+        let encrypted_secret = self
+            .secret_cipher
+            .encrypt(object_id, &secret_bytes[..])
+            .await?;
+
+        // Store as Pending (replaces any existing pending)
+        let settings = crate::auth::two_factor::TwoFactorSettings::new_pending(
+            *user_id,
+            encrypted_secret,
+        );
+        self.storage.create_two_factor_settings(&settings).await?;
+
+        Ok(crate::auth::contracts::TwoFactorSetupResponse {
+            otpauth_uri,
+            secret_base32,
+        })
+    }
+
+    /// Confirm TOTP enrollment with the first valid code.
+    ///
+    /// AUTH-25.3 — Two-Factor Enable
+    ///
+    /// On success, transitions Pending → Enabled and generates backup codes.
+    pub async fn enable_two_factor(&self, user_id: &Uuid, code: &str) -> Result<(), ApiError> {
+        // Serialize per-user atomic operations.
+        let lock = self.storage.lock_for_user(user_id).await;
+        let _guard = lock.lock().await;
+
+        let mut settings = self
+            .storage
+            .get_two_factor_settings(user_id)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        if !matches!(
+            settings.state,
+            crate::auth::two_factor::TwoFactorState::Pending
+        ) {
+            return Err(ApiError::BadRequest);
+        }
+
+        if settings.is_pending_expired(Utc::now()) {
+            self.storage.delete_two_factor_settings(user_id).await?;
+            return Err(ApiError::Unauthorized);
+        }
+
+        let valid = self.verify_totp_and_mark_step(&mut settings, code).await?;
+
+        if !valid {
+            self.emit_event(SecurityEvent::TwoFactorVerificationFailed {
+                metadata: SecurityMetadata::new(None, None),
+                user_id: *user_id,
+            })
+            .await;
+            return Err(ApiError::Unauthorized);
+        }
+
+        // Transition Pending → Enabled.
+        settings.state = crate::auth::two_factor::TwoFactorState::Enabled;
+        settings.enabled_at = Some(Utc::now());
+        settings.expires_at = None;
+
+        self.storage.update_two_factor_settings(&settings).await?;
+
+        // Generate backup codes atomically with enable.
+        // Storage failure here leaves 2FA enabled without recovery codes;
+        // generate_backup_codes is best-effort but must not be skipped.
+        let _plaintext_codes = self.generate_backup_codes(user_id).await?;
+
+        self.emit_event(SecurityEvent::TwoFactorEnabled {
+            metadata: SecurityMetadata::new(None, None),
+            user_id: *user_id,
+        })
+        .await;
+
+        Ok(())
+    }
+
+    /// Disable two-factor authentication.
+    ///
+    /// AUTH-25.3 — Two-Factor Disable
+    ///
+    /// Requires password + current valid TOTP code.
+    pub async fn disable_two_factor(
+        &self,
+        user_id: &Uuid,
+        password: &str,
+        code: &str,
+    ) -> Result<(), ApiError> {
+        // Verify password first (no need to hold the lock for this).
+        let user = self
+            .storage
+            .get_user_by_id(user_id)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        let password_valid = self
+            .password_hasher
+            .verify(password, &user.password_hash)
+            .map_err(|_| ApiError::Unauthorized)?;
+
+        if !password_valid {
+            return Err(ApiError::Unauthorized);
+        }
+
+        // Serialize per-user atomic operations.
+        let lock = self.storage.lock_for_user(user_id).await;
+        let _guard = lock.lock().await;
+
+        let mut settings = self
+            .storage
+            .get_two_factor_settings(user_id)
+            .await?
+            .ok_or(ApiError::Unauthorized)?;
+
+        if !matches!(
+            settings.state,
+            crate::auth::two_factor::TwoFactorState::Enabled
+        ) {
+            return Err(ApiError::BadRequest);
+        }
+
+        let valid = self.verify_totp_and_mark_step(&mut settings, code).await?;
+
+        if !valid {
+            self.emit_event(SecurityEvent::TwoFactorVerificationFailed {
+                metadata: SecurityMetadata::new(None, None),
+                user_id: *user_id,
+            })
+            .await;
+            return Err(ApiError::Unauthorized);
+        }
+
+        // Atomic disable: delete settings + revoke backup codes.
+        self.storage.delete_two_factor_settings(user_id).await?;
+        self.storage
+            .revoke_all_backup_codes(user_id, Utc::now())
+            .await?;
+
+        self.emit_event(SecurityEvent::TwoFactorDisabled {
+            metadata: SecurityMetadata::new(None, None),
+            user_id: *user_id,
+        })
+        .await;
+
+        Ok(())
+    }
+
+    /// Get current two-factor status.
+    pub async fn two_factor_status(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::auth::contracts::TwoFactorStatusResponse, ApiError> {
+        let settings = self.storage.get_two_factor_settings(user_id).await?;
+
+        let (enabled, state) = match settings {
+            Some(s) if matches!(s.state, crate::auth::two_factor::TwoFactorState::Enabled) => {
+                (true, "enabled".to_string())
+            }
+            Some(s) if matches!(s.state, crate::auth::two_factor::TwoFactorState::Pending) => {
+                (false, "pending".to_string())
+            }
+            _ => (false, "disabled".to_string()),
+        };
+
+        Ok(crate::auth::contracts::TwoFactorStatusResponse { enabled, state })
+    }
+
+    /// Verify a TOTP code and mark its time step as accepted.
+    ///
+    /// AUTH-25 — Replay protection.
+    ///
+    /// Rejects codes whose time step has already been accepted.
+    ///
+    /// IMPORTANT: The caller MUST:
+    /// 1. Hold `storage.lock_for_user(user_id)` for the entire
+    ///    read → verify → update → persist cycle.
+    /// 2. Persist the modified settings via `update_two_factor_settings`
+    ///    before releasing the lock.
+    ///
+    /// Without both, replay protection is not enforced.
+    async fn verify_totp_and_mark_step(
+        &self,
+        settings: &mut crate::auth::two_factor::TwoFactorSettings,
+        code: &str,
+    ) -> Result<bool, ApiError> {
+        use totp_rs::TOTP;
+
+        use crate::auth::two_factor::profile;
+
+        let secret_bytes = self
+            .secret_cipher
+            .decrypt(&settings.encrypted_secret)
+            .await?;
+
+        let totp = TOTP::new(
+            profile::ALGORITHM,
+            profile::DIGITS,
+            profile::SKEW,
+            profile::STEP_SECONDS,
+            secret_bytes.to_vec(),
+            Some(profile::ISSUER.to_string()),
+            settings.user_id.to_string(),
+        )
+        .map_err(|_| ApiError::Internal)?;
+
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| ApiError::Internal)?
+            .as_secs();
+
+        if !totp.check(code, now) {
+            return Ok(false);
+        }
+
+        // Current time step.
+        let step = now / profile::STEP_SECONDS;
+
+        // Replay protection.
+        if let Some(last) = settings.last_accepted_step {
+            if step <= last {
+                return Ok(false);
+            }
+        }
+
+        settings.last_accepted_step = Some(step);
+        Ok(true)
     }
 
     pub fn session_duration_days(&self) -> i64 {

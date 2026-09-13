@@ -7,6 +7,29 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
+/// Aevum TOTP profile — single source of truth for all TOTP parameters.
+///
+/// Changing any of these values is a breaking change for enrolled users.
+pub mod profile {
+    /// HMAC algorithm (SHA-1 required for maximal client compatibility).
+    pub const ALGORITHM: totp_rs::Algorithm = totp_rs::Algorithm::SHA1;
+
+    /// Number of digits in the generated code.
+    pub const DIGITS: usize = 6;
+
+    /// Accepted clock skew in steps (±30 seconds).
+    pub const SKEW: u8 = 1;
+
+    /// Time step in seconds.
+    pub const STEP_SECONDS: u64 = 30;
+
+    /// Issuer name shown in the authenticator app.
+    pub const ISSUER: &str = "Aevum";
+
+    /// Secret length in bytes (160-bit).
+    pub const SECRET_BYTES: usize = 20;
+}
+
 /// Lifecycle state of two-factor authentication for a user.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

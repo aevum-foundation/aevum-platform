@@ -84,4 +84,24 @@ pub trait AuthApi: Send + Sync {
         &self,
         user_id: &Uuid,
     ) -> Result<crate::auth::contracts::BackupCodeStatusResponse, ApiError>;
+
+    async fn setup_two_factor(
+        &self,
+        user_id: &Uuid,
+        email: &str,
+    ) -> Result<crate::auth::contracts::TwoFactorSetupResponse, ApiError>;
+
+    async fn enable_two_factor(&self, user_id: &Uuid, code: &str) -> Result<(), ApiError>;
+
+    async fn disable_two_factor(
+        &self,
+        user_id: &Uuid,
+        password: &str,
+        code: &str,
+    ) -> Result<(), ApiError>;
+
+    async fn two_factor_status(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::auth::contracts::TwoFactorStatusResponse, ApiError>;
 }

@@ -3,6 +3,7 @@
 use crate::auth::models::{
     BackupCode, EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User,
 };
+use crate::auth::two_factor::TwoFactorSettings;
 use crate::auth::service::AuthStorage;
 use crate::error::ApiError;
 use aevum_db::{AevumDb, DbConfig, DbError, DbRuntime};
@@ -20,6 +21,7 @@ const SESSION_BY_USER_PREFIX: &str = "platform:session:by_user:";
 const PASSWORD_RESET_PREFIX: &str = "platform:auth:password_reset:";
 const EMAIL_VERIFICATION_PREFIX: &str = "platform:auth:email_verification:";
 const BACKUP_CODE_PREFIX: &str = "platform:auth:backup_code:";
+const TWO_FACTOR_PREFIX: &str = "platform:auth:two_factor:";
 
 #[derive(Clone)]
 pub struct AevumDbAuthStorage {
@@ -27,14 +29,14 @@ pub struct AevumDbAuthStorage {
     /// Per-user locks for serializing critical backup code operations.
     /// AevumDB does not expose CAS/transaction API, so application-level
     /// locking guarantees single-use semantics for security-critical flows.
-    backup_code_locks: Arc<Mutex<HashMap<Uuid, Arc<Mutex<()>>>>>,
+    user_locks: Arc<Mutex<HashMap<Uuid, Arc<Mutex<()>>>>>,
 }
 
 impl std::fmt::Debug for AevumDbAuthStorage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AevumDbAuthStorage")
             .field("db", &"<redacted>")
-            .field("backup_code_locks", &"<redacted>")
+            .field("user_locks", &"<redacted>")
             .finish()
     }
 }
@@ -47,12 +49,12 @@ impl AevumDbAuthStorage {
         })?;
         Ok(Self {
             db: Arc::new(db),
-            backup_code_locks: Arc::new(Mutex::new(HashMap::new())),
+            user_locks: Arc::new(Mutex::new(HashMap::new())),
         })
     }
 
-    async fn get_backup_code_lock(&self, user_id: &Uuid) -> Arc<Mutex<()>> {
-        let mut locks = self.backup_code_locks.lock().await;
+    async fn get_user_lock(&self, user_id: &Uuid) -> Arc<Mutex<()>> {
+        let mut locks = self.user_locks.lock().await;
         locks
             .entry(*user_id)
             .or_insert_with(|| Arc::new(Mutex::new(())))
@@ -101,6 +103,10 @@ impl AevumDbAuthStorage {
 
     fn backup_code_prefix() -> &'static str {
         BACKUP_CODE_PREFIX
+    }
+
+    fn two_factor_key(user_id: &Uuid) -> String {
+        format!("{}{}", TWO_FACTOR_PREFIX, user_id)
     }
 
     fn serialize<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, ApiError> {
@@ -415,7 +421,7 @@ impl AuthStorage for AevumDbAuthStorage {
         // Serialize all consume operations for this user.
         // AevumDB does not expose CAS, so we guarantee single-use via
         // application-level per-user locking.
-        let lock = self.get_backup_code_lock(user_id).await;
+        let lock = self.get_user_lock(user_id).await;
         let _guard = lock.lock().await;
 
         let entries = self
@@ -442,7 +448,7 @@ impl AuthStorage for AevumDbAuthStorage {
         user_id: &Uuid,
         revoked_at: DateTime<Utc>,
     ) -> Result<usize, ApiError> {
-        let lock = self.get_backup_code_lock(user_id).await;
+        let lock = self.get_user_lock(user_id).await;
         let _guard = lock.lock().await;
 
         let entries = self
@@ -462,6 +468,48 @@ impl AuthStorage for AevumDbAuthStorage {
         }
 
         Ok(revoked)
+    }
+
+    async fn lock_for_user(
+        &self,
+        user_id: &Uuid,
+    ) -> Arc<tokio::sync::Mutex<()>> {
+        self.get_user_lock(user_id).await
+    }
+
+    async fn create_two_factor_settings(
+        &self,
+        settings: &TwoFactorSettings,
+    ) -> Result<(), ApiError> {
+        let key = Self::two_factor_key(&settings.user_id);
+        let data = Self::serialize(settings)?;
+        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        Ok(())
+    }
+
+    async fn get_two_factor_settings(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Option<TwoFactorSettings>, ApiError> {
+        let key = Self::two_factor_key(user_id);
+        let data = self.db.get(key.as_bytes()).map_err(Self::map_db_error)?;
+        data.map(|d| Self::deserialize(&d)).transpose()
+    }
+
+    async fn update_two_factor_settings(
+        &self,
+        settings: &TwoFactorSettings,
+    ) -> Result<(), ApiError> {
+        let key = Self::two_factor_key(&settings.user_id);
+        let data = Self::serialize(settings)?;
+        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        Ok(())
+    }
+
+    async fn delete_two_factor_settings(&self, user_id: &Uuid) -> Result<(), ApiError> {
+        let key = Self::two_factor_key(user_id);
+        self.db.delete(key.as_bytes()).map_err(Self::map_db_error)?;
+        Ok(())
     }
 
     async fn revoke_session_by_token_hash(

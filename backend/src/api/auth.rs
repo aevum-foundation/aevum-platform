@@ -17,6 +17,8 @@ use std::sync::Arc;
 use crate::auth::api::AuthApi;
 use crate::auth::contracts::{
     BackupCodeVerifyRequest, BackupCodesGenerateResponse, BackupCodeStatusResponse,
+    TwoFactorDisableRequest, TwoFactorEnableRequest, TwoFactorSetupResponse,
+    TwoFactorStatusResponse,
     EmailVerificationConfirm, EmailVerificationRequest, EmailVerificationResponse, LoginRequest,
     LoginResponse, LogoutResponse, MeResponse, PasswordChangeRequest, PasswordResetConfirm,
     PasswordResetRequest, RegisterRequest, RegisterResponse, SESSION_COOKIE_NAME,
@@ -421,6 +423,84 @@ pub async fn backup_codes_status(
     Ok(HttpResponse::Ok().json(status))
 }
 
+#[post("/api/v1/auth/2fa/setup")]
+pub async fn two_factor_setup(
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    let response = service
+        .setup_two_factor(&auth.user.id, &auth.user.email)
+        .await?;
+
+    Ok(HttpResponse::Ok()
+        .insert_header(("Cache-Control", "no-store"))
+        .json(response))
+}
+
+#[post("/api/v1/auth/2fa/enable")]
+pub async fn two_factor_enable(
+    req: web::Json<TwoFactorEnableRequest>,
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    req.validate().map_err(|_| ApiError::BadRequest)?;
+
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    service
+        .enable_two_factor(&auth.user.id, &req.code)
+        .await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({ "success": true })))
+}
+
+#[post("/api/v1/auth/2fa/disable")]
+pub async fn two_factor_disable(
+    req: web::Json<TwoFactorDisableRequest>,
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    req.validate().map_err(|_| ApiError::BadRequest)?;
+
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    service
+        .disable_two_factor(&auth.user.id, &req.password, &req.code)
+        .await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({ "success": true })))
+}
+
+#[get("/api/v1/auth/2fa/status")]
+pub async fn two_factor_status(
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    let status: TwoFactorStatusResponse = service.two_factor_status(&auth.user.id).await?;
+
+    Ok(HttpResponse::Ok().json(status))
+}
+
 #[get("/api/v1/auth/me")]
 pub async fn me(req: HttpRequest) -> ApiResult<HttpResponse> {
     let auth = req
@@ -462,6 +542,10 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(generate_backup_codes)
         .service(verify_backup_code)
         .service(backup_codes_status)
+        .service(two_factor_setup)
+        .service(two_factor_enable)
+        .service(two_factor_disable)
+        .service(two_factor_status)
         .service(me);
 }
 

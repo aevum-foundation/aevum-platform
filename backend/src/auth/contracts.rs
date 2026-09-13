@@ -65,6 +65,33 @@ pub struct BackupCodeVerifyRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TwoFactorSetupResponse {
+    /// otpauth:// URI for QR generation on the client.
+    /// Contains the secret — never log or cache this response.
+    pub otpauth_uri: String,
+    /// Base32-encoded secret for manual entry.
+    /// Contains the secret — never log or cache this response.
+    pub secret_base32: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct TwoFactorEnableRequest {
+    pub code: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct TwoFactorDisableRequest {
+    pub password: String,
+    pub code: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TwoFactorStatusResponse {
+    pub enabled: bool,
+    pub state: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackupCodeStatusResponse {
     pub enabled: bool,
     pub remaining: usize,
@@ -196,6 +223,27 @@ impl EmailVerificationRequest {
 impl EmailVerificationConfirm {
     pub fn validate(&self) -> Result<(), ContractValidationError> {
         if self.token.is_empty() {
+            return Err(ContractValidationError::EmptyVerificationToken);
+        }
+        Ok(())
+    }
+}
+
+impl TwoFactorEnableRequest {
+    pub fn validate(&self) -> Result<(), ContractValidationError> {
+        if self.code.is_empty() {
+            return Err(ContractValidationError::EmptyVerificationToken);
+        }
+        Ok(())
+    }
+}
+
+impl TwoFactorDisableRequest {
+    pub fn validate(&self) -> Result<(), ContractValidationError> {
+        if self.password.is_empty() {
+            return Err(ContractValidationError::EmptyPassword);
+        }
+        if self.code.is_empty() {
             return Err(ContractValidationError::EmptyVerificationToken);
         }
         Ok(())

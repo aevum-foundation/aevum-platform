@@ -26,6 +26,7 @@ use uuid::Uuid;
 use crate::auth::models::{
     BackupCode, EmailVerificationToken, PasswordResetToken, Session, SessionTokenHash, User,
 };
+use crate::auth::two_factor::TwoFactorSettings;
 use crate::auth::service::AuthStorage;
 use crate::error::ApiError;
 
@@ -57,9 +58,24 @@ pub struct InMemoryAuthStorage {
 
     /// Backup codes indexed by code id.
     backup_codes: Arc<Mutex<HashMap<Uuid, BackupCode>>>,
+
+    /// Two-factor settings indexed by user id.
+    two_factor_settings: Arc<Mutex<HashMap<Uuid, TwoFactorSettings>>>,
+
+    /// Per-user locks for serializing critical atomic operations.
+    /// Policy: never hold two different user locks at the same time.
+    user_locks: Arc<Mutex<HashMap<Uuid, Arc<Mutex<()>>>>>,
 }
 
 impl InMemoryAuthStorage {
+    async fn get_user_lock(&self, user_id: &Uuid) -> Arc<Mutex<()>> {
+        let mut locks = self.user_locks.lock().await;
+        locks
+            .entry(*user_id)
+            .or_insert_with(|| Arc::new(Mutex::new(())))
+            .clone()
+    }
+
     /// Create an empty storage.
     pub fn new() -> Self {
         Self::default()
@@ -338,6 +354,45 @@ impl AuthStorage for InMemoryAuthStorage {
             }
         }
         Ok(revoked)
+    }
+
+    async fn lock_for_user(
+        &self,
+        user_id: &Uuid,
+    ) -> Arc<tokio::sync::Mutex<()>> {
+        self.get_user_lock(user_id).await
+    }
+
+    async fn create_two_factor_settings(
+        &self,
+        settings: &TwoFactorSettings,
+    ) -> Result<(), ApiError> {
+        let mut map = self.two_factor_settings.lock().await;
+        map.insert(settings.user_id, settings.clone());
+        Ok(())
+    }
+
+    async fn get_two_factor_settings(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Option<TwoFactorSettings>, ApiError> {
+        let map = self.two_factor_settings.lock().await;
+        Ok(map.get(user_id).cloned())
+    }
+
+    async fn update_two_factor_settings(
+        &self,
+        settings: &TwoFactorSettings,
+    ) -> Result<(), ApiError> {
+        let mut map = self.two_factor_settings.lock().await;
+        map.insert(settings.user_id, settings.clone());
+        Ok(())
+    }
+
+    async fn delete_two_factor_settings(&self, user_id: &Uuid) -> Result<(), ApiError> {
+        let mut map = self.two_factor_settings.lock().await;
+        map.remove(user_id);
+        Ok(())
     }
 
     async fn revoke_session_by_token_hash(
