@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use actix_web::{
     cookie::{Cookie, SameSite},
-    get, post, put, web, HttpMessage, HttpRequest, HttpResponse,
+    delete, get, post, put, web, HttpMessage, HttpRequest, HttpResponse,
 };
 
 use std::sync::Arc;
@@ -596,6 +596,73 @@ pub async fn update_preferences(
     Ok(HttpResponse::Ok().json(prefs))
 }
 
+#[post("/api/v1/auth/avatar")]
+pub async fn upload_avatar(
+    body: web::Bytes,
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    let content_type = http_req
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .ok_or(ApiError::BadRequest)?;
+
+    let avatar = service
+        .upload_avatar(&auth.user.id, content_type, &body)
+        .await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "user_id": avatar.user_id,
+        "mime_type": avatar.mime_type.as_str(),
+        "size": avatar.size,
+        "uploaded_at": avatar.uploaded_at,
+    })))
+}
+
+#[get("/api/v1/auth/avatar")]
+pub async fn get_avatar(
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    let Some((avatar, data)) = service.get_avatar(&auth.user.id).await? else {
+        return Err(ApiError::NotFound);
+    };
+
+    Ok(HttpResponse::Ok()
+        .insert_header(("Content-Type", avatar.mime_type.as_str()))
+        .insert_header(("Cache-Control", "private, max-age=300"))
+        .body(data.to_vec()))
+}
+
+#[delete("/api/v1/auth/avatar")]
+pub async fn delete_avatar(
+    http_req: HttpRequest,
+    service: web::Data<AppAuthService>,
+) -> ApiResult<HttpResponse> {
+    let auth = http_req
+        .extensions()
+        .get::<crate::auth::models::AuthContext>()
+        .cloned()
+        .ok_or(ApiError::Unauthorized)?;
+
+    service.delete_avatar(&auth.user.id).await?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({ "success": true })))
+}
+
 #[get("/api/v1/auth/me")]
 pub async fn me(req: HttpRequest) -> ApiResult<HttpResponse> {
     let auth = req
@@ -644,6 +711,9 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(two_factor_verify)
         .service(get_preferences)
         .service(update_preferences)
+        .service(upload_avatar)
+        .service(get_avatar)
+        .service(delete_avatar)
         .service(me);
 }
 

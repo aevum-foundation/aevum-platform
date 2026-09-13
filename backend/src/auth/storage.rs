@@ -27,6 +27,7 @@ use crate::auth::models::{
     BackupCode, EmailVerificationToken, PasswordResetToken, PreAuthToken, Session,
     SessionTokenHash, User,
 };
+use crate::auth::avatar::Avatar;
 use crate::auth::preferences::UserPreferences;
 use crate::auth::two_factor::TwoFactorSettings;
 use crate::auth::service::AuthStorage;
@@ -73,6 +74,12 @@ pub struct InMemoryAuthStorage {
 
     /// User preferences indexed by user id.
     user_preferences: Arc<Mutex<HashMap<Uuid, UserPreferences>>>,
+
+    /// Avatar metadata indexed by user id.
+    avatars: Arc<Mutex<HashMap<Uuid, Avatar>>>,
+
+    /// Avatar payloads indexed by blob key.
+    avatar_blobs: Arc<Mutex<HashMap<String, Vec<u8>>>>,
 }
 
 impl InMemoryAuthStorage {
@@ -369,6 +376,45 @@ impl AuthStorage for InMemoryAuthStorage {
         user_id: &Uuid,
     ) -> Arc<tokio::sync::Mutex<()>> {
         self.get_user_lock(user_id).await
+    }
+
+    async fn get_avatar(&self, user_id: &Uuid) -> Result<Option<Avatar>, ApiError> {
+        let map = self.avatars.lock().await;
+        Ok(map.get(user_id).cloned())
+    }
+
+    async fn upsert_avatar(&self, avatar: &Avatar) -> Result<(), ApiError> {
+        let mut map = self.avatars.lock().await;
+        map.insert(avatar.user_id, avatar.clone());
+        Ok(())
+    }
+
+    async fn delete_avatar(&self, user_id: &Uuid) -> Result<(), ApiError> {
+        let mut map = self.avatars.lock().await;
+        map.remove(user_id);
+        Ok(())
+    }
+
+    async fn get_avatar_blob(
+        &self,
+        blob_key: &str,
+    ) -> Result<Option<zeroize::Zeroizing<Vec<u8>>>, ApiError> {
+        let map = self.avatar_blobs.lock().await;
+        Ok(map
+            .get(blob_key)
+            .map(|v| zeroize::Zeroizing::new(v.clone())))
+    }
+
+    async fn put_avatar_blob(&self, blob_key: &str, data: &[u8]) -> Result<(), ApiError> {
+        let mut map = self.avatar_blobs.lock().await;
+        map.insert(blob_key.to_owned(), data.to_vec());
+        Ok(())
+    }
+
+    async fn delete_avatar_blob(&self, blob_key: &str) -> Result<(), ApiError> {
+        let mut map = self.avatar_blobs.lock().await;
+        map.remove(blob_key);
+        Ok(())
     }
 
     async fn get_user_preferences(

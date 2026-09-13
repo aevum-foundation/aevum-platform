@@ -1702,3 +1702,181 @@ async fn preferences_rejects_unknown_field() {
     let resp = test::call_service(&app, req).await;
     assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 }
+
+
+fn minimal_png_test(width: u32, height: u32) -> Vec<u8> {
+    let mut data = vec![
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+        0x00, 0x00, 0x00, 0x0D,
+        b'I', b'H', b'D', b'R',
+    ];
+    data.extend_from_slice(&width.to_be_bytes());
+    data.extend_from_slice(&height.to_be_bytes());
+    data.extend_from_slice(&[0x08, 0x02, 0x00, 0x00, 0x00]);
+    data
+}
+
+#[actix_web::test]
+async fn avatar_upload_get_delete_flow() {
+    let ctx = create_test_context().await;
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    // Register + login
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "avatar@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "avatar@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let csrf_token = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    let png_data = minimal_png_test(256, 256);
+
+    // Upload
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/avatar")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .insert_header(("Content-Type", "image/png"))
+        .set_payload(png_data.clone())
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Get
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/avatar")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let content_type = resp.headers().get("content-type").unwrap();
+    assert_eq!(content_type.to_str().unwrap(), "image/png");
+
+    let body = test::read_body(resp).await;
+    assert_eq!(body.as_ref(), png_data.as_slice());
+
+    // Delete
+    let req = test::TestRequest::delete()
+        .uri("/api/v1/auth/avatar")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // Get after delete — 404
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/avatar")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+}
+
+#[actix_web::test]
+async fn avatar_rejects_svg() {
+    let ctx = create_test_context().await;
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/register")
+        .set_json(serde_json::json!({
+            "email": "avatar-svg@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let _ = test::call_service(&app, req).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/login")
+        .set_json(serde_json::json!({
+            "email": "avatar-svg@example.com",
+            "password": TEST_PASSWORD
+        }))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    let session_token = extract_cookie(&resp, "__Host-aevum_session").unwrap();
+    let csrf_token = extract_cookie(&resp, "__Host-aevum_csrf").unwrap();
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/avatar")
+        .cookie(cookie_header("__Host-aevum_session", &session_token))
+        .cookie(cookie_header("__Host-aevum_csrf", &csrf_token))
+        .insert_header(("X-CSRF-Token", csrf_token.clone()))
+        .insert_header(("Content-Type", "image/svg+xml"))
+        .set_payload(b"<svg xmlns=\"http://www.w3.org/2000/svg\"/>".to_vec())
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+}
+
+#[actix_web::test]
+async fn avatar_requires_authentication() {
+    let ctx = create_test_context().await;
+    let auth_api: Arc<dyn AuthApi> = ctx.auth_service.clone();
+    let authenticator: Arc<dyn Authenticator> = ctx.auth_service.clone();
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(ctx.app_state.clone()))
+            .app_data(web::Data::new(auth_api))
+            .wrap(AuthMiddleware::new(web::Data::new(authenticator)))
+            .wrap(CsrfMiddleware::new(web::Data::new(CsrfConfig::default())))
+            .configure(api::auth::configure),
+    )
+    .await;
+
+    let png_data = minimal_png_test(100, 100);
+
+    // POST without session and without CSRF:
+    // CSRF middleware runs first for mutating methods and rejects with 403.
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/avatar")
+        .insert_header(("Content-Type", "image/png"))
+        .set_payload(png_data)
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+
+    // GET without session: AuthMiddleware rejects with 401.
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/avatar")
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}

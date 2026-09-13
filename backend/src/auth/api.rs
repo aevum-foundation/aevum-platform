@@ -121,4 +121,18 @@ pub trait AuthApi: Send + Sync {
         user_id: &Uuid,
         update: crate::auth::preferences::UserPreferencesUpdate,
     ) -> Result<crate::auth::preferences::UserPreferences, ApiError>;
+
+    async fn upload_avatar(
+        &self,
+        user_id: &Uuid,
+        content_type: &str,
+        data: &[u8],
+    ) -> Result<crate::auth::avatar::Avatar, ApiError>;
+
+    async fn get_avatar(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Option<(crate::auth::avatar::Avatar, zeroize::Zeroizing<Vec<u8>>)>, ApiError>;
+
+    async fn delete_avatar(&self, user_id: &Uuid) -> Result<(), ApiError>;
 }

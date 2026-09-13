@@ -134,6 +134,41 @@ pub trait AuthStorage: Send + Sync {
         preferences: &crate::auth::preferences::UserPreferences,
     ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
 
+    fn get_avatar(
+        &self,
+        user_id: &Uuid,
+    ) -> impl std::future::Future<
+        Output = Result<Option<crate::auth::avatar::Avatar>, ApiError>,
+    > + Send;
+
+    fn upsert_avatar(
+        &self,
+        avatar: &crate::auth::avatar::Avatar,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    fn delete_avatar(
+        &self,
+        user_id: &Uuid,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    fn get_avatar_blob(
+        &self,
+        blob_key: &str,
+    ) -> impl std::future::Future<
+        Output = Result<Option<zeroize::Zeroizing<Vec<u8>>>, ApiError>,
+    > + Send;
+
+    fn put_avatar_blob(
+        &self,
+        blob_key: &str,
+        data: &[u8],
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
+    fn delete_avatar_blob(
+        &self,
+        blob_key: &str,
+    ) -> impl std::future::Future<Output = Result<(), ApiError>> + Send;
+
     fn list_backup_codes(
         &self,
         user_id: &Uuid,
@@ -376,6 +411,26 @@ where
         update: crate::auth::preferences::UserPreferencesUpdate,
     ) -> Result<crate::auth::preferences::UserPreferences, ApiError> {
         AuthService::update_preferences(self, user_id, update).await
+    }
+
+    async fn upload_avatar(
+        &self,
+        user_id: &Uuid,
+        content_type: &str,
+        data: &[u8],
+    ) -> Result<crate::auth::avatar::Avatar, ApiError> {
+        AuthService::upload_avatar(self, user_id, content_type, data).await
+    }
+
+    async fn get_avatar(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Option<(crate::auth::avatar::Avatar, zeroize::Zeroizing<Vec<u8>>)>, ApiError> {
+        AuthService::get_avatar(self, user_id).await
+    }
+
+    async fn delete_avatar(&self, user_id: &Uuid) -> Result<(), ApiError> {
+        AuthService::delete_avatar(self, user_id).await
     }
 }
 
@@ -1636,6 +1691,97 @@ where
         self.storage.upsert_user_preferences(&prefs).await?;
 
         Ok(prefs)
+    }
+
+    /// Upload (or replace) the user's avatar.
+    ///
+    /// AUTH-27.3 — Avatar Upload
+    ///
+    /// Flow:
+    /// 1. Validate payload (magic bytes + dimensions).
+    /// 2. Encrypt payload via SecretCipher (CryptoDomain::Blob).
+    /// 3. Write new blob to storage.
+    /// 4. Atomically replace metadata (same blob_key, deterministic).
+    /// 5. Old payload is overwritten by the new one (same key).
+    ///
+    /// Atomicity note: because blob_key is deterministic per user,
+    /// the new payload overwrites the old one at the same key, so
+    /// metadata and payload remain consistent even across failures.
+    pub async fn upload_avatar(
+        &self,
+        user_id: &Uuid,
+        content_type: &str,
+        data: &[u8],
+    ) -> Result<crate::auth::avatar::Avatar, ApiError> {
+        let mime = crate::auth::avatar::validate_avatar(content_type, data)
+            .map_err(|_| ApiError::BadRequest)?;
+
+        let blob_key = crate::auth::avatar::Avatar::blob_key_for(user_id);
+
+        // Derive object_id for envelope binding
+        let object_id = {
+            use sha2::{Digest, Sha256};
+            let mut hasher = Sha256::new();
+            hasher.update(b"AEVUM_AUTH_AVATAR_BLOB_OBJECT_ID_V1");
+            hasher.update(user_id.as_bytes());
+            let digest = hasher.finalize();
+            u64::from_be_bytes([
+                digest[0], digest[1], digest[2], digest[3],
+                digest[4], digest[5], digest[6], digest[7],
+            ])
+        };
+
+        let encrypted = self
+            .secret_cipher
+            .encrypt(object_id, data)
+            .await?;
+
+        self.storage
+            .put_avatar_blob(&blob_key, &encrypted)
+            .await?;
+
+        let avatar = crate::auth::avatar::Avatar {
+            user_id: *user_id,
+            mime_type: mime,
+            size: data.len() as u64,
+            content_hash: crate::auth::avatar::Avatar::hash_bytes(data),
+            blob_key,
+            uploaded_at: Utc::now(),
+        };
+
+        self.storage.upsert_avatar(&avatar).await?;
+
+        Ok(avatar)
+    }
+
+    /// Fetch the user's avatar metadata + decrypted payload.
+    pub async fn get_avatar(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Option<(crate::auth::avatar::Avatar, zeroize::Zeroizing<Vec<u8>>)>, ApiError> {
+        let Some(avatar) = self.storage.get_avatar(user_id).await? else {
+            return Ok(None);
+        };
+
+        let Some(encrypted) = self.storage.get_avatar_blob(&avatar.blob_key).await? else {
+            return Ok(None);
+        };
+
+        let plaintext = self.secret_cipher.decrypt(&encrypted).await?;
+
+        Ok(Some((avatar, plaintext)))
+    }
+
+    /// Delete the user's avatar (metadata + blob).
+    pub async fn delete_avatar(&self, user_id: &Uuid) -> Result<(), ApiError> {
+        let Some(avatar) = self.storage.get_avatar(user_id).await? else {
+            return Ok(());
+        };
+
+        self.storage.delete_avatar_blob(&avatar.blob_key).await?;
+        self.storage.delete_avatar(user_id).await?;
+
+        Ok(())
     }
 
     pub fn session_duration_days(&self) -> i64 {

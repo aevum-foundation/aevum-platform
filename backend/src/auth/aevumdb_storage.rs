@@ -4,6 +4,7 @@ use crate::auth::models::{
     BackupCode, EmailVerificationToken, PasswordResetToken, PreAuthToken, Session,
     SessionTokenHash, User,
 };
+use crate::auth::avatar::Avatar;
 use crate::auth::preferences::UserPreferences;
 use crate::auth::two_factor::TwoFactorSettings;
 use crate::auth::service::AuthStorage;
@@ -487,6 +488,47 @@ impl AuthStorage for AevumDbAuthStorage {
         user_id: &Uuid,
     ) -> Arc<tokio::sync::Mutex<()>> {
         self.get_user_lock(user_id).await
+    }
+
+    async fn get_avatar(&self, user_id: &Uuid) -> Result<Option<Avatar>, ApiError> {
+        let key = format!("platform:user:avatar:{}", user_id);
+        let data = self.db.get(key.as_bytes()).map_err(Self::map_db_error)?;
+        data.map(|d| Self::deserialize(&d)).transpose()
+    }
+
+    async fn upsert_avatar(&self, avatar: &Avatar) -> Result<(), ApiError> {
+        let key = format!("platform:user:avatar:{}", avatar.user_id);
+        let data = Self::serialize(avatar)?;
+        self.db.put(key.as_bytes(), &data).map_err(Self::map_db_error)?;
+        Ok(())
+    }
+
+    async fn delete_avatar(&self, user_id: &Uuid) -> Result<(), ApiError> {
+        let key = format!("platform:user:avatar:{}", user_id);
+        self.db.delete(key.as_bytes()).map_err(Self::map_db_error)?;
+        Ok(())
+    }
+
+    async fn get_avatar_blob(
+        &self,
+        blob_key: &str,
+    ) -> Result<Option<zeroize::Zeroizing<Vec<u8>>>, ApiError> {
+        let data = self.db.get(blob_key.as_bytes()).map_err(Self::map_db_error)?;
+        Ok(data.map(zeroize::Zeroizing::new))
+    }
+
+    async fn put_avatar_blob(&self, blob_key: &str, data: &[u8]) -> Result<(), ApiError> {
+        self.db
+            .put(blob_key.as_bytes(), data)
+            .map_err(Self::map_db_error)?;
+        Ok(())
+    }
+
+    async fn delete_avatar_blob(&self, blob_key: &str) -> Result<(), ApiError> {
+        self.db
+            .delete(blob_key.as_bytes())
+            .map_err(Self::map_db_error)?;
+        Ok(())
     }
 
     async fn get_user_preferences(
