@@ -2,8 +2,11 @@
 
 use std::sync::Arc;
 
+use actix_web::cookie::Cookie;
+
 use aevum_platform_api::{
     auth::{email::MockEmailProvider, service::AuthService, storage::InMemoryAuthStorage},
+    community::{service::CommunityService, storage::InMemoryCommunityStorage},
     config::Config,
     state::AppState,
     storage::MockStorage,
@@ -12,6 +15,7 @@ use aevum_platform_api::{
 pub struct TestContext {
     pub email_provider: Arc<MockEmailProvider>,
     pub auth_service: Arc<AuthService<InMemoryAuthStorage>>,
+    pub community_service: Arc<CommunityService<InMemoryCommunityStorage>>,
     pub app_state: AppState,
 }
 
@@ -27,9 +31,39 @@ pub async fn create_test_context() -> TestContext {
         email_provider.clone(),
     ));
 
+    let community_storage = InMemoryCommunityStorage::new();
+    let community_service = Arc::new(CommunityService::new(community_storage));
+
     TestContext {
         email_provider,
         auth_service,
+        community_service,
         app_state,
     }
+}
+
+/// Extract a cookie value from a `Set-Cookie` header by name.
+///
+/// Shared across all integration tests so we have one canonical parser.
+pub fn extract_cookie(
+    response: &actix_web::dev::ServiceResponse<
+        actix_web::body::EitherBody<actix_web::body::BoxBody>,
+    >,
+    name: &str,
+) -> Option<String> {
+    response
+        .headers()
+        .get_all("set-cookie")
+        .into_iter()
+        .filter_map(|value| value.to_str().ok())
+        .find(|cookie_str| cookie_str.starts_with(&format!("{}=", name)))
+        .and_then(|cookie_str| {
+            let cookie = Cookie::parse(cookie_str).ok()?;
+            Some(cookie.value().to_string())
+        })
+}
+
+/// Build a `Cookie` header for a request.
+pub fn cookie_header(name: &'static str, value: &str) -> Cookie<'static> {
+    Cookie::build(name, value.to_owned()).finish()
 }

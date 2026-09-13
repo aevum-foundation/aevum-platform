@@ -11,6 +11,7 @@ use aevum_platform_api::{
     auth::csrf::CsrfConfig,
     auth::csrf_middleware::CsrfMiddleware,
     auth::{middleware::AuthMiddleware, service::AuthService, storage::InMemoryAuthStorage},
+    community::{api::CommunityApi, service::CommunityService, storage::InMemoryCommunityStorage},
     config::Config,
     state::AppState,
     storage::MockStorage,
@@ -49,10 +50,17 @@ async fn main() -> std::io::Result<()> {
         auth_service.clone();
     let auth_middleware_data = actix_web::web::Data::new(authenticator);
 
+    // Community service
+    let community_storage = InMemoryCommunityStorage::new();
+    let community_service = std::sync::Arc::new(CommunityService::new(community_storage));
+    let community_api: std::sync::Arc<dyn CommunityApi> = community_service.clone();
+    let community_api_data = actix_web::web::Data::new(community_api);
+
     let server = HttpServer::new(move || {
         App::new()
             .app_data(actix_web::web::Data::new(app_state.clone()))
             .app_data(auth_api_data.clone())
+            .app_data(community_api_data.clone())
             .wrap(Logger::default())
             .wrap(AuthMiddleware::new(auth_middleware_data.clone()))
             .wrap(CsrfMiddleware::new(actix_web::web::Data::new(
@@ -60,6 +68,7 @@ async fn main() -> std::io::Result<()> {
             )))
             .configure(health::configure)
             .configure(api::auth::configure)
+            .configure(api::community::configure)
     })
     .bind((host.as_str(), port))?
     .disable_signals()

@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 #[path = "support.rs"]
 mod support;
-use support::create_test_context;
+use support::{cookie_header, create_test_context, extract_cookie};
 
 use aevum_platform_api::{
     api::{self},
@@ -24,28 +24,6 @@ use aevum_platform_api::{
 
 const TEST_EMAIL: &str = "integration@example.com";
 const TEST_PASSWORD: &str = "correct-horse-battery-staple";
-
-fn extract_cookie(
-    response: &actix_web::dev::ServiceResponse<
-        actix_web::body::EitherBody<actix_web::body::BoxBody>,
-    >,
-    name: &str,
-) -> Option<String> {
-    response
-        .headers()
-        .get_all("set-cookie")
-        .into_iter()
-        .filter_map(|value| value.to_str().ok())
-        .find(|cookie_str| cookie_str.starts_with(&format!("{}=", name)))
-        .and_then(|cookie_str| {
-            let cookie = Cookie::parse(cookie_str).ok()?;
-            Some(cookie.value().to_string())
-        })
-}
-
-fn cookie_header(name: &'static str, value: &str) -> Cookie<'static> {
-    Cookie::build(name, value.to_owned()).finish()
-}
 
 #[actix_web::test]
 async fn full_auth_flow_register_login_me_logout() {
