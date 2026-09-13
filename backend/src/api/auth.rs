@@ -664,8 +664,19 @@ mod tests {
             "hashed_password".to_string(),
         );
 
+        let session = crate::auth::models::Session::new(
+            user.id,
+            crate::auth::models::SessionTokenHash::new("test".to_string()),
+            chrono::Utc::now() + chrono::Duration::hours(1),
+        );
+
+        let auth_ctx = crate::auth::models::AuthContext {
+            user: user.clone(),
+            session,
+        };
+
         let mut req = test::TestRequest::get().uri("/api/v1/auth/me").to_request();
-        req.extensions_mut().insert(user.clone());
+        req.extensions_mut().insert(auth_ctx);
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), StatusCode::OK);

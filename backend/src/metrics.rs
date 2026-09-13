@@ -87,9 +87,10 @@ pub fn time(name: &'static str, start: Instant) {
 /// RAII timer that records duration on drop.
 ///
 /// Usage:
-/// ```rust,ignore
+/// ```
+/// use aevum_platform_api::metrics;
+///
 /// let _timer = metrics::Timer::start(metrics::auth::LOGIN_DURATION_SECONDS);
-/// // ... logic ...
 /// ```
 #[must_use]
 pub struct Timer {
