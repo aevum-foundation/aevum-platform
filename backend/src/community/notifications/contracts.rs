@@ -18,6 +18,8 @@ pub const MAX_PAGE_LIMIT: usize = 100;
 pub const MAX_PAYLOAD_SIZE: usize = 16 * 1024;
 pub const MAX_SOURCE_ID_LEN: usize = 256;
 
+pub const MAX_CURSOR_LEN: usize = 512;
+
 // ─── Error codes ───────────────────────────────────────────
 
 pub const INVALID_CURSOR_CODE: &str = "INVALID_CURSOR";
