@@ -540,8 +540,380 @@ The paths are a map, not a contract. You choose how you move through them.
 
 ---
 
+## 4. Learning Levels
+
+### 4.0 Overview
+
+Aevum Learn uses **levels** to describe the development of capability. A
+level is not a rank, not a certification, and not an employment title. It is
+a description of what a person can currently understand, build, and
+contribute.
+
+Levels are not a ladder you must climb. They describe where you are now, not
+where you are expected to go. You can stop at any level. You can stay at any
+level for years. There is nothing wrong with that.
+
+```text
+        Explorer
+           ↓
+        Learner
+           ↓
+        Builder
+           ↓
+       Contributor
+           ↓
+    Core Contributor
+           ↓
+      Maintainer
+```
+
+This is a model of increasing competence, contribution, trust, and
+responsibility. It is not an employment or management hierarchy, and
+advancement is not automatic.
+
+4.1 What Levels Are Not
+
+Levels are not:
+
+· Certifications, credentials, or diplomas.
+· Job titles, employment status, or HR categories.
+· Public rankings or social status.
+· Automatic rewards for consuming content.
+· A system of gamification.
+
+Aevum Learn does not award levels for watching videos, reading pages, or
+scoring well on quizzes. Levels reflect demonstrated capability and
+participation, not time spent consuming materials.
+
+The underlying principle:
+
+Understanding + Practice + Working results + Contribution + Earned trust
+— not consumption.
+
+4.2 The Six Levels
+
+Explorer
+
+What it describes: A person who is observing, reading, and exploring.
+
+What it does not describe: A tracked or public state. Explorer is not
+visible anywhere.
+
+How it looks: Someone reading the documentation, browsing the code,
+watching the project, and deciding whether decentralized compute
+infrastructure is interesting.
+
+Not tracked. Not public. No criteria.
+
+Learner
+
+What it describes: A person who has begun studying fundamentals —
+computer science, Linux, a first systems language, Git.
+
+How it looks: Someone writing first programs, making first commits on a
+personal repository, working through first exercises.
+
+Not tracked publicly. Personal progression only.
+
+Builder
+
+What it describes: A person who builds small working things — even
+things no one else uses.
+
+How it looks: Small programs that compile and run. Small scripts that
+automate something. First experiments with networking, cryptography, or
+async code.
+
+Not tracked publicly. Evidence is the working artifact itself.
+
+Contributor
+
+What it describes: A person who has contributed to a real project —
+Aevum or another open-source project.
+
+What it does not mean: A single merged pull request is not sufficient by
+itself. A typo fix and a new module are both valuable, but they do not
+describe the same capability. Contributor describes a pattern of
+contributions, not a count.
+
+How it looks: A public GitHub profile with merged contributions. The
+level is public as a project trust indicator — not as a badge or reward.
+
+Visibility: Public.
+
+Core Contributor
+
+What it describes: A person who has demonstrated sustained technical
+competence, quality of review, and reliability — and who is trusted with
+scope inside the project.
+
+How it looks: Regular, meaningful contributions; thoughtful code review;
+helping other contributors; handling ambiguity.
+
+Not automatic. GitHub metadata provides evidence, not identity.
+Recognition is earned through contribution history and trust, and is
+confirmed by existing Core Contributors and Maintainers.
+
+Visibility: Public.
+
+Maintainer
+
+What it describes: A person who is responsible for a direction, area, or
+module of the project.
+
+What it does not mean: A manager, a boss, or an HR supervisor. A
+Maintainer is responsible for something technical — a subsystem, a
+specification, a piece of infrastructure — and is trusted to make decisions
+about it.
+
+How it looks: Deep familiarity with a specific area; care for its
+correctness; willingness to review and mentor; long-term commitment.
+
+Not automatic. Maintainer status is conferred through extended trust and
+explicit recognition by other Maintainers.
+
+Visibility: Public.
+
+### 4.3 Public vs Private
+
+| Level | Visibility | Rationale |
+|---|---|---|
+| Explorer | Private | Personal state, not a public claim |
+| Learner | Private | Personal state, not a public claim |
+| Builder | Private | Evidence is the artifact, not a label |
+| Contributor | Public | Project trust indicator, useful for collaboration |
+| Core Contributor | Public | Project trust indicator, useful for collaboration |
+| Maintainer | Public | Project responsibility, needed by others in the project |
+
+Public levels are **project trust levels**, not social ranking. Two people
+with the same level can have very different skills, domains, and
+contributions. The level describes a category of trust within the project,
+not a comparison between people.
+
+### 4.4 Progression
+
+Progression between levels is not automatic.
+
+- **Explorer → Learner → Builder** happen naturally as a person studies and
+  builds. Nothing is tracked; nothing is claimed.
+- **Builder → Contributor** happens when a person makes a real, meaningful
+  contribution to a real project.
+- **Contributor → Core Contributor** requires sustained contribution,
+  review quality, and the trust of existing Core Contributors.
+- **Core Contributor → Maintainer** requires deep responsibility and
+  explicit recognition.
+
+No level is required before entering any Learning Path (§3). Levels describe
+what a person can do; Paths describe what a person wants to explore. A person
+on the Cryptography Path may be at Level 1. A person at Level 4 may be on the
+Compute / GPU Path. Both are normal.
+
+Regression is also normal. A person may step away from the project for years,
+change interests, or focus on a different area. Levels describe current
+capability and participation, not permanent status.
+
+---
+
+## 5. Curriculum
+
+### 5.0 Overview
+
+The curriculum is the sequence of **fundamental knowledge** that underlies
+decentralized compute infrastructure. It is not a catalog of courses. It is
+not a list of videos. It is a map of what a person needs to understand in
+order to build real things.
+
+The curriculum is a **recommended progression**, not a mandatory gate.
+Someone who already knows Rust does not need to start at Computer Science.
+Someone who already knows cryptography does not need to re-study hashes.
+
+The curriculum defines six levels of knowledge:
+
+```text
+Level 0 — Computer Science
+Level 1 — Rust and Systems
+Level 2 — Cryptography
+Level 3 — Distributed Systems and Blockchain
+Level 4 — Aevum Architecture
+Level 5 — Contributor
+```
+
+5.1 The Relationship Between Levels and Paths
+
+Level ≠ Path.
+
+· Levels answer: "What capability level am I developing?"
+· Paths answer: "What technical direction do I want to explore?"
+
+A person may be at Level 2 with a Cryptography Path focus, or at Level 3 with
+a Compute / GPU Path focus. Levels and Paths are different coordinate
+systems, and they intersect freely.
+
+A person may:
+
+· Be at Level 3 on the Protocol / Blockchain Path.
+· Be at Level 1 on the Rust / Systems Path.
+· Contribute on both in the same month.
+
+This is normal. Levels and Paths are not the same thing, and they are not
+required to be aligned.
+
+5.2 Level 0 — Computer Science
+
+Focus: How computers actually work.
+
+Topics:
+
+· Memory, processes, threads, and files.
+· Linux fundamentals: shell, permissions, processes, filesystems.
+· Networking basics: IP, TCP, DNS, HTTP.
+· Git and version control as a daily tool.
+· A first programming language (Rust preferred; another systems language is
+  acceptable).
+· Reading and writing documentation.
+· Debugging basics: reading errors, reading logs, isolating failures.
+
+Practice: Writing small programs, running them, and breaking them on
+purpose to understand what happens.
+
+Suggested GitHub entry point: beginner, documentation.
+
+5.3 Level 1 — Rust and Systems
+
+Focus: Writing real systems code.
+
+Topics:
+
+· Ownership, borrowing, and lifetimes.
+· Traits, generics, and idiomatic Rust abstraction.
+· Error handling and testing.
+· Async programming, concurrency, executors, runtimes, and their tradeoffs.
+· Filesystems, sockets, and low-level I/O.
+· Networking fundamentals in code: TCP, HTTP, peer-to-peer transport.
+· Reading and modifying an existing Rust codebase.
+
+Practice: Writing programs that use concurrency safely, run tests,
+profile performance, and integrate with an existing codebase.
+
+Suggested GitHub entry point: rust, systems, intermediate.
+
+---
+
+
+### 5.4 Level 2 — Cryptography
+
+**Focus:** The cryptographic foundations of secure systems.
+
+**Topics:**
+
+- Hash functions and MACs.
+- Digital signatures and key exchange.
+- Symmetric encryption and AEAD.
+- Post-quantum primitives (for example ML-KEM, ML-DSA).
+- Domain separation, key hierarchies, and cryptographic context binding.
+- Common pitfalls: nonce reuse, key confusion, domain separation errors.
+- How cryptographic primitives are used in protocols and storage engines.
+
+**Practice:** Implementing toy primitives for learning, inspecting real
+constructions, and identifying design failures.
+
+**Suggested GitHub entry point:** `cryptography`, `security`, `advanced`.
+
+### 5.5 Level 3 — Distributed Systems and Blockchain
+
+**Focus:** Coordination without a central authority.
+
+**Topics:**
+
+- Distributed systems fundamentals: consistency, availability, partition
+  tolerance.
+- Consensus mechanisms: PoW, PoS, BFT, and tradeoffs.
+- State machines and deterministic execution.
+- Blockchain architecture: accounts, transactions, state roots, finality.
+- L1/L2 separation and settlement.
+- Coordination of identity, presence, settlement, and programmable
+  economics.
+
+**Practice:** Reading protocol specifications, reasoning about safety and
+liveness, tracing transactions through layers.
+
+**Suggested GitHub entry point:** `protocol`, `consensus`, `advanced`.
+
+### 5.6 Level 4 — Aevum Architecture
+
+**Focus:** The specific architecture of Aevum and its components.
+
+**Topics:**
+
+- Aevum L1 protocol: identity, presence, settlement.
+- Aevum L2 execution environment and compute market.
+- Compute Engine: workload packaging, scheduling, verification.
+- Storage: AevumDB, envelope crypto, domain separation.
+- Post-quantum cryptography in Aevum.
+- Verification strategies: redundancy, deterministic recomputation,
+  probabilistic checks.
+- Cross-module interactions: how L1, L2, compute, and storage fit together.
+
+**Practice:** Reading Aevum source code, tracing flows across modules, and
+proposing improvements grounded in the actual architecture.
+
+**Suggested GitHub entry point:** `protocol`, `compute`, `verification`,
+`advanced`.
+
+### 5.7 Level 5 — Contributor
+
+**Focus:** Turning capability into real contribution.
+
+This level is not a technical course. It is the operational level where a
+person moves from studying to participating in a real project.
+
+**Topics:**
+
+- Finding issues that match your current skill level.
+- Writing clear bug reports, feature proposals, and documentation fixes.
+- Git branches, commits, and pull requests.
+- Code review as reviewer and reviewee.
+- Keeping contributions focused, testable, and reviewable.
+- Interacting with project culture and conventions.
+
+**Practice:** Making scoped contributions to real projects; reviewing real
+pull requests; responding to review comments.
+
+**Suggested GitHub entry point:** `good first issue`, `documentation`,
+`help wanted`.
+
+### 5.8 Anti-Gamification
+
+The curriculum does not award levels for consuming content. The following do
+not determine a level:
+
+- Videos watched.
+- Pages read.
+- Quiz scores.
+- GitHub activity counts.
+- Number of pull requests alone.
+- Time spent on the platform.
+
+Levels reflect demonstrated capability and participation. A person's level
+is a description of what they can do, not a score of what they have seen.
+
+### 5.9 Curriculum vs Paths
+
+The curriculum is a **sequence of capability**. The paths (§3) are a **map of
+directions**. They intersect freely.
+
+- A person can progress through Levels 0–5 on any Path.
+- A person can explore any Path at any Level.
+- A person may focus on one Path and advance through several Levels within
+  it.
+- A person may switch Paths at any time.
+
+The curriculum defines *what to learn*. The paths define *where to apply it*.
+
+---
+
 ## Document Status
 
-Sections 1, 2, and 3 are frozen. Remaining sections (§4 Learning Levels
+Sections 1 through 5 are frozen. Remaining sections (§6 Contributor Pathway
 through §15 Future Academy Evolution) will be added in subsequent
 iterations.
