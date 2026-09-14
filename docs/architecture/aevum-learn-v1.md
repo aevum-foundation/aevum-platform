@@ -1657,8 +1657,484 @@ platform. Decisions live in GitHub artifacts.
 
 ---
 
-## Document Status
+## 10. Content Strategy
 
-Sections 1 through 9 are frozen. Remaining sections (§10 Content Strategy
-through §15 Future Academy Evolution) will be added in subsequent
-iterations.
+### 10.0 Overview
+
+Aevum produces content, but it does not run a content operation. Content
+exists to support the project's purpose — making decentralized compute
+infrastructure understandable, approachable, and contributable.
+
+The guiding question:
+
+> **What content does the project produce, and for whom?**
+
+The answer is not "as much as possible". The answer is a small number of
+purposeful layers, each serving a different audience, each connecting to the
+others.
+
+Three principles apply throughout this section:
+
+- **Content is made by contributors.** Aevum does not employ content
+  creators and does not run a content production pipeline.
+- **The three layers form a discoverable progression, not a mandatory
+  funnel.** A person can enter at any layer and move in any direction.
+- **No content KPI.** Content is valuable when it improves understanding,
+  discoverability, or contribution — not when it reaches a target number.
+
+### 10.1 The Three Layers
+
+Aevum content is organized into three layers:
+
+```text
+MASS
+              ↙    ↓    ↘
+   TECHNICAL ←→ EDUCATIONAL
+              ↘    ↓    ↙
+                GITHUB
+```
+
+Mass layer
+
+Broad-audience content:
+
+· short videos;
+· introductory posts;
+· social media threads;
+· high-level explanations of the problem Aevum addresses.
+
+Examples: What is a decentralized compute network? Why does post-quantum
+cryptography matter? What is a slot in a distributed protocol?
+
+The mass layer does not attempt to teach engineering. It introduces concepts
+and points interested readers toward deeper material.
+
+Technical layer
+
+Deep technical content:
+
+· architecture deep dives;
+· protocol analysis;
+· implementation notes;
+· research write-ups.
+
+Examples: How Aevum's L1/L2 split works. How AevumDB handles storage. How
+verification strategies handle non-deterministic workloads.
+
+The technical layer assumes the reader has some engineering context and wants
+to understand how something actually works.
+
+Educational layer
+
+Learning material connected to Learn and GitHub:
+
+· exercises;
+· tutorials;
+· worked examples;
+· guided implementations.
+
+Examples: Implement a Merkle tree. Write a WAL. Build a minimal P2P test.
+Explain an invariant in Aevum's state machine.
+
+The educational layer is the bridge between learning and doing. It is
+directly connected to Learning Paths (§3) and Curriculum (§5).
+
+10.2 Discoverable Progression, Not Mandatory Funnel
+
+The three layers are connected, but the connection is not a required path.
+
+A person can:
+
+· Start at the mass layer and move to technical content.
+· Start at the technical layer and jump directly to GitHub.
+· Start on GitHub and discover Learn material while reading code.
+· Start with a YouTube video and never visit GitHub at all — and that is
+  acceptable.
+
+The layers exist so that people can find their way, not so that they
+must follow a prescribed sequence.
+
+The value of the three layers is discoverability: each layer points toward
+the others, so an interested person can always find more depth.
+
+10.3 Contributor-Created Content
+
+All Aevum content is made by contributors.
+
+There is no content team. There is no editorial hierarchy. There is no
+approval gate for publication, except where content is presented as
+official Aevum documentation.
+
+A contributor chooses what to write, film, or explain. The project does not
+assign content production. The project does not require anyone to produce
+content.
+
+If a contributor creates a video, an article, or a tutorial, it is welcomed.
+If a contributor never creates content, nothing is missing.
+
+### 10.4 Official vs Community-Created Content
+
+Aevum distinguishes between two kinds of content:
+
+- **Official project content** — content that represents Aevum's
+  architecture, specifications, or positions. This includes documentation,
+  specifications, and any material presented as authoritative.
+- **Community-created content** — content made by contributors that
+  expresses their own understanding, work, or opinion. This includes most
+  videos, articles, tutorials, and discussions.
+
+The distinction matters most for technical and protocol claims. A
+contributor's video titled *"I implemented a GPU scheduler for Aevum"* is
+community-created content. It is not an Aevum position, an Aevum
+specification, or an Aevum commitment.
+
+Official content is reviewed for technical accuracy. Community-created
+content is welcomed and may be linked, but it is understood to be the work
+of its author.
+
+#### How official status is determined
+
+Official status is not granted by a separate editorial organization. There
+is no editorial team, no approval committee, and no publication board.
+
+> **Official status is determined by the project's existing technical
+> responsibility structure, not by a separate editorial organization.**
+
+In practice, this means: content is official when it is produced or reviewed
+by the people who carry technical responsibility for the area it describes —
+Maintainers and Core Contributors, within the scope of their responsibility
+(§6).
+
+Content that is not produced under that responsibility remains
+community-created. This is the default state, not a lesser one.
+
+#### Linking does not endorse
+
+Linking to community-created content does not make that content official.
+
+> **Linking to community-created content does not make that content
+> official.**
+
+A link from the Aevum website to a contributor's video is a pointer to a
+useful resource. It is not an endorsement, an official position, or a
+specification. Readers who need authoritative information should consult the
+official documentation.
+
+### 10.5 Recommended Cross-Linking
+
+Contributors are encouraged to link between related content:
+
+- A YouTube video may link to the relevant Learn page.
+- A blog post may link to the corresponding GitHub issue or
+  specification.
+- A tutorial may reference the Learning Path or Curriculum section it
+  belongs to.
+
+Cross-linking helps readers move between related material.
+
+At the same time:
+
+> **Cross-linking should help people move between related content without
+> creating duplicate canonical content.**
+
+One piece of content may be referenced from many places. It should not be
+copied into many places as if each copy were a separate source of truth.
+
+This continues the rule from §9:
+
+> Cross-posting ≠ parallel sources of truth.
+
+### 10.6 No Content KPI
+
+Aevum does not set content production targets.
+
+There are no:
+
+- monthly video quotas;
+- weekly article targets;
+- engagement thresholds;
+- view-count goals;
+- contributor content requirements.
+
+Content is valuable when it improves understanding, discoverability, or
+contribution. It is not valuable because it reaches a number.
+
+The absence of a KPI is deliberate. Content KPIs create pressure to publish
+material that is not ready, not useful, or not accurate. Aevum prefers a
+small amount of high-quality content over a large amount of low-quality
+content.
+
+### 10.7 Version and Accuracy Awareness
+
+Aevum is a technical project that changes over time. Architecture,
+cryptography, specifications, and APIs evolve.
+
+Technical content should identify **when it reflects a specific version,
+architecture, or state of the project**, particularly when accuracy depends
+on version:
+
+- protocol specifications;
+- cryptographic design;
+- AevumDB behavior;
+- public APIs;
+- system architecture.
+
+A reader who finds an old article through a search engine should be able to
+tell whether the article reflects the current state of the project.
+
+The principle:
+
+> **If the accuracy of technical content depends on a specific version of
+> the project, that version should be visible in the content.**
+
+This is a recommendation, not a hard requirement for every piece of content.
+It applies most strongly to content that could reasonably be mistaken for
+current documentation.
+
+#### Translations
+
+Translations may be created by contributors.
+
+A translated technical document should preserve the version and status of
+its source material. If the original document is marked as reflecting a
+specific version of the project, the translation should carry the same
+marker. A translation is a representation of the source, not an independent
+source of its own.
+
+### 10.8 Content Is Not Obligation
+
+Aevum does not require content. Aevum does not run on content.
+
+Content exists because the project is easier to understand when someone
+explains it. If someone chooses to explain it, that is valuable. If nobody
+chooses to, the project continues as it is.
+
+This rule exists to protect the project from becoming a content production
+system. The project exists to build infrastructure. Content supports the
+infrastructure; it does not replace it.
+
+---
+
+## 11. Website IA
+
+### 11.0 Overview
+
+Aevum has a website. The website is not a marketing page. It is an entry
+point into the project — code, documentation, community, and Learn.
+
+The guiding question:
+
+> **How does the site structure reflect the project?**
+
+The answer is not "one page per idea". The answer is a small number of clear
+entry points, each leading to a real place.
+
+### 11.1 Single Domain, Single Brand
+
+Aevum Learn lives at:
+
+```text
+https://aevumchain.com/learn
+```
+
+Not at:
+
+```text
+learn.aevumchain.com
+```
+
+The reasons:
+
+· One brand. Learn is part of Aevum, not a separate product.
+· One information architecture. A user navigates from the main site to
+  Learn without leaving the domain.
+· One SEO presence. Content accrues authority to a single domain rather
+  than being spread across subdomains.
+
+Subdomains may be considered later if there is a concrete technical or
+organizational reason. There is no such reason today.
+
+11.2 Top-Level Site
+
+The website provides the following top-level areas:
+
+```text
+/
+├── /             Home
+├── /explorer     Explorer
+├── /docs         Documentation
+├── /community    Community
+├── /wallet       Wallet
+├── /support      Support
+└── /learn        Aevum Learn
+```
+
+These areas already exist or are planned. Existing site areas remain outside
+the scope of Learn v1.
+
+The Learn section is the one that Learn v1 defines.
+
+11.3 Learn Structure
+
+Aevum Learn is structured as follows:
+
+```text
+/learn
+├── /start            Entry point
+├── /roadmap          Long-term direction
+├── /paths            Learning Paths index
+├── /contribute       How to contribute
+└── /community-link   Link to community channels
+```
+
+Five pages at launch.
+
+Additional pages may be added as content is created. The initial structure is
+deliberately small.
+
+Five useful pages are better than nine empty pages.
+
+/learn/start
+
+The entry point into Learn.
+
+It presents:
+
+· what Aevum Learn is;
+· who it is for;
+· how to choose a starting point.
+
+It links to /paths for the Learning Paths and to /roadmap for the
+long-term direction.
+
+/learn/roadmap
+
+The long-term direction of the Learn material.
+
+It describes:
+
+· which Paths exist;
+· which Curriculum levels exist;
+· what is already written;
+· what is planned;
+· what is not planned.
+
+It is honest about what does not exist yet.
+
+/learn/paths
+
+The index of Learning Paths.
+
+It is a navigation layer, not a new taxonomy. It presents the same Paths
+defined in §3:
+
+· Beginner;
+· Rust / Systems;
+· Cryptography;
+· Protocol / Blockchain;
+· Compute / GPU;
+· Contributor.
+
+Each Path links to the relevant existing Learn material, curriculum section,
+exercise, documentation, or future Path page.
+
+On launch, /paths does not require separate detail pages for each Path.
+A Path may link to existing material; a dedicated Path page is added only
+when there is enough content to justify it.
+
+The /paths page does not introduce a new classification system. It is a map
+of the existing Paths from §3.
+
+/learn/contribute
+
+A page describing how to contribute to Aevum, aimed specifically at people
+coming from Learn.
+
+It is a shorter, more focused version of CONTRIBUTING.md. It links to the
+full document in the repository.
+
+The page describes:
+
+· how to find a first issue;
+· how to open a first pull request;
+· how to get help;
+· where the community talks;
+· what is not required (no formal application, no background requirement).
+
+/learn/community-link
+
+A single page linking to the community channels described in §9:
+
+· Discord;
+· GitHub Discussions;
+· GitHub;
+· other channels as they exist.
+
+It is not a duplicate of the channels. It is a pointer to them.
+
+11.4 Design Principles
+
+The site follows the existing Aevum design system:
+
+· dark and light themes;
+· gold as the identity colour;
+· cyan as the technical colour;
+· no emoji in the user interface; only SVG icons;
+· no marketing imagery that implies guarantees or promises.
+
+These principles are already part of the site and apply to Learn as well.
+
+11.5 What the Site Does Not Do
+
+The Learn section does not:
+
+· require registration to view content;
+· gate content behind signup or email;
+· track users across the site for personalized profiling or behavioral
+  targeting;
+· present personalized recommendations;
+· display progress bars or level indicators;
+· award badges for viewing content;
+· promise employment, income, or career advancement.
+
+The Learn section is an entry point into the project, not a commercial
+education product.
+
+11.6 Accessibility and Platform Independence
+
+Learn content should be accessible without requiring a specific device,
+platform, or proprietary application where practical.
+
+The primary educational content lives on the website and in the
+documentation. External platforms — Discord, YouTube, GitHub — are entry
+points and conversation channels, not the canonical home of Learn material.
+
+This is not a full accessibility standard. It is a principle: a person who
+does not use a specific platform should still be able to learn.
+
+11.7 Growth
+
+The site may grow as content is created and as the project evolves. New pages
+may be added to Learn when there is real content to put on them.
+
+The rule:
+
+Pages are added when there is content to put on them, not when there is
+an idea for a page.
+
+Empty pages are worse than missing pages. A missing page can be added later.
+An empty page teaches a visitor that the project is not ready.
+
+11.8 Links to GitHub and Community
+
+Learn pages link to:
+
+· GitHub for real contribution;
+· Discord for conversation;
+· GitHub Discussions for long-lived technical questions;
+· documentation for reference material.
+
+The site does not attempt to replicate GitHub or Discord. It points to them.
+
+---
+
