@@ -11,7 +11,15 @@ use aevum_platform_api::{
     auth::csrf::CsrfConfig,
     auth::csrf_middleware::CsrfMiddleware,
     auth::{middleware::AuthMiddleware, service::AuthService, storage::InMemoryAuthStorage},
-    community::{api::CommunityApi, service::CommunityService, storage::InMemoryCommunityStorage},
+    community::{
+        api::CommunityApi,
+        notifications::{
+            api::NotificationApi, service::NotificationService,
+            storage::InMemoryNotificationStorage,
+        },
+        service::CommunityService,
+        storage::InMemoryCommunityStorage,
+    },
     config::Config,
     state::AppState,
     storage::MockStorage,
@@ -56,11 +64,19 @@ async fn main() -> std::io::Result<()> {
     let community_api: std::sync::Arc<dyn CommunityApi> = community_service.clone();
     let community_api_data = actix_web::web::Data::new(community_api);
 
+    // Notification service
+    let notification_storage = InMemoryNotificationStorage::new();
+    let notification_service =
+        std::sync::Arc::new(NotificationService::with_noop_sink(notification_storage));
+    let notification_api: std::sync::Arc<dyn NotificationApi> = notification_service.clone();
+    let notification_api_data = actix_web::web::Data::new(notification_api);
+
     let server = HttpServer::new(move || {
         App::new()
             .app_data(actix_web::web::Data::new(app_state.clone()))
             .app_data(auth_api_data.clone())
             .app_data(community_api_data.clone())
+            .app_data(notification_api_data.clone())
             .wrap(Logger::default())
             .wrap(AuthMiddleware::new(auth_middleware_data.clone()))
             .wrap(CsrfMiddleware::new(actix_web::web::Data::new(
@@ -69,6 +85,7 @@ async fn main() -> std::io::Result<()> {
             .configure(health::configure)
             .configure(api::auth::configure)
             .configure(api::community::configure)
+            .configure(api::notifications::configure)
     })
     .bind((host.as_str(), port))?
     .disable_signals()
