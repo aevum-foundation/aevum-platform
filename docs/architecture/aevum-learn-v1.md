@@ -912,8 +912,296 @@ The curriculum defines *what to learn*. The paths define *where to apply it*.
 
 ---
 
+## 6. Contributor Pathway
+
+### 6.0 Overview
+
+Section 4 defined the six levels. This section explains how contribution
+actually becomes trust inside Aevum.
+
+The Contributor Pathway is not a career ladder. It is not a hiring funnel. It
+is not a promotion process. It is a description of how an open project
+recognizes the people who build it.
+
+The guiding question:
+
+> **How does contribution become trust?**
+
+The answer is not voting, not metrics, and not time served. The answer is
+demonstrated work and demonstrated responsibility, recognized by others who
+already carry that responsibility.
+
+Trust is contextual. A person may be trusted in one area and still be
+learning in another.
+
+### 6.1 What Counts as Contribution
+
+Contribution is not limited to code. Code is one kind of contribution; it is
+not the only kind, and it is not privileged above the others.
+
+Contribution includes:
+
+- **Code** — features, fixes, refactors, tests, tooling.
+- **Documentation** — guides, specifications, architecture notes, translations.
+- **Review** — reading pull requests carefully, giving useful feedback,
+  catching issues.
+- **Testing** — manual testing, integration testing, reproducing bugs,
+  writing test coverage.
+- **Security research** — responsible disclosure, threat modeling,
+  cryptographic review.
+- **Protocol research** — consensus, settlement, verification, economic
+  design.
+- **Education** — writing learning materials, mentoring, explaining concepts
+  clearly.
+- **Translation** — making knowledge accessible in other languages.
+- **Moderation** — keeping community channels useful and welcoming.
+- **Infrastructure operations** — running nodes, providing test
+  environments, operating public infrastructure.
+- **Workload development** — authoring, packaging, and verifying
+  computational workloads.
+- **Community support** — helping newcomers, answering questions, triaging
+  issues.
+
+A person who only writes code is not more of a contributor than a person who
+only writes documentation. Both are essential to the project.
+
+### 6.2 From Builder to Contributor
+
+A Builder becomes a Contributor when they make a real, meaningful
+contribution to a real project — Aevum or another open-source project.
+
+There is no application. There is no gate. There is no minimum count.
+
+A single merged pull request may be a first contribution. It is not, by
+itself, a description of capability. Contributor is not a title awarded for a
+first merge. It is a description of a pattern.
+
+For Learn purposes, evidence is public and may include merged contributions,
+reviews, documentation, research, infrastructure work, or other visible
+contributions — not only code.
+
+When it becomes visible, the level functions as a **project trust
+indicator** — useful for collaboration, not for ranking.
+
+### 6.3 From Contributor to Core Contributor
+
+A Contributor becomes a Core Contributor when they have demonstrated
+**sustained technical competence, quality of review, and reliability**, and
+are trusted with scope inside the project.
+
+The pathway:
+
+- Recognition is earned through sustained contribution and trust.
+- It is not requested, applied for, or automatically granted.
+- It is not decided by vote counts, percentages, or activity metrics.
+- It is offered by existing Core Contributors and Maintainers, on the basis
+  of:
+  - contribution history;
+  - quality of work;
+  - quality of review;
+  - how the person interacts with others;
+  - willingness and ability to take responsibility;
+  - judgement in ambiguous situations.
+
+> **Recognition is earned through sustained contribution and trust. It is
+> not requested, applied for, or automatically granted.**
+
+When recognition happens, it is made public — so that other contributors know
+who they can rely on for review, guidance, and responsibility.
+
+### 6.4 From Core Contributor to Maintainer
+
+A Core Contributor becomes a Maintainer when they take **long-term
+responsibility for a specific area, subsystem, or specification** of the
+project.
+
+A Maintainer is not a manager. A Maintainer is responsible for something
+technical — a module, a spec, a piece of infrastructure — and is trusted to
+make decisions about it.
+
+Maintainer status is conferred through extended trust and explicit
+recognition by other Maintainers.
+
+Once again:
+
+- Not automatic.
+- Not requested.
+- Not based on activity metrics.
+- Not a management position.
+
+### 6.5 No Revocation
+
+Contributor, Core Contributor, and Maintainer status is **historical**. It
+reflects what a person has contributed and what trust they have earned.
+
+If a person steps away from the project:
+
+- Their **historical contribution remains part of the project's history**.
+- Their **level is not revoked** because of inactivity.
+- Their **responsibility for a specific area may be reassigned** if they are
+  no longer active.
+
+Example: a Maintainer who is no longer maintaining their area may hand
+responsibility to another Maintainer. Their recognition as a Maintainer
+remains; their active responsibility changes.
+
+This is different from a leaderboard. There is no seasonal reset. There is no
+score that decays. There is no gamification.
+
+### 6.6 Public Recognition
+
+Contributor, Core Contributor, and Maintainer are **public levels** (§4.3).
+
+Public recognition serves a practical purpose:
+
+- Other contributors know who to ask for review or guidance.
+- New contributors can see the project's structure of trust.
+- Responsibility is visible, so it can be relied on.
+
+Public recognition is not a badge, a status symbol, or a ranking. Two
+Contributors may have very different skills, domains, and levels of
+activity. The level describes a category of trust, not a comparison between
+people.
+
+---
+
+## 7. Mentorship
+
+### 7.0 Overview
+
+Section 5 defined the curriculum. This section explains how knowledge
+actually becomes capability inside the project.
+
+The guiding question:
+
+> **How does knowledge become capability?**
+
+The answer is not courses, not certifications, and not scheduled lectures.
+The answer is mentorship — informal, voluntary, and continuous.
+
+Mentorship is not a program that Aevum runs. It is a culture that Aevum
+maintains.
+
+### 7.1 Free-Form and Voluntary
+
+Mentorship in Aevum is:
+
+- **Free-form.** No assigned pairs. No mandatory sessions. No KPI.
+- **Opt-in.** A person asks when they need help. A person offers help when
+  they can.
+- **Voluntary.** Nobody is required to mentor. Nobody is required to be
+  mentored.
+- **Reciprocal.** Today's mentee is often tomorrow's mentor.
+
+Mentorship is not something scheduled into a calendar. It arises naturally
+around shared work.
+
+### 7.2 Where Mentorship Happens
+
+Mentorship happens wherever learning happens. This includes:
+
+- **Discord** — for fast questions and quick feedback.
+- **GitHub Discussions** — for long-lived knowledge that benefits future
+  readers.
+- **Pull request reviews** — for learning through real code and real review.
+- **Documentation** — for learning through writing and reading structured
+  material.
+- **Community channels** — for general questions, translations, and support.
+
+> **Mentorship happens wherever learning happens.**
+
+Well-written documentation is a form of mentorship. It allows one contributor
+to help thousands of future readers.
+
+There is no single "mentorship channel". The whole project is the mentorship
+channel.
+
+### 7.3 Teach Reasoning, Not Answers
+
+The most important principle of mentorship in Aevum:
+
+> **Teach reasoning, not answers.**
+
+The goal of mentorship is not to create dependency. The goal is to help a
+person become capable of solving future problems independently.
+
+A mentor does not hand over a finished solution. A mentor helps a person:
+
+- understand the problem;
+- reason about the constraints;
+- find the information they need;
+- read the relevant specification;
+- check a hypothesis;
+- design and test a solution.
+
+The value of mentorship is not the answer. The value is the ability to find
+the answer — and to know when the answer is wrong.
+
+### 7.4 RTFM Is Not a Mentorship Answer
+
+In many technical communities, the response to a beginner's question is
+**"RTFM"** — read the manual.
+
+In Aevum, this is not a mentorship answer.
+
+A person who asks a question may have already read the manual — or may not
+know where the manual is, or may be stuck on a specific point that the manual
+assumes is obvious. Telling them to read the manual again does not teach
+anything.
+
+The correct response is to:
+
+- answer the question, or
+- point to the exact section of documentation that answers it, or
+- ask what they have tried, so the conversation can continue.
+
+Senior contributors are expected to explain, not dismiss.
+
+### 7.5 Language
+
+English is the primary language of documentation and technical discussion.
+
+At the same time:
+
+> **Contributors are free to help each other in any language.**
+
+A global project benefits from multilingual support. Documentation is written
+in English so that it can serve as a shared reference. Person-to-person help
+can happen in whatever language both sides prefer.
+
+### 7.6 No Scheduled Program
+
+Aevum does not run a scheduled mentorship program. There are no assigned
+mentors, no cohorts, no reviews, no graduation ceremonies.
+
+Instead, mentorship emerges from:
+
+- Asking good questions in public channels.
+- Answering questions carefully and respectfully.
+- Doing real work together in pull requests and discussions.
+- Writing documentation that helps future readers.
+- Reviewing others' work honestly and constructively.
+
+The role of the project is to maintain the culture that makes this possible —
+not to schedule it.
+
+### 7.7 What Mentorship Is Not
+
+Mentorship is not:
+
+- A scheduled course.
+- A guarantee of individual attention.
+- A promise of promotion.
+- A financial arrangement.
+- An employment relationship.
+
+Mentorship is a voluntary culture of learning. It exists as long as
+contributors choose to keep it alive.
+
+---
+
 ## Document Status
 
-Sections 1 through 5 are frozen. Remaining sections (§6 Contributor Pathway
+Sections 1 through 7 are frozen. Remaining sections (§8 GitHub Integration
 through §15 Future Academy Evolution) will be added in subsequent
 iterations.
