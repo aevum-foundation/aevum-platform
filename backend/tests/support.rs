@@ -6,7 +6,11 @@ use actix_web::cookie::Cookie;
 
 use aevum_platform_api::{
     auth::{email::MockEmailProvider, service::AuthService, storage::InMemoryAuthStorage},
-    community::{service::CommunityService, storage::InMemoryCommunityStorage},
+    community::{
+        notifications::{service::NotificationService, storage::InMemoryNotificationStorage},
+        service::CommunityService,
+        storage::InMemoryCommunityStorage,
+    },
     config::Config,
     state::AppState,
     storage::MockStorage,
@@ -16,6 +20,7 @@ pub struct TestContext {
     pub email_provider: Arc<MockEmailProvider>,
     pub auth_service: Arc<AuthService<InMemoryAuthStorage>>,
     pub community_service: Arc<CommunityService<InMemoryCommunityStorage>>,
+    pub notification_service: Arc<NotificationService<InMemoryNotificationStorage>>,
     pub app_state: AppState,
 }
 
@@ -34,10 +39,14 @@ pub async fn create_test_context() -> TestContext {
     let community_storage = InMemoryCommunityStorage::new();
     let community_service = Arc::new(CommunityService::new(community_storage));
 
+    let notification_storage = InMemoryNotificationStorage::new();
+    let notification_service = Arc::new(NotificationService::with_noop_sink(notification_storage));
+
     TestContext {
         email_provider,
         auth_service,
         community_service,
+        notification_service,
         app_state,
     }
 }

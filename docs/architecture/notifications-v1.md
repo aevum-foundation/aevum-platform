@@ -1,6 +1,6 @@
 # Notifications v1 — Architecture
 
-Status: **B-2 complete (design frozen)**
+Status: **B-2 implemented and tested**
 
 Notifications v1 provides a durable, idempotent notification subsystem
 owned by the Community domain. It is a foundational layer for future
@@ -506,3 +506,44 @@ B-2 covers:
 - authentication;
 - CSRF enforcement;
 - HTTP endpoints behaviour.
+
+---
+
+## 19. Implementation Status
+
+Notifications v1 is implemented, tested, and committed as of commit
+`9bfb7dc` (B-2.4). The B-2.5 integration suite is committed on top.
+
+### Completed phases
+
+| Phase | Scope | Tests |
+|-------|-------|-------|
+| B-2.0 | Architecture contract | — (document) |
+| B-2.1 | Models, validation, contracts | +30 unit |
+| B-2.2a | NotificationStorage trait + InMemory | +21 unit |
+| B-2.2b | AevumDbNotificationStorage | +19 unit |
+| B-2.3a | Sink abstraction + NotificationApi trait | +6 unit |
+| B-2.3b | NotificationService | +19 unit |
+| B-2.4 | HTTP handlers + wiring | +3 unit |
+| B-2.5b | Integration tests | +13 integration |
+
+### Delivered surface
+
+- Three HTTP endpoints (list / unread-count / mark-read)
+- Cursor-based pagination with UUID tie-breaker
+- Idempotent emit keyed by `(user_id, kind, sha256(source_id))`
+- Durable storage with unread index
+- Post-commit best-effort sink delivery
+- Public DTO whitelist without `user_id`
+
+### Test coverage
+
+All B-2 tests are green with zero regressions in AUTH-10..28 and B-1.
+
+### Post-B-2 follow-ups
+
+- `AevumDB-TX-1` — conditional write primitive for multi-instance
+  uniqueness (see `docs/backlog/aevumdb-tx-1.md`).
+- Retention policy — deferred until operational requirements exist.
+- Realtime delivery — `NotificationSink` trait is the extension point.
+- Producer integration — Forum (B-3) will call `NotificationService::emit`.
