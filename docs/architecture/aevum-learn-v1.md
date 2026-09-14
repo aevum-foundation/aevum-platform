@@ -1200,8 +1200,465 @@ contributors choose to keep it alive.
 
 ---
 
+## 8. GitHub Integration
+
+### 8.0 Overview
+
+GitHub is where contribution happens. It is the primary place where code,
+issues, pull requests, reviews, and technical discussions live. It is not a
+mirror of the community; it is the workspace of the project.
+
+The guiding question:
+
+> **How does the project make contribution practical?**
+
+The answer is not a process document. The answer is a working environment
+that makes good contributions easy to start and easy to review.
+
+Three rules apply throughout this section:
+
+- **Labels are navigation hints, not gates.** A label indicates where to
+  look, not what a person is allowed to do.
+- **Verification is proportional to change.** A documentation fix does not
+  require the same checks as a cryptographic change.
+- **GitHub is the source of contribution truth.** Community channels are
+  communication; GitHub is where decisions, code, and history live.
+
+Two clarifications:
+
+- **GitHub is the source of contribution history and technical project
+  artifacts, but it is not required to be the only place where people
+  communicate or learn.** Communication may happen elsewhere; durable
+  technical artifacts belong here.
+- **Contribution is not limited to merged code.** GitHub records many forms
+  of contribution, including reviews, documentation, testing, research,
+  issue work, and other visible project activity. A merged pull request is
+  one form of contribution; it is not the definition of contribution.
+
+### 8.1 The Label System
+
+Aevum uses a **hybrid** label system: a small set of level labels with a
+prefix, and a flat set of domain labels.
+
+#### Level labels
+
+```text
+level:beginner
+level:intermediate
+level:advanced
+level:research
+```
+
+Level labels are navigation hints. They indicate a rough difficulty
+category, not a permission requirement. A person who has never contributed
+can pick up a level:advanced issue if they are confident in the area. A
+person who has already contributed to advanced code may still choose a
+level:beginner issue because it interests them.
+
+The labels do not need to be followed. They help people find issues matching
+their current capability, but they do not gate access.
+
+Domain labels
+
+```text
+rust
+crypto
+protocol
+compute
+gpu
+documentation
+infra
+testing
+security
+```
+
+Domain labels describe the area of the issue. They are flat and free of
+hierarchy. An issue can carry multiple domain labels.
+
+Status labels
+
+```text
+good first issue
+help wanted
+discussion
+blocked
+```
+
+Status labels describe the state or intent of the issue.
+
+8.2 Good First Issue
+
+A good first issue is a task that a new contributor can pick up without
+needing deep prior knowledge of the project.
+
+A good first issue is:
+
+· Well-scoped. The change is clear and limited in scope.
+· Isolated. It does not require understanding many interconnected
+  modules.
+· Understandable. The expected behavior is clear.
+· Low-risk. It is unlikely to break production behavior.
+· Verifiable. There is a reasonable way to check that the change is
+  correct.
+
+A good first issue has:
+
+· a clear description of the problem or task;
+· a clear definition of the expected outcome;
+· a stated acceptance criterion;
+· a reproducible problem or a defined target;
+· a test or verification path;
+· no requirement for deep architectural knowledge.
+
+A good first issue avoids security-critical paths unless it is specifically
+marked and mentored.
+
+A good first issue is not defined by the number of lines it changes. A
+short change can be complex; a long change can be trivial. The size of a
+patch is not a meaningful measure of difficulty.
+
+8.3 The Pull Request Flow
+
+The contribution flow from first-time contributor to merged code:
+
+1. Pick an issue. Any issue is open. Choose one that matches your
+   interest and current capability.
+2. Fork the repository (for external contributors) or create a branch in
+   the repository (for existing contributors).
+3. Make the change. Keep the change focused. Do not include unrelated
+   work.
+4. Run the checks relevant to the affected component. Verification is
+   proportional to change.
+5. Open a pull request. Describe the change, link the issue, and explain
+   how it was verified.
+6. Respond to review. A reviewer may ask questions or request changes.
+   This is normal.
+7. Merge. When the change is ready, a maintainer merges it.
+
+The flow is deliberately minimal. There is no application process, no
+assignment requirement, and no permission gate.
+
+### 8.4 Verification Proportional to Change
+
+Contributors run the checks relevant to the affected component. There is no
+universal checklist that applies to every pull request.
+
+Examples:
+
+- A **documentation** change does not require running the full Rust test
+  suite.
+- A **Rust code** change normally includes formatting, tests, and clippy
+  where applicable.
+- A **cryptographic** change may require additional review and test coverage.
+- A **specification** change may require cross-checking with existing
+  implementations.
+
+The principle:
+
+> **Verification is proportional to change.**
+
+The goal is not to run every possible check on every possible change. The
+goal is to know that the change is correct and does not break what it
+touches.
+
+### 8.5 Pull Request Template
+
+A pull request description should answer three questions:
+
+- **What changed?** — Summary in one or two sentences.
+- **Why?** — Link to the related issue or motivation.
+- **How was it verified?** — The checks that were run and the reasoning
+  behind them.
+
+Additional fields, such as screenshots or benchmarks, are added only when the
+change requires them.
+
+### 8.6 Issue Templates
+
+Aevum provides a small number of issue templates:
+
+- **Bug report** — reproducible problem, environment, expected vs actual
+  behavior.
+- **Feature request** — proposed capability, motivation, alternatives
+  considered.
+- **Security report** — private reporting mechanism for responsible
+  disclosure.
+- **Discussion** — open-ended technical question or proposal.
+
+Issue templates are **guidance**, not mandatory forms. They exist to help
+people write useful reports, not to slow them down.
+
+### 8.7 CONTRIBUTING.md and CODE_OF_CONDUCT.md
+
+Aevum maintains two meta-documents referenced from the repository root:
+
+- **`CONTRIBUTING.md`** — describes the contribution flow in practical
+  terms.
+- **`CODE_OF_CONDUCT.md`** — describes the expected behavior in community
+  spaces.
+
+These documents are **guides**, not contracts. They describe how the project
+works and what it expects, and they can evolve as the project evolves.
+
+Their content is not part of Learn v1. They are separate documents.
+
+### 8.8 GitHub Discussions
+
+GitHub Discussions is the home of long-lived technical knowledge that is not
+a pull request.
+
+Examples of what belongs in Discussions:
+
+- design proposals that are not yet ready for a pull request;
+- comparison of alternatives;
+- questions whose answers will help future readers;
+- reflections on architecture that inform future work.
+
+Examples of what does not belong in Discussions:
+
+- real-time chat (belongs in Discord);
+- bug reports (belong in issues);
+- questions already answered by the documentation — these should normally be
+  directed to the relevant documentation, so that documentation remains the
+  primary path for common questions.
+
+The rule:
+
+> **GitHub is the source of contribution truth.**
+
+Decisions that affect the code, specification, architecture, or protocol
+must be recorded in a public technical artifact — a pull request, an issue, a
+discussion, or a document. They must not live only in chat.
+
+### 8.9 GitHub Projects
+
+GitHub Projects may be used to make roadmap work visible. If used, they
+reflect the same rules:
+
+- Projects show status; they do not grant permission.
+- Projects are coordination tools, not measures of individual contribution.
+- Projects are not a hierarchy; they are an overview.
+- Projects may be added, changed, or removed as the project evolves.
+
+The use of GitHub Projects is optional. If it stops being useful, it can be
+removed.
+
+---
+
+## 9. Community Integration
+
+### 9.0 Overview
+
+Community channels exist to support the project. They are where people talk,
+ask, learn, and organize. They are not where the project is governed.
+
+The guiding question:
+
+> **How does the project reach people where they are?**
+
+The answer is not "everywhere at once". The answer is a small number of
+channels with clear purposes, and a clear rule about what they are not.
+
+Three rules apply throughout this section:
+
+- **GitHub is the source of contribution truth.** (Repeated deliberately.)
+- **Community channels are not protocol governance.** Decisions about the
+  protocol, the specification, and the architecture are made in public
+  technical artifacts — not in chat.
+- **Cross-posting distributes information; it does not create parallel
+  sources of truth.** The same information may appear on multiple platforms,
+  but each platform has a purpose.
+
+One principle applies before any specific platform:
+
+> **Platforms are replaceable. Their purposes are not.**
+
+Aevum may adopt, replace, or discontinue communication platforms as the
+ecosystem changes. Platform names in this document describe current
+examples, not permanent infrastructure commitments.
+
+### 9.1 Discord
+
+Discord is the primary real-time and async conversational channel.
+
+The initial structure is small. It may grow as the community grows, but it
+starts minimal.
+
+```text
+WELCOME
+├── #welcome
+├── #rules
+└── #announcements
+
+COMMUNITY
+├── #general
+└── #introductions
+
+LEARNING
+├── #learning
+├── #rust
+└── #cryptography
+
+BUILD
+├── #development
+├── #good-first-issues
+└── #code-review
+
+AEVUM
+├── #protocol
+├── #compute
+└── #research
+```
+
+Four categories, approximately ten channels.
+
+Rules for Discord:
+
+· No hidden technical decisions. If a discussion produces a decision
+  that affects the code, specification, architecture, or protocol, the
+  decision must be recorded in a GitHub artifact.
+· Searchable is better than ephemeral. When a question has a useful
+  answer, prefer to record it where future readers can find it.
+· Language is free. English is the primary language of documentation,
+  but contributors may help each other in any language.
+
+9.2 Telegram
+
+Telegram is an announcement distribution layer, not an independent
+community.
+
+Its role:
+
+· mirror announcements from Discord (#announcements);
+· reach people who prefer Telegram over Discord;
+· distribute information without creating a second discussion center.
+
+Telegram does not host discussions. It does not create parallel
+conversations. It does not become a source of truth.
+
+9.3 X / Twitter
+
+X / Twitter is a discovery and announcement channel.
+
+Its role:
+
+· announce releases, milestones, and significant work;
+· reach audiences that do not visit GitHub or Discord;
+· point readers toward the source of truth.
+
+X is not a place where technical discussion happens. It is a place where
+people learn that something happened and where to find out more.
+
+9.4 YouTube
+
+YouTube is a mass content layer.
+
+Its role:
+
+· explain what Aevum is;
+· introduce decentralized compute concepts to a broad audience;
+· provide visual, long-form educational material.
+
+Content on YouTube is created by contributors. Aevum does not employ content
+creators. If a contributor makes a video, it may be published. If a
+contributor makes a series of videos, it may become a series. But YouTube
+content is not a production obligation of the project.
+
+9.5 Habr / Dev.to / Medium
+
+Technical long-form content platforms.
+
+Their role:
+
+· publish technical articles, deep dives, and research notes;
+· reach readers who prefer long-form reading to video or chat;
+· extend the reach of the technical work beyond the immediate community.
+
+Content is written by contributors, not commissioned.
+
+9.6 Reddit
+
+Reddit is used for discovery and discussion in relevant subreddits (for
+example, r/rust, r/ethereum, r/distributed).
+
+Its role:
+
+· introduce Aevum to audiences that congregate in specific subreddits;
+· answer questions from those audiences;
+· direct interested readers toward GitHub and the documentation.
+
+Rules for Reddit:
+
+· No spam. Aevum does not post the same message repeatedly across
+  subreddits.
+· Respect each community's rules. Each subreddit has its own culture;
+  Aevum adapts to it.
+· The technical work is the message. Marketing language does not work
+  on Reddit. Working code does.
+
+9.7 Community Events
+
+Aevum does not require recurring community calls.
+
+There is no weekly sync, no monthly all-hands, no scheduled meeting cadence.
+
+The primary culture is:
+
+· text-first;
+· asynchronous;
+· searchable;
+· persistent.
+
+Calls may be introduced when a demonstrated need justifies them. Until then,
+community organization happens in GitHub and in Discord.
+
+Aevum does not require recurring community calls. Calls may be
+introduced when a demonstrated need justifies them.
+
+9.8 Content Is Made by Contributors
+
+Aevum does not employ content creators.
+
+Aevum does not run a content production pipeline.
+
+Aevum does not require any contributor to produce videos, articles, or
+announcements.
+
+If a contributor chooses to write an article, make a video, or give a talk,
+that work is welcomed and may be published. But content is not a production
+obligation.
+
+This rule protects two things:
+
+· It keeps Aevum focused on real engineering.
+· It keeps contributors free to participate however they choose.
+
+9.9 Cross-Posting
+
+Cross-posting exists to distribute information. It does not create parallel
+sources of truth.
+
+Each platform has a purpose:
+
+Platform Purpose
+GitHub Source of contribution truth
+Discord Conversation
+Telegram Announcements
+X / Twitter Discovery and announcements
+YouTube Visual / long-form learning
+Habr / Dev.to / Medium External technical reach
+Reddit Community discovery and discussion
+
+When the same information appears on multiple platforms, it originates from
+one place — normally GitHub — and is distributed from there.
+
+A conversation on one platform does not create a decision on another
+platform. Decisions live in GitHub artifacts.
+
+---
+
 ## Document Status
 
-Sections 1 through 7 are frozen. Remaining sections (§8 GitHub Integration
+Sections 1 through 9 are frozen. Remaining sections (§10 Content Strategy
 through §15 Future Academy Evolution) will be added in subsequent
 iterations.
