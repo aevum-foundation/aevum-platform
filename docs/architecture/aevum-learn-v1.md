@@ -262,7 +262,286 @@ Real contribution over follower counts.
 
 ---
 
+## 3. Learning Paths
+
+### 3.0 Overview
+
+Learning paths are **routes**, not a curriculum. A route tells you where you
+can go, not every step you must take. Paths overlap, branch, and can be
+entered from different starting points. No path requires you to complete any
+other path first.
+
+You do not need permission to start. You do not need a certificate to move
+to the next path. You choose the route based on where you are now and where
+you want to go.
+
+```text
+                       LEARNING PATHS
+
+       Beginner ─────── Rust / Systems
+           │                  │
+           ├──── Cryptography ┤
+           │                  │
+           ├──── Protocol / Blockchain
+           │                  │
+           └──── Compute / GPU
+
+                  ↓
+           Contributor Path
+                  ↓
+   Trust / Competence / Responsibility
+                  ↓
+      Core Contributor / Maintainer
+```
+
+These connections are examples, not prerequisites. You can enter any
+path from any starting point, leave any path at any time, and combine
+paths however you choose.
+
+Each path is a starting point, not a sequence requirement. A path can be
+left at any time and returned to later, or replaced by another path if
+interests change.
+
+### 3.1 Beginner Path
+
+**For:** People with no prior programming experience who want a real path
+into systems engineering, cryptography, or distributed computing.
+
+**You will learn:**
+
+- How computers actually work: memory, processes, files, and networks.
+- The Linux command line, the shell, and everyday tooling.
+- Version control with Git and collaborative workflows on GitHub.
+- One first programming language (Rust is preferred, but any systems
+  language is acceptable).
+- How to read documentation, write small programs, and debug them.
+- How to make a first open-source contribution — even a one-line fix.
+
+**You will practice:**
+
+- Writing small programs from scratch and reading them back.
+- Using Git branches, commits, and pull requests on a real repository.
+- Debugging failures by reading error messages and logs.
+- Making a first pull request to an open-source project.
+
+**After this path, you can:**
+
+- Read and write small programs in a systems language.
+- Use Git and GitHub for real collaboration.
+- Understand what a process, a file descriptor, and a network socket are.
+- Find and make your first useful contribution to an open-source project.
+
+GitHub entry point: issues labeled beginner.
+
+### 3.2 Rust / Systems Path
+
+**For:** Developers with experience in another language who want to learn
+Rust and systems programming on a real project.
+
+**You will learn:**
+
+- Ownership, borrowing, lifetimes, and the Rust memory model.
+- Traits, generics, and type-level abstraction in idiomatic Rust.
+- Error handling, testing, and the Rust toolchain (cargo, clippy,
+  rustfmt) as tooling examples.
+- Async programming, concurrency, executors, and runtimes — and their
+  tradeoffs.
+- Networking fundamentals: TCP/IP, sockets, DNS, HTTP, and the role of
+  peer-to-peer transport.
+- Filesystems, sockets, memory-mapped I/O, and low-level systems concepts.
+- How to read and modify an existing production Rust codebase.
+
+**You will practice:**
+
+- Ownership and borrowing exercises.
+- Writing concurrency-safe code and reasoning about its guarantees.
+- Building and running tests, including property and integration tests.
+- Profiling small programs to understand performance tradeoffs.
+
+**After this path, you can:**
+
+- Write idiomatic, tested, and safe Rust code.
+- Understand memory safety, concurrency guarantees, and systems-level
+  tradeoffs.
+- Navigate and contribute to real Rust codebases such as Aevum or
+  comparable projects.
+- Reason about performance and correctness in systems software.
+
+GitHub entry point: issues labeled rust, systems, intermediate.
+
+---
+
+
+### 3.3 Cryptography Path
+
+**For:** People interested in cryptographic primitives, post-quantum
+cryptography, and the security foundations of distributed systems.
+
+**You will learn:**
+
+- Cryptographic hash functions, MACs, and the properties that make them
+  useful.
+- Digital signatures, key exchange, and public-key infrastructure.
+- Symmetric encryption, AEAD, and secure envelope design.
+- Post-quantum cryptographic primitives (for example ML-KEM, ML-DSA) and
+  why they matter.
+- Domain separation, key hierarchies, and cryptographic context binding.
+- How cryptographic primitives are used in real protocols and storage
+  engines.
+
+**You will practice:**
+
+- Implementing toy cryptographic primitives (for learning only).
+- Inspecting real protocol constructions and identifying design intent.
+- Identifying common security failures in cryptographic designs.
+
+**After this path, you can:**
+
+- Understand cryptographic primitives, their security assumptions, and the
+  limits of their use.
+- Read cryptographic specifications and reason about their guarantees.
+- Contribute to cryptographic components in real systems, including
+  protocol and storage security layers.
+- Identify common pitfalls (nonce reuse, key confusion, domain separation
+  errors) in cryptographic designs.
+
+**GitHub entry point:** issues labeled `cryptography`, `security`, `advanced`.
+
+### 3.4 Protocol / Blockchain Path
+
+**For:** People with prior experience in distributed systems or blockchain
+who want to understand and contribute to consensus protocols, state
+machines, and L1/L2 architecture.
+
+**You will learn:**
+
+- Distributed systems fundamentals: consistency, availability, and
+  partition tolerance.
+- Consensus mechanisms: PoW, PoS, BFT, and their tradeoffs.
+- State machines, epochs, and deterministic execution.
+- Blockchain architecture: accounts, transactions, state roots, and
+  finality.
+- L1/L2 separation and its implications for scalability and settlement.
+- How a decentralized compute network coordinates identity, presence, and
+  settlement.
+
+**You will practice:**
+
+- Reading and critiquing protocol specifications.
+- Reasoning about liveness and safety guarantees of different consensus
+  designs.
+- Tracing the lifecycle of a transaction through L1 and L2 layers.
+
+**After this path, you can:**
+
+- Reason about the guarantees and limitations of different consensus
+  designs.
+- Read and critique protocol specifications.
+- Understand how L1 and L2 interact in systems like Aevum.
+- Contribute to protocol-level modules: state machines, epochs, settlement,
+  and verification.
+
+**GitHub entry point:** issues labeled `protocol`, `consensus`, `advanced`.
+
+### 3.5 Compute / GPU Path
+
+**For:** People interested in distributed compute, GPU programming, and
+verification of computational workloads.
+
+**You will learn:**
+
+- GPU architecture: warps, memory hierarchy, and execution models.
+- GPU programming models, vendor-specific platforms such as CUDA and ROCm,
+  and portable compute abstractions.
+- How workloads are packaged, distributed, and executed across many nodes.
+- How computational results can be verified, challenged, reproduced, and
+  rejected when incorrect.
+- The tradeoffs between deterministic and non-deterministic workloads.
+- How a compute market prices, schedules, and settles distributed work.
+
+**You will practice:**
+
+- Packaging a workload and running it on a compute node.
+- Executing workloads across multiple nodes and comparing results.
+- Designing a verification strategy for a specific workload type.
+
+**After this path, you can:**
+
+- Package and run workloads on GPU or CPU compute nodes.
+- Understand verification strategies and their failure modes.
+- Contribute to compute scheduling and verification layers in
+  decentralized compute systems.
+- Reason about cost, reliability, and correctness in distributed compute
+  systems.
+
+**GitHub entry point:** issues labeled `compute`, `gpu`, `verification`.
+
+---
+
+### 3.6 Contributor Path
+
+**For:** Anyone who wants to move from learning to real contribution —
+regardless of prior path.
+
+This path is not a technical course. It is the path from understanding to
+contribution.
+
+**You will learn:**
+
+- The difference between a user, a contributor, and a maintainer.
+- How to find issues that match your current skill level.
+- How to write a clear bug report, a feature proposal, or a documentation
+  fix.
+- How to work with Git branches, commits, and pull requests.
+- How code review works in an open-source project — both as a reviewer and
+  a reviewee.
+- How to keep a contribution focused, testable, and reviewable.
+- How to interact with a project's culture and conventions without
+  friction.
+
+**You will practice:**
+
+- Making a scoped contribution to a real project.
+- Reviewing someone else's pull request and providing constructive
+  feedback.
+- Responding to review comments on your own contribution.
+
+**After this path, you can:**
+
+- Navigate an open-source project's contribution flow.
+- Make useful, well-scoped, and reviewable contributions.
+- Review code and provide constructive feedback.
+- Understand how responsibility and trust accumulate in an open project —
+  up to Core Contributor and Maintainer levels.
+
+**GitHub entry point:** issues labeled `good first issue`, `documentation`,
+`help wanted`.
+
+### 3.7 How Paths Relate
+
+- Paths **overlap**. A person on the Compute / GPU path will likely use the
+  Cryptography path's material at some point, and vice versa.
+- Paths can be **entered at any point**. A developer with prior Rust
+  experience can start directly at Rust / Systems or Protocol /
+  Blockchain.
+- Paths can be **left at any time**. There is no requirement to finish a
+  path before starting another.
+- The Contributor Path is **orthogonal** to the technical paths. It can be
+  entered from any technical path, and it is the bridge between learning
+  and doing.
+
+A note on advancement:
+
+> *Contributor*, *Core Contributor*, and *Maintainer* are not automatic
+> promotions. They reflect accumulated trust, competence, and
+> responsibility within the open project.
+
+The paths are a map, not a contract. You choose how you move through them.
+
+---
+
 ## Document Status
 
-Sections 1 and 2 are frozen. Remaining sections (§3 Learning Paths through
-§15 Future Academy Evolution) will be added in subsequent iterations.
+Sections 1, 2, and 3 are frozen. Remaining sections (§4 Learning Levels
+through §15 Future Academy Evolution) will be added in subsequent
+iterations.
