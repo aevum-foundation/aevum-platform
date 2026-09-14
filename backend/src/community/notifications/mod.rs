@@ -4,6 +4,7 @@
 //!
 //! See `docs/architecture/notifications-v1.md` for the frozen contract.
 
+pub mod aevumdb_storage;
 pub mod contracts;
 pub mod models;
 pub mod storage;
