@@ -24,7 +24,7 @@ pub struct Notification {
 /// Notification kind. Exactly four kinds are supported in v1.
 ///
 /// New kinds are added only when a real producer exists.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum NotificationKind {
     ReplyToTopic,
