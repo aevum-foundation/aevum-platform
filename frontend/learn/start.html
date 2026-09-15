@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="Aevum Learn — how to start. A recommended progression through six curriculum levels, from computer science to contribution."
+    >
+    <meta name="theme-color" content="#061426">
+    <meta name="color-scheme" content="dark light">
+
+    <title>Aevum — Learn — Start</title>
+
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/app-shell.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/pages/learn.css">
+</head>
+
+<body>
+    <div id="header-container" aria-busy="true"></div>
+
+    <main class="learn-page" id="main-content">
+
+        <!-- ==================================================
+             HERO
+             ================================================== -->
+        <section class="learn-hero" aria-labelledby="start-title">
+            <div class="container">
+                <div class="learn-kicker">
+                    <span aria-hidden="true"></span>
+                    START
+                </div>
+
+                <h1 id="start-title">Start Here.</h1>
+
+                <p>
+                    Aevum Learn is a recommended progression, not a mandatory gate.
+                    If you don't know where to begin, begin at the beginning. If you
+                    already know Rust, skip ahead. If you know cryptography, skip
+                    that too. Pick the level that matches where you are.
+                </p>
+
+                <div class="learn-hero-actions">
+                    <a class="btn btn-primary" href="/learn/roadmap.html#level-0">Start with Level 0</a>
+                    <a class="btn btn-secondary" href="/learn/paths.html">See All Paths</a>
+                    <a class="btn btn-secondary" href="https://github.com/aevum-foundation" target="_blank" rel="noopener">Go to GitHub</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================
+             MODEL — Learning Levels and Paths
+             ================================================== -->
+        <section class="learn-section" aria-labelledby="model-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">MODEL</span>
+                    <h2 id="model-title">Learning Levels and Paths</h2>
+                    <p>
+                        Learn is organized along two independent dimensions:
+                        <strong>learning levels</strong> and <strong>paths</strong>.
+                        They are different coordinate systems, and they intersect freely.
+                    </p>
+                </div>
+
+                <div class="learn-model">
+                    <div class="learn-model-grid">
+                        <div class="learn-model-column">
+                            <h3>Learning Levels</h3>
+                            <p>
+                                <strong>Learning levels</strong> describe capability: what you can
+                                understand, build, and verify. They progress from
+                                <strong>Explorer</strong> through <strong>Learner</strong> and
+                                <strong>Builder</strong> to <strong>Contributor</strong>,
+                                <strong>Core Contributor</strong>, and <strong>Maintainer</strong>.
+                            </p>
+                        </div>
+
+                        <div class="learn-model-column">
+                            <h3>Paths</h3>
+                            <p>
+                                <strong>Paths</strong> describe direction: which technical
+                                area you want to explore. There are six paths — Beginner,
+                                Rust / Systems, Cryptography, Protocol / Blockchain,
+                                Compute / GPU, and Contributor. You can move between
+                                paths at any time.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================
+             CURRICULUM — Six Curriculum Levels
+             ================================================== -->
+        <section class="learn-section" aria-labelledby="curriculum-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">CURRICULUM</span>
+                    <h2 id="curriculum-title">The Curriculum</h2>
+                    <p>
+                        The curriculum is organized into six <strong>curriculum levels</strong>,
+                        from Computer Science through Contributor. They are a recommended
+                        progression, not credentials or status levels.
+                    </p>
+                </div>
+
+                <div class="learn-paths-grid">
+                    <a class="learn-path-card" href="/learn/roadmap.html#level-0">
+                        <span class="learn-path-label">00</span>
+                        <h3>Level 0 — Computer Science</h3>
+                        <p>
+                            How computers work: memory, processes, files, Linux, Git,
+                            and a first programming language. For people with no prior
+                            experience.
+                        </p>
+                    </a>
+
+                    <a class="learn-path-card" href="/learn/roadmap.html#level-1">
+                        <span class="learn-path-label">01</span>
+                        <h3>Level 1 — Rust and Systems</h3>
+                        <p>
+                            Ownership, borrowing, async, concurrency, networking, and
+                            reading real systems code. For developers with prior
+                            programming experience.
+                        </p>
+                    </a>
+
+                    <a class="learn-path-card" href="/learn/roadmap.html#level-2">
+                        <span class="learn-path-label">02</span>
+                        <h3>Level 2 — Cryptography</h3>
+                        <p>
+                            Hashes, signatures, AEAD, post-quantum primitives, and how
+                            cryptography is used in protocols.
+                        </p>
+                    </a>
+
+                    <a class="learn-path-card" href="/learn/roadmap.html#level-3">
+                        <span class="learn-path-label">03</span>
+                        <h3>Level 3 — Distributed Systems and Blockchain</h3>
+                        <p>
+                            Consensus, state machines, L1/L2 separation, and
+                            coordination without central authority.
+                        </p>
+                    </a>
+
+                    <a class="learn-path-card" href="/learn/roadmap.html#level-4">
+                        <span class="learn-path-label">04</span>
+                        <h3>Level 4 — Aevum Architecture</h3>
+                        <p>
+                            Aevum's L1/L2 split, Compute Engine, AevumDB,
+                            post-quantum stack, and verification.
+                        </p>
+                    </a>
+
+                    <a class="learn-path-card" href="/learn/roadmap.html#level-5">
+                        <span class="learn-path-label">05</span>
+                        <h3>Level 5 — Contributor</h3>
+                        <p>
+                            How to turn capability into real contribution: finding
+                            work, opening a first PR, getting review.
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================
+             HOW TO ACTUALLY START
+             ================================================== -->
+        <section class="learn-section" aria-labelledby="process-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">PROCESS</span>
+                    <h2 id="process-title">How to Actually Start</h2>
+                    <p>
+                        Four practical steps. No schedule, no graduation,
+                        no permission required.
+                    </p>
+                </div>
+
+                <div class="learn-steps">
+                    <div class="learn-step">
+                        <div class="learn-step-content">
+                            <h3>Pick a level that matches where you are</h3>
+                            <p>
+                                If you're new, start at Level 0. If you've written code
+                                before, start at Level 1. If you already know Rust and
+                                cryptography, jump directly to Level 3 or Level 4.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="learn-step">
+                        <div class="learn-step-content">
+                            <h3>Read the topics for that level</h3>
+                            <p>
+                                Each level has a list of topics in the
+                                <a href="/learn/roadmap.html">curriculum</a>.
+                                Read them at your own pace.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="learn-step">
+                        <div class="learn-step-content">
+                            <h3>Practice</h3>
+                            <p>
+                                Real understanding comes from building things. GitHub
+                                issues, discussions, code, documentation, testing, and
+                                other project work are places to apply what you learn.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="learn-step">
+                        <div class="learn-step-content">
+                            <h3>Move up when you're ready — or stay where you are</h3>
+                            <p>
+                                There is no schedule. There is no graduation. Some
+                                people spend years at one level. That is normal and
+                                accepted.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================
+             WHAT YOU DO NOT NEED
+             ================================================== -->
+        <section class="learn-section" aria-labelledby="prereq-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">PREREQUISITES</span>
+                    <h2 id="prereq-title">What You Do NOT Need</h2>
+                    <p>
+                        To start learning with Aevum Learn, you do not need:
+                    </p>
+                </div>
+
+                <div class="learn-prerequisites">
+                    <div class="learn-prerequisite">
+                        <h3>No prior experience</h3>
+                        <p>If you've never programmed, Level 0 exists for you.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>No degree</h3>
+                        <p>No credential is required to learn or contribute.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>No permission</h3>
+                        <p>You don't need to be accepted, invited, or approved by anyone.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>No payment</h3>
+                        <p>Learn is open. There is no paid tier, no gated content, no token requirement.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>No commitment</h3>
+                        <p>You can read one page, close the tab, and come back in a year. That is fine.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================
+             WHERE TO GO NEXT
+             ================================================== -->
+        <section class="learn-section" aria-labelledby="next-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">NEXT</span>
+                    <h2 id="next-title">Where to Go Next</h2>
+                </div>
+
+                <div class="learn-start-grid">
+                    <a class="learn-cta-card" href="/learn/roadmap.html">
+                        <span class="learn-path-label">01</span>
+                        <h3>Roadmap</h3>
+                        <p>The full curriculum: all six levels, topics, and practice.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="/learn/paths.html">
+                        <span class="learn-path-label">02</span>
+                        <h3>Paths</h3>
+                        <p>Six directions into decentralized infrastructure. Choose the one that fits.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="/learn/contribute.html">
+                        <span class="learn-path-label">03</span>
+                        <h3>Contribute</h3>
+                        <p>How to open your first issue, make your first PR, and get help.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="https://github.com/aevum-foundation" target="_blank" rel="noopener">
+                        <span class="learn-path-label">04</span>
+                        <h3>GitHub</h3>
+                        <p>The real project: issues, discussions, and code.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================
+             RELATED
+             ================================================== -->
+        <section class="learn-section" aria-labelledby="related-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">RELATED</span>
+                    <h2 id="related-title">Go Deeper</h2>
+                </div>
+
+                <div class="learn-related">
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/docs/community/community-manifesto.md" target="_blank" rel="noopener">Manifesto — why Aevum exists</a>
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/docs/architecture/aevum-learn-v1.md" target="_blank" rel="noopener">Learn v1 architecture</a>
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a>
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/CODE_OF_CONDUCT.md" target="_blank" rel="noopener">CODE_OF_CONDUCT.md</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="footer-container" aria-busy="true"></div>
+
+    <script>
+        (() => {
+            'use strict';
+            const componentCache = new Map();
+
+            async function loadComponent(id, url) {
+                const el = document.getElementById(id);
+                if (!el) return false;
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+                try {
+                    let html = componentCache.get(url);
+                    if (!html) {
+                        const response = await fetch(url, {
+                            cache: 'default',
+                            signal: controller.signal
+                        });
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        html = await response.text();
+                        componentCache.set(url, html);
+                    }
+                    el.innerHTML = html;
+                    el.setAttribute('aria-busy', 'false');
+                    return true;
+                } catch (error) {
+                    console.error(`[Aevum] Component failed: ${url}`, error);
+                    el.innerHTML = '';
+                    el.setAttribute('aria-busy', 'false');
+                    return false;
+                } finally {
+                    clearTimeout(timeout);
+                }
+            }
+
+            async function boot() {
+                await loadComponent('header-container', '/components/header.html');
+                await loadComponent('footer-container', '/components/footer.html');
+            }
+
+            boot();
+        })();
+    </script>
+</body>
+</html>
