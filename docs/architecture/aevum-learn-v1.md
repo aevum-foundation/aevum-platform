@@ -2138,3 +2138,513 @@ The site does not attempt to replicate GitHub or Discord. It points to them.
 
 ---
 
+
+## 12. SEO
+
+### 12.0 Overview
+
+Learn content should be findable. SEO is not about manipulating search
+engines — it is about making sure that useful content can be discovered by
+people who are looking for it.
+
+The guiding question:
+
+> **How does Learn content become findable?**
+
+### 12.1 Indexable Content
+
+Public Learn content intended for discovery is indexable by default.
+
+Indexable:
+
+- Learn pages (`/learn/*`);
+- public curriculum material;
+- public technical content referenced from Learn;
+- documentation pages intended for discovery.
+
+Not indexable:
+
+- admin pages;
+- internal tools;
+- search result pages;
+- temporary or user-specific pages.
+
+The principle:
+
+> **Public Learn content intended for discovery is indexable by default.
+> Internal, temporary, user-specific, or search-result pages are not
+> indexed.**
+
+Whether an individual curriculum section is a separately indexable URL is a
+publishing decision, not an SEO rule. If a section is published as a
+self-contained document, it may be indexed.
+
+### 12.2 Semantic HTML and Structured Data
+
+Learn pages use semantic HTML: `<article>`, `<section>`, `<nav>`, `<time>`,
+`<header>`, `<footer>`.
+
+Structured data (Schema.org) may be applied where it improves clarity:
+
+- `Article` or `TechArticle` for long-form content;
+- `HowTo` for tutorials;
+- `BreadcrumbList` for navigation;
+- `Organization` for the project itself.
+
+Structured data is applied where it is accurate. It is not applied for
+decoration.
+
+### 12.3 Open Graph and Preview Metadata
+
+Learn pages provide Open Graph and Twitter Card metadata:
+
+- title;
+- description;
+- canonical URL;
+- preview image;
+- language.
+
+The metadata describes the page accurately. It is not used to exaggerate.
+
+### 12.4 Sitemap and robots.txt
+
+Aevum publishes a `sitemap.xml` listing indexable Learn pages, and a
+`robots.txt` describing crawl rules. The sitemap is generated from the actual
+site content; it is not maintained by hand.
+
+### 12.5 Canonical URLs
+
+Each Learn page has a canonical URL.
+
+When a piece of content is referenced from multiple places, the canonical URL
+points to the primary version on the Aevum site — not to a mirror on an
+external platform.
+
+When content is cross-posted, the external version identifies the Aevum
+canonical URL where the platform allows it.
+
+### 12.6 Translations and Language Alternates
+
+Translations may be created by contributors.
+
+A full language version of a document is a **language representation** of
+that document, not a duplicate page. It is indexable on its own.
+
+Rules:
+
+- Each full language version has its own canonical URL (for example,
+  `/learn/rust` for English, `/learn/de/rust` for German).
+- Language versions are linked to each other with `hreflang` alternates.
+- The English version is one language representation, not a mandatory
+  canonical for all other language versions.
+- Translated technical content preserves the version and status of the
+  source material.
+
+The principle:
+
+> **Each full language representation canonicalizes to itself and links to
+> its siblings via `hreflang`.**
+
+A translation is a representation of the source, not an independent source
+of its own.
+
+### 12.7 Static-First Delivery
+
+Learn content is delivered as static, pre-rendered HTML where practical.
+
+Static delivery is:
+
+- faster for readers;
+- easier for search engines to crawl;
+- easier to archive;
+- independent of any specific runtime.
+
+Dynamic features are added only when they improve the reader's experience and
+do not compromise these properties.
+
+### 12.8 No SEO Tricks
+
+Aevum does not use:
+
+- keyword stuffing;
+- cloaking;
+- link farming;
+- hidden text;
+- misleading metadata;
+- doorway pages.
+
+SEO is a consequence of useful content, clear structure, and honest
+metadata. It is not a separate optimization discipline.
+
+---
+
+## 13. Analytics
+
+### 13.0 Overview
+
+Aevum measures whether Learn is helping people find their way into the
+project. It does not measure people.
+
+The guiding question:
+
+> **How do we know if Learn is working, without becoming a tracking
+> system?**
+
+### 13.1 Principles
+
+Three principles apply:
+
+- **Privacy-preserving.** No user tracking, no cross-site behavior, no
+  personal profiles.
+- **Aggregate-only.** Measurements are aggregate, not individual.
+- **Self-hosted, minimal.** Analytics runs on infrastructure controlled by
+  the project.
+
+### 13.2 What Is Measured
+
+Aevum may measure:
+
+- page views, aggregated per page;
+- referrers, aggregated;
+- navigation paths through Learn, aggregated;
+- outbound clicks to GitHub, documentation, and community channels;
+- aggregate signals related to contribution discovery (see §13.4).
+
+### 13.3 What Is Not Measured
+
+Aevum does not measure:
+
+- individual users;
+- cross-site behavior;
+- personal identifiers;
+- session recordings;
+- heatmaps tied to user data;
+- any personally identifiable information.
+
+The absence of individual-level analytics is deliberate. Individual metrics
+create pressure to optimize for people-level conversion, which contradicts
+§6 and §7.
+
+### 13.4 Contribution Discovery Signals
+
+Aevum may collect aggregate signals related to contribution discovery:
+
+- views of Learn pages;
+- outbound clicks to GitHub;
+- outbound clicks to issue pages;
+- outbound clicks to pull request pages;
+- aggregate new contribution activity over a period.
+
+These signals may be compared at an aggregate level to understand whether
+Learn is helping people discover contribution opportunities.
+
+They are **not** treated as:
+
+- individual conversion funnels;
+- performance targets for any person;
+- KPIs for contributors;
+- measures of individual contribution.
+
+The term used in this document is **contribution discovery signals**, not
+"conversion".
+
+### 13.5 No Content or Contribution KPIs
+
+Aevum does not set content or contribution KPIs based on analytics.
+
+There are no:
+
+- individual targets;
+- team targets tied to individuals;
+- reward systems for metrics;
+- ranking systems based on analytics.
+
+Analytics exists to help the project understand itself. It does not exist to
+evaluate people.
+
+### 13.6 Tools
+
+Aevum may use a self-hosted, privacy-preserving analytics system.
+
+Tools such as Plausible or Umami may be considered. The specific tool is a
+replaceable implementation choice, not an architectural commitment.
+
+The architectural commitment is the principle: **self-hosted,
+privacy-preserving, aggregate-only**.
+
+This is the same approach as §9: freeze the principle, replace the
+implementation.
+
+### 13.7 Transparency
+
+Where practical, Aevum describes what is measured. Users can see what data is
+collected and how it is used.
+
+Analytics that a user cannot understand is not used.
+
+---
+
+## 14. Moderation & Safety
+
+### 14.0 Overview
+
+Community spaces need minimal rules to remain usable. Moderation exists to
+keep conversations useful and safe, not to govern the project.
+
+The guiding question:
+
+> **How does the community stay usable without becoming a governance
+> system?**
+
+### 14.1 Moderation Is Service, Not Governance
+
+Moderation is a service that keeps community spaces functional. It is not a
+technical governance role.
+
+> **Moderation ≠ technical governance.**
+
+A moderator may remove spam, harassment, or off-topic abuse. A moderator may
+not declare architectural decisions, approve protocol changes, or set
+direction for the project. Technical decisions live in GitHub artifacts
+(§8, §9).
+
+### 14.2 Code of Conduct
+
+Aevum maintains a `CODE_OF_CONDUCT.md` that describes expected behavior in
+community spaces.
+
+The Code of Conduct is a separate document. It is referenced from §8.7 and
+from community spaces. It is not reproduced inside Learn v1.
+
+### 14.3 What Is Moderated
+
+Moderation applies to community spaces:
+
+- Discord channels;
+- GitHub issues and pull requests;
+- community-facing interactions on external platforms where Aevum has a
+  presence.
+
+Moderation does not apply to:
+
+- a contributor's own repository, blog, or social media account;
+- private conversations between contributors;
+- technical disagreements expressed in good faith.
+
+### 14.4 The Moderator Role
+
+Moderator is a **cross-cutting role**, not a Level in §4.
+
+A person can be:
+
+- a Builder and a Moderator;
+- a Core Contributor and a Moderator;
+- a trusted community member and a Moderator.
+
+Moderation is about care for the space, not technical capability. It is a
+role of trust, similar to Contributor levels, but it does not describe
+technical ability.
+
+### 14.5 Moderation Actions
+
+Moderation actions are proportionate to the behavior.
+
+Examples:
+
+- a **warning** for minor disruptions;
+- a **temporary restriction** for repeated disruption;
+- a **permanent removal** from a community space for severe or repeated
+  abuse.
+
+Severe abuse may justify immediate action without prior escalation.
+
+The principle:
+
+> **Moderation actions are proportionate to the behavior and may include
+> warnings, temporary restrictions, or permanent removal from a community
+> space. Severe abuse may justify immediate action.**
+
+### 14.6 Documentation of Actions
+
+Moderation actions should be documented where practical.
+
+Documentation is subject to:
+
+- privacy;
+- safety;
+- legal constraints;
+- platform constraints.
+
+Where documentation would reveal personal information or expose a person to
+retaliation, it may be limited or omitted.
+
+### 14.7 Appeal
+
+A person affected by a moderation action may ask for a review by another
+moderator or by a Maintainer.
+
+Appeals are not a formal legal process. They are a practical mechanism for
+correcting mistakes.
+
+### 14.8 Language and Cultural Context
+
+Aevum is a global project. Moderators are expected to consider cultural
+context and language differences when evaluating behavior.
+
+Not every blunt statement is harassment. Not every cultural misunderstanding
+is a violation. Moderation should distinguish between intent and effect, and
+act only when there is a real problem.
+
+---
+
+## 15. Future Learn Evolution
+
+### 15.0 Overview
+
+This section describes what Learn **might** become. It does not describe
+commitments, roadmaps, or promises.
+
+The guiding question:
+
+> **What might Learn evolve into — and what will it never become?**
+
+### 15.1 Possible Future Extensions
+
+The following are **possibilities**, not commitments:
+
+- a separate domain for Learn (`learn.aevumchain.com`) if a concrete
+  technical or organizational reason appears;
+- additional Learning Paths, for example:
+  - Formal Verification;
+  - Performance Engineering;
+  - Security Research;
+- additional languages for curriculum material, written by contributors;
+- community-contributed translations presented in a structured way;
+- exercises with automated evaluation, if this does not become a
+  gamification system.
+
+> **These examples do not constitute commitments or a roadmap.**
+
+### 15.2 What Learn Will Not Become
+
+Learn will not become:
+
+- a certification system;
+- a diploma-granting institution;
+- a degree program;
+- an employment platform;
+- a paid course platform;
+- a token-gated system;
+- a ranking system;
+- a content factory;
+- a credential marketplace;
+- a replacement for real engineering experience.
+
+These are not temporary decisions. They are architectural boundaries.
+
+### 15.3 Why These Boundaries Exist
+
+Each boundary protects the same principle:
+
+> **Learn exists to help people become capable. It does not exist to
+> create credentials, employees, or audiences.**
+
+Certificates, degrees, and employment platforms create incentives that shift
+attention away from capability and toward status. Ranking systems and content
+factories create incentives that shift attention away from real work and
+toward measurable activity. Token-gated content creates incentives that
+shift attention away from learning and toward speculation.
+
+Learn v1 does not do any of these things, and it is designed so that future
+changes do not accidentally introduce them.
+
+### 15.4 The Relationship Between Learn and the Project
+
+Learn is part of Aevum. It is not a separate product, a separate brand, or a
+separate organization.
+
+If Learn grows, it grows as part of the project, with the same principles:
+
+- contributor-driven;
+- open;
+- voluntary;
+- practice over credentials;
+- real engineering over marketing.
+
+Learn does not become a company. Learn does not become an academy. Learn
+continues to be what it was designed to be: an entry point into the project.
+
+### 15.5 What Might Change
+
+The following may change as Learn evolves:
+
+- the exact pages at `aevumchain.com/learn`;
+- the exact content on each page;
+- the number and type of Learning Paths;
+- the specific platforms used for communication;
+- the specific tools used for analytics;
+- the specific tools used for exercises;
+- the specific topics covered in the Curriculum.
+
+The following will not change:
+
+- the principles in §1;
+- the six levels of §4;
+- the six Learning Paths of §3;
+- the relationship between Levels and Paths (§5.1);
+- the Contributor Pathway (§6);
+- the Mentorship culture (§7);
+- the source-of-truth rules (§8, §9);
+- the anti-gamification and anti-HR boundaries (§4.1, §5.8, §13.5, §15.2).
+
+### 15.6 Closing
+
+Learn v1 is a complete architecture. It is designed so that the project can
+grow around it without losing the principles it was built on.
+
+If Learn is successful, the measure will not be how many people finished a
+course, or how many videos were published, or how many views were reached.
+
+The measure will be whether people who came to Learn became capable of
+understanding, using, and building decentralized compute infrastructure —
+whether that infrastructure is Aevum's or something else entirely.
+
+---
+
+## Document Status
+
+**Status: COMPLETE**
+
+Learn v1 is complete.
+
+All fifteen sections are frozen and implemented as an architectural
+contract. The document defines:
+
+- **§1 Purpose & Philosophy** — why Learn exists
+- **§2 Audience** — who it serves
+- **§3 Learning Paths** — six routes into the project
+- **§4 Learning Levels** — six levels of capability and trust
+- **§5 Curriculum** — the sequence of fundamental knowledge
+- **§6 Contributor Pathway** — how contribution becomes trust
+- **§7 Mentorship** — how knowledge becomes capability
+- **§8 GitHub Integration** — where contribution happens
+- **§9 Community Integration** — how people communicate around the project
+- **§10 Content Strategy** — what the project explains, and to whom
+- **§11 Website IA** — where the content lives
+- **§12 SEO** — how content becomes findable
+- **§13 Analytics** — how the project understands itself without surveillance
+- **§14 Moderation & Safety** — how the community stays usable
+- **§15 Future Learn Evolution** — what Learn might become, and what it will
+  never become
+
+Learn v1 was designed to be a stable foundation. It defines principles, not
+vendors; boundaries, not features; capability, not credentials.
+
+The document may be extended with new sections in the future if needed, but
+the principles in §1 through §15 are considered frozen.
+
+See also:
+
+- `docs/architecture/community-v1.md` — Community domain (B-1)
+- `docs/architecture/notifications-v1.md` — Notifications subsystem (B-2)
+- `docs/architecture/auth-v1.md` — AUTH subsystem
