@@ -7,6 +7,7 @@ Architecture contracts for the Aevum Platform backend.
 - [auth-v1.md](./auth-v1.md) — AUTH subsystem architecture and security contract.
 - [community-v1.md](./community-v1.md) — Community Profile architecture and B-1 contract.
 - [notifications-v1.md](./notifications-v1.md) — Notifications architecture and B-2 contract.
+- [aevum-learn-v1.md](./aevum-learn-v1.md) — Learn v1 architecture and educational entry point.
 
 ## Backlog
 
