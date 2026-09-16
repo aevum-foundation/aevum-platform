@@ -151,3 +151,10 @@ been reviewed.
 | `learn/paths.html`          | Learning | Learn | KEEP | Learning paths covering Beginner, Rust/Systems, Cryptography, Protocol/Blockchain, Compute/GPU, and Contributor. |
 | `learn/contribute.html`     | Learning | Learn | KEEP | Learning-oriented contributor pathway covering contribution scope, expectations, and ways to get help. |
 | `learn/community-link.html` | Learning | Learn | KEEP | Learn-to-Community bridge explaining where participants communicate and how to ask questions. |
+
+### 3.4 Operational
+
+| CURRENT | TYPE | TARGET | ACTION | NOTES |
+| ------- | ---- | ------ | ------ | ----- |
+| `explorer.html` | Operational | Network | KEEP | Network explorer providing an operational interface for epochs, network activity, transactions, and addresses. |
+| `wallet.html` | Operational | Network | FUTURE | Wallet resource reserved for the planned wallet experience. Current page describes intended functionality but does not provide wallet operations. |
