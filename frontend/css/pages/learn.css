@@ -338,6 +338,141 @@
     line-height: 1.6;
 }
 
+
+
+/* ============================================================
+   ROADMAP — curriculum levels
+   ============================================================ */
+
+.learn-roadmap-intro {
+    max-width: 760px;
+    margin-bottom: 48px;
+}
+
+.learn-roadmap-intro p {
+    margin: 0 0 14px;
+    color: var(--color-text-secondary);
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+.learn-roadmap-intro p:last-child {
+    margin-bottom: 0;
+}
+
+.learn-level {
+    padding: 56px 0;
+    border-top: 1px solid var(--color-border);
+    scroll-margin-top: 120px;
+}
+
+.learn-level:first-of-type {
+    border-top: none;
+    padding-top: 24px;
+}
+
+.learn-level-header {
+    margin-bottom: 28px;
+}
+
+.learn-level-header h2 {
+    margin: 0 0 10px;
+    color: var(--color-text-primary);
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 680;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+}
+
+.learn-level-focus {
+    margin: 0;
+    max-width: 720px;
+    color: var(--color-text-secondary);
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+.learn-level-body {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 40px;
+    align-items: start;
+}
+
+.learn-level-topics h3,
+.learn-level-practice h3 {
+    margin: 0 0 14px;
+    color: var(--color-text-primary);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+}
+
+.learn-level-topics ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.learn-level-topics li {
+    position: relative;
+    margin-bottom: 10px;
+    padding-left: 20px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.learn-level-topics li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-accent-cyan);
+}
+
+.learn-level-practice p {
+    margin: 0 0 16px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.learn-level-practice p:last-child {
+    margin-bottom: 0;
+}
+
+.learn-level-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 20px;
+}
+
+.learn-label {
+    display: inline-block;
+    padding: 4px 11px;
+    background: var(--color-accent-cyan-dim);
+    border: 1px solid var(--color-border-cyan);
+    border-radius: var(--radius-pill);
+    color: var(--color-accent-cyan);
+    font-family: var(--font-family-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.6;
+    text-decoration: none;
+}
+
+a.learn-label:hover {
+    border-color: var(--color-accent-cyan);
+    background: var(--color-bg-surface-light);
+}
+
 @media (max-width: 960px) {
     .learn-paths-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -391,6 +526,15 @@
     .learn-hero-actions .btn {
         width: 100%;
         text-align: center;
+    }
+
+    .learn-level {
+        padding: 40px 0;
+    }
+
+    .learn-level-body {
+        grid-template-columns: 1fr;
+        gap: 24px;
     }
 }
 

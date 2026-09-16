@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="Aevum Learn — curriculum. Six levels from computer science to contribution, with topics and practice for each."
+    >
+    <meta name="theme-color" content="#061426">
+    <meta name="color-scheme" content="dark light">
+
+    <title>Aevum — Learn — Curriculum</title>
+
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/app-shell.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/pages/learn.css">
+</head>
+
+<body>
+    <div id="header-container" aria-busy="true"></div>
+
+    <main class="learn-page" id="main-content">
+
+        <section class="learn-hero" aria-labelledby="roadmap-title">
+            <div class="container">
+                <div class="learn-kicker">
+                    <span aria-hidden="true"></span>
+                    CURRICULUM
+                </div>
+
+                <h1 id="roadmap-title">The Curriculum.</h1>
+
+                <p>
+                    Six curriculum levels, from Computer Science to contribution.
+                    A recommended progression, not a mandatory gate.
+                </p>
+
+                <div class="learn-hero-actions">
+                    <a class="btn btn-primary" href="#level-0">Go to Level 0</a>
+                    <a class="btn btn-secondary" href="/learn/paths.html">See Paths</a>
+                    <a class="btn btn-secondary" href="/learn/start.html">How to Start</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="intro-title">
+            <div class="container">
+                <div class="learn-roadmap-intro">
+                    <span class="learn-kicker">HOW TO READ THIS</span>
+                    <h2 id="intro-title" class="visually-hidden">Introduction</h2>
+                    <p>
+                        Each curriculum level describes a body of knowledge that builds
+                        on the previous one. You do not need to start at Level 0.
+                        If you already know Rust, start at Level 1. If you already know
+                        cryptography, skip Level 2.
+                    </p>
+                    <p>
+                        Levels describe capability. Paths describe direction.
+                        They are different coordinate systems, and they intersect freely.
+                        See <a href="/learn/start.html#model">Start</a> for the full model.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section">
+            <div class="container">
+                <section id="level-0" class="learn-level" aria-labelledby="level-0-title">
+                    <header class="learn-level-header">
+                        <span class="learn-kicker">LEVEL 0</span>
+                        <h2 id="level-0-title">Computer Science</h2>
+                        <p class="learn-level-focus">How computers actually work.</p>
+                    </header>
+
+                    <div class="learn-level-body">
+                        <div class="learn-level-topics">
+                            <h3>Topics</h3>
+                            <ul>
+                                <li>Memory, processes, threads, and files.</li>
+                                <li>Linux fundamentals: shell, permissions, processes, filesystems.</li>
+                                <li>Networking basics: IP, TCP, DNS, HTTP.</li>
+                                <li>Git and version control as a daily tool.</li>
+                                <li>A first programming language (Rust preferred).</li>
+                                <li>Reading and writing documentation.</li>
+                                <li>Debugging basics: reading errors, logs, isolating failures.</li>
+                            </ul>
+                        </div>
+
+                        <div class="learn-level-practice">
+                            <h3>Practice</h3>
+                            <p>
+                                Writing small programs, running them, and breaking them
+                                on purpose to understand what happens.
+                            </p>
+                            <div class="learn-level-labels">
+                                <span class="learn-label">beginner</span>
+                                <span class="learn-label">documentation</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="learn-section">
+            <div class="container">
+                <section id="level-1" class="learn-level" aria-labelledby="level-1-title">
+                    <header class="learn-level-header">
+                        <span class="learn-kicker">LEVEL 1</span>
+                        <h2 id="level-1-title">Rust and Systems</h2>
+                        <p class="learn-level-focus">Writing real systems code.</p>
+                    </header>
+
+                    <div class="learn-level-body">
+                        <div class="learn-level-topics">
+                            <h3>Topics</h3>
+                            <ul>
+                                <li>Ownership, borrowing, and lifetimes.</li>
+                                <li>Traits, generics, and idiomatic Rust abstraction.</li>
+                                <li>Error handling and testing.</li>
+                                <li>Async programming, concurrency, executors, runtimes, and their tradeoffs.</li>
+                                <li>Filesystems, sockets, and low-level I/O.</li>
+                                <li>Networking fundamentals in code: TCP, HTTP, peer-to-peer transport.</li>
+                                <li>Reading and modifying an existing Rust codebase.</li>
+                            </ul>
+                        </div>
+
+                        <div class="learn-level-practice">
+                            <h3>Practice</h3>
+                            <p>
+                                Writing programs that use concurrency safely, run tests,
+                                profile performance, and integrate with an existing codebase.
+                            </p>
+                            <div class="learn-level-labels">
+                                <span class="learn-label">rust</span>
+                                <span class="learn-label">systems</span>
+                                <span class="learn-label">intermediate</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="learn-section">
+            <div class="container">
+                <section id="level-2" class="learn-level" aria-labelledby="level-2-title">
+                    <header class="learn-level-header">
+                        <span class="learn-kicker">LEVEL 2</span>
+                        <h2 id="level-2-title">Cryptography</h2>
+                        <p class="learn-level-focus">The cryptographic foundations of secure systems.</p>
+                    </header>
+
+                    <div class="learn-level-body">
+                        <div class="learn-level-topics">
+                            <h3>Topics</h3>
+                            <ul>
+                                <li>Hash functions and MACs.</li>
+                                <li>Digital signatures and key exchange.</li>
+                                <li>Symmetric encryption and AEAD.</li>
+                                <li>Post-quantum primitives (for example ML-KEM, ML-DSA).</li>
+                                <li>Domain separation, key hierarchies, and cryptographic context binding.</li>
+                                <li>Common pitfalls: nonce reuse, key confusion, domain separation errors.</li>
+                                <li>How cryptographic primitives are used in protocols and storage engines.</li>
+                            </ul>
+                        </div>
+
+                        <div class="learn-level-practice">
+                            <h3>Practice</h3>
+                            <p>
+                                Implementing toy primitives for learning, inspecting real
+                                constructions, and identifying design failures.
+                            </p>
+                            <div class="learn-level-labels">
+                                <span class="learn-label">cryptography</span>
+                                <span class="learn-label">security</span>
+                                <span class="learn-label">advanced</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="learn-section">
+            <div class="container">
+                <section id="level-3" class="learn-level" aria-labelledby="level-3-title">
+                    <header class="learn-level-header">
+                        <span class="learn-kicker">LEVEL 3</span>
+                        <h2 id="level-3-title">Distributed Systems and Blockchain</h2>
+                        <p class="learn-level-focus">Coordination without a central authority.</p>
+                    </header>
+
+                    <div class="learn-level-body">
+                        <div class="learn-level-topics">
+                            <h3>Topics</h3>
+                            <ul>
+                                <li>Distributed systems fundamentals: consistency, availability, partition tolerance.</li>
+                                <li>Consensus mechanisms: PoW, PoS, BFT, and their tradeoffs.</li>
+                                <li>State machines and deterministic execution.</li>
+                                <li>Blockchain architecture: accounts, transactions, state roots, finality.</li>
+                                <li>L1/L2 separation and settlement.</li>
+                                <li>Coordination of identity, presence, settlement, and programmable economics.</li>
+                            </ul>
+                        </div>
+
+                        <div class="learn-level-practice">
+                            <h3>Practice</h3>
+                            <p>
+                                Reading protocol specifications, reasoning about safety
+                                and liveness, tracing transactions through layers.
+                            </p>
+                            <div class="learn-level-labels">
+                                <span class="learn-label">protocol</span>
+                                <span class="learn-label">consensus</span>
+                                <span class="learn-label">advanced</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="learn-section">
+            <div class="container">
+                <section id="level-4" class="learn-level" aria-labelledby="level-4-title">
+                    <header class="learn-level-header">
+                        <span class="learn-kicker">LEVEL 4</span>
+                        <h2 id="level-4-title">Aevum Architecture</h2>
+                        <p class="learn-level-focus">The specific architecture of Aevum and its components.</p>
+                    </header>
+
+                    <div class="learn-level-body">
+                        <div class="learn-level-topics">
+                            <h3>Topics</h3>
+                            <ul>
+                                <li>Aevum L1 protocol: identity, presence, settlement.</li>
+                                <li>Aevum L2 execution environment and compute market.</li>
+                                <li>Compute Engine: workload packaging, scheduling, verification.</li>
+                                <li>Storage: AevumDB, envelope crypto, domain separation.</li>
+                                <li>Post-quantum cryptography in Aevum.</li>
+                                <li>Verification strategies: redundancy, deterministic recomputation, probabilistic checks.</li>
+                                <li>Cross-module interactions: how L1, L2, compute, and storage fit together.</li>
+                            </ul>
+                        </div>
+
+                        <div class="learn-level-practice">
+                            <h3>Practice</h3>
+                            <p>
+                                Reading Aevum source code, tracing flows across modules,
+                                and proposing improvements grounded in the actual architecture.
+                            </p>
+                            <div class="learn-level-labels">
+                                <span class="learn-label">protocol</span>
+                                <span class="learn-label">compute</span>
+                                <span class="learn-label">verification</span>
+                                <span class="learn-label">advanced</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="learn-section">
+            <div class="container">
+                <section id="level-5" class="learn-level" aria-labelledby="level-5-title">
+                    <header class="learn-level-header">
+                        <span class="learn-kicker">LEVEL 5</span>
+                        <h2 id="level-5-title">Contributor</h2>
+                        <p class="learn-level-focus">Turning capability into real contribution.</p>
+                    </header>
+
+                    <div class="learn-level-body">
+                        <div class="learn-level-topics">
+                            <h3>Topics</h3>
+                            <ul>
+                                <li>Finding issues that match your current skill level.</li>
+                                <li>Writing clear bug reports, feature proposals, and documentation fixes.</li>
+                                <li>Git branches, commits, and pull requests.</li>
+                                <li>Code review as reviewer and reviewee.</li>
+                                <li>Keeping contributions focused, testable, and reviewable.</li>
+                                <li>Interacting with project culture and conventions.</li>
+                            </ul>
+                        </div>
+
+                        <div class="learn-level-practice">
+                            <h3>Practice</h3>
+                            <p>
+                                Making scoped contributions to real projects; reviewing
+                                real pull requests; responding to review comments.
+                            </p>
+                            <div class="learn-level-labels">
+                                <span class="learn-label">good first issue</span>
+                                <span class="learn-label">documentation</span>
+                                <span class="learn-label">help wanted</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="next-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">NEXT</span>
+                    <h2 id="next-title">Where to Go Next</h2>
+                </div>
+
+                <div class="learn-start-grid">
+                    <a class="learn-cta-card" href="/learn/start.html">
+                        <span class="learn-path-label">01</span>
+                        <h3>Start</h3>
+                        <p>How to choose a starting point and understand the model.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="/learn/paths.html">
+                        <span class="learn-path-label">02</span>
+                        <h3>Paths</h3>
+                        <p>Six directions into decentralized infrastructure.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="/learn/contribute.html">
+                        <span class="learn-path-label">03</span>
+                        <h3>Contribute</h3>
+                        <p>How to open your first issue, make your first PR, and get help.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="https://github.com/aevum-foundation" target="_blank" rel="noopener">
+                        <span class="learn-path-label">04</span>
+                        <h3>GitHub</h3>
+                        <p>The real project: issues, discussions, and code.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="related-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">RELATED</span>
+                    <h2 id="related-title">Go Deeper</h2>
+                </div>
+
+                <div class="learn-related">
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/docs/community/community-manifesto.md" target="_blank" rel="noopener">Manifesto — why Aevum exists</a>
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/docs/architecture/aevum-learn-v1.md" target="_blank" rel="noopener">Learn v1 architecture</a>
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a>
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/CODE_OF_CONDUCT.md" target="_blank" rel="noopener">CODE_OF_CONDUCT.md</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="footer-container" aria-busy="true"></div>
+
+    <script>
+        (() => {
+            'use strict';
+            const componentCache = new Map();
+
+            async function loadComponent(id, url) {
+                const el = document.getElementById(id);
+                if (!el) return false;
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+                try {
+                    let html = componentCache.get(url);
+                    if (!html) {
+                        const response = await fetch(url, {
+                            cache: 'default',
+                            signal: controller.signal
+                        });
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        html = await response.text();
+                        componentCache.set(url, html);
+                    }
+                    el.innerHTML = html;
+                    el.setAttribute('aria-busy', 'false');
+                    return true;
+                } catch (error) {
+                    console.error(`[Aevum] Component failed: ${url}`, error);
+                    el.innerHTML = '';
+                    el.setAttribute('aria-busy', 'false');
+                    return false;
+                } finally {
+                    clearTimeout(timeout);
+                }
+            }
+
+            async function boot() {
+                await loadComponent('header-container', '/components/header.html');
+                await loadComponent('footer-container', '/components/footer.html');
+            }
+
+            boot();
+        })();
+    </script>
+</body>
+</html>
