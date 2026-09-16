@@ -65,7 +65,7 @@
 }
 
 .learn-section {
-    max-width: 1100px;
+    max-width: var(--container-max);
     margin: 72px auto 0;
 }
 

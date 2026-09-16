@@ -9,7 +9,9 @@ function toggleTheme() {
     const next = current === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', next);
     localStorage.setItem('aevum-theme', next);
-    document.querySelectorAll('.theme-toggle').forEach(btn => {
-        btn.textContent = next === 'dark' ? '🌙' : '☀️';
+
+    // SVG-safe: only update aria-pressed, do NOT touch textContent.
+    document.querySelectorAll('.theme-toggle').forEach(function (btn) {
+        btn.setAttribute('aria-pressed', next === 'light' ? 'true' : 'false');
     });
 }
