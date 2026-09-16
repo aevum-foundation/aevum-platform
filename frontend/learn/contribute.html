@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="Aevum Learn — how to contribute. Open your first issue, make your first PR, and get help. No application, no permission, no credential required."
+    >
+    <meta name="theme-color" content="#061426">
+    <meta name="color-scheme" content="dark light">
+
+    <title>Aevum — Learn — Contribute</title>
+
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/app-shell.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/pages/learn.css">
+</head>
+
+<body>
+    <div id="header-container" aria-busy="true"></div>
+
+    <main class="learn-page" id="main-content">
+
+        <section class="learn-hero" aria-labelledby="contribute-title">
+            <div class="container">
+                <div class="learn-kicker">
+                    <span aria-hidden="true"></span>
+                    CONTRIBUTE
+                </div>
+
+                <h1 id="contribute-title">Contribute.</h1>
+
+                <p>
+                    Aevum is built in public. Contributions come in many forms:
+                    code, documentation, testing, design, review, research, and
+                    discussion.
+                </p>
+
+                <div class="learn-hero-actions">
+                    <a class="btn btn-primary" href="https://github.com/aevum-foundation/aevum-platform/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener">Read CONTRIBUTING</a>
+                    <a class="btn btn-secondary" href="https://github.com/aevum-foundation" target="_blank" rel="noopener">Browse GitHub</a>
+                    <a class="btn btn-secondary" href="/learn/start.html">Start Learning</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="why-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">WHY</span>
+                    <h2 id="why-title">Why Contribute</h2>
+                </div>
+
+                <div class="learn-roadmap-intro">
+                    <p>
+                        Aevum is built in public. The project grows through the work
+                        of contributors who choose to participate — not through
+                        status, credentials, or employment.
+                    </p>
+                    <p>
+                        Contribution is measured by work, not by title. Help is
+                        needed in many areas: code, documentation, testing,
+                        research, and community support. Each of these improves the
+                        project and builds trust over time.
+                    </p>
+                    <p>
+                        See
+                        <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/docs/architecture/aevum-learn-v1.md" target="_blank" rel="noopener">Learn v1 §6</a>
+                        for how contribution becomes trust.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="how-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">PROCESS</span>
+                    <h2 id="how-title">How It Works</h2>
+                    <p>Four steps from first issue to merged contribution.</p>
+                </div>
+
+                <div class="learn-steps">
+                    <div class="learn-step">
+                        <div class="learn-step-content">
+                            <h3>Find an issue</h3>
+                            <p>
+                                Look for labels like <code>good first issue</code>,
+                                <code>help wanted</code>, or <code>level:beginner</code>.
+                                You can pick any issue you feel ready for.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="learn-step">
+                        <div class="learn-step-content">
+                            <h3>Open a pull request</h3>
+                            <p>
+                                Fork the repository, make a focused change, run the
+                                relevant checks, and open a PR. Describe what changed,
+                                why, and how it was verified.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="learn-step">
+                        <div class="learn-step-content">
+                            <h3>Get review</h3>
+                            <p>
+                                A reviewer may ask questions or suggest changes.
+                                This is normal. Review is a conversation, not a gate.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="learn-step">
+                        <div class="learn-step-content">
+                            <h3>Merge</h3>
+                            <p>
+                                When the change is ready, a maintainer merges it.
+                                Your contribution becomes part of the project.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="what-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">WHAT</span>
+                    <h2 id="what-title">What You Can Contribute</h2>
+                    <p>
+                        Eight directions. Code is one of them. You do not need
+                        to be a Rust developer to have a place in Aevum.
+                    </p>
+                </div>
+
+                <div class="learn-prerequisites">
+                    <div class="learn-prerequisite">
+                        <h3>Documentation</h3>
+                        <p>Guides, specifications, corrections, and examples that help others understand the project.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>Testing</h3>
+                        <p>Reproducing bugs, writing test coverage, running manual and integration tests.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>Rust Development</h3>
+                        <p>Features, fixes, refactors, and tooling in the Rust codebase.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>Cryptography Research</h3>
+                        <p>Post-quantum primitives, envelope design, and cryptographic review.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>Protocol Design</h3>
+                        <p>Consensus, settlement, verification, and economic design.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>Compute / GPU</h3>
+                        <p>Workload packaging, execution, and verification across distributed nodes.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>Developer Experience</h3>
+                        <p>Tooling, SDKs, CI, and improvements that make contribution easier.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>Community Support</h3>
+                        <p>Helping newcomers, answering questions, and keeping spaces usable.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="need-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">PREREQUISITES</span>
+                    <h2 id="need-title">What You Do NOT Need</h2>
+                    <p>To contribute to Aevum, you do not need:</p>
+                </div>
+
+                <div class="learn-prerequisites">
+                    <div class="learn-prerequisite">
+                        <h3>No degree</h3>
+                        <p>No credential is required to learn or contribute.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>No permission</h3>
+                        <p>You don't need to be accepted, invited, or approved by anyone.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>No prior contribution history</h3>
+                        <p>Your first contribution can be your first contribution.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>No payment</h3>
+                        <p>Contribution is voluntary. There is no paid tier or gated content.</p>
+                    </div>
+
+                    <div class="learn-prerequisite">
+                        <h3>No long-term commitment</h3>
+                        <p>You can make one PR and stop, or contribute for years.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="help-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">HELP</span>
+                    <h2 id="help-title">Where to Get Help</h2>
+                    <p>Three places to ask questions, find guidance, and get unstuck.</p>
+                </div>
+
+                <div class="learn-start-grid">
+                    <a class="learn-cta-card" href="https://github.com/aevum-foundation/aevum-platform/discussions" target="_blank" rel="noopener">
+                        <span class="learn-path-label">01</span>
+                        <h3>GitHub Discussions</h3>
+                        <p>Questions about learning, design, and ideas.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="/learn/community-link.html">
+                        <span class="learn-path-label">02</span>
+                        <h3>Community</h3>
+                        <p>Talk with other contributors, find help, and stay connected.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="https://github.com/aevum-foundation/aevum-platform/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener">
+                        <span class="learn-path-label">03</span>
+                        <h3>CONTRIBUTING.md</h3>
+                        <p>The full guide: workflow, checks, review, and conventions.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="https://github.com/aevum-foundation/aevum-platform/blob/master/CODE_OF_CONDUCT.md" target="_blank" rel="noopener">
+                        <span class="learn-path-label">04</span>
+                        <h3>Code of Conduct</h3>
+                        <p>Expected behavior in community spaces.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="next-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">NEXT</span>
+                    <h2 id="next-title">Where to Go Next</h2>
+                </div>
+
+                <div class="learn-start-grid">
+                    <a class="learn-cta-card" href="/learn/roadmap.html">
+                        <span class="learn-path-label">01</span>
+                        <h3>Roadmap</h3>
+                        <p>Continue learning: all six curriculum levels.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="/learn/paths.html">
+                        <span class="learn-path-label">02</span>
+                        <h3>Paths</h3>
+                        <p>Choose a specialization.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="https://github.com/aevum-foundation" target="_blank" rel="noopener">
+                        <span class="learn-path-label">03</span>
+                        <h3>GitHub</h3>
+                        <p>Browse issues and discussions.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="https://github.com/aevum-foundation/aevum-platform/blob/master/docs/community/community-manifesto.md" target="_blank" rel="noopener">
+                        <span class="learn-path-label">04</span>
+                        <h3>Manifesto</h3>
+                        <p>Understand the long-term vision.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="related-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">RELATED</span>
+                    <h2 id="related-title">Go Deeper</h2>
+                </div>
+
+                <div class="learn-related">
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/docs/community/community-manifesto.md" target="_blank" rel="noopener">Manifesto — why Aevum exists</a>
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/docs/architecture/aevum-learn-v1.md" target="_blank" rel="noopener">Learn v1 architecture</a>
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a>
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/CODE_OF_CONDUCT.md" target="_blank" rel="noopener">CODE_OF_CONDUCT.md</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="footer-container" aria-busy="true"></div>
+
+    <script>
+        (() => {
+            'use strict';
+            const componentCache = new Map();
+
+            async function loadComponent(id, url) {
+                const el = document.getElementById(id);
+                if (!el) return false;
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+                try {
+                    let html = componentCache.get(url);
+                    if (!html) {
+                        const response = await fetch(url, {
+                            cache: 'default',
+                            signal: controller.signal
+                        });
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        html = await response.text();
+                        componentCache.set(url, html);
+                    }
+                    el.innerHTML = html;
+                    el.setAttribute('aria-busy', 'false');
+                    return true;
+                } catch (error) {
+                    console.error(`[Aevum] Component failed: ${url}`, error);
+                    el.innerHTML = '';
+                    el.setAttribute('aria-busy', 'false');
+                    return false;
+                } finally {
+                    clearTimeout(timeout);
+                }
+            }
+
+            async function boot() {
+                await loadComponent('header-container', '/components/header.html');
+                await loadComponent('footer-container', '/components/footer.html');
+            }
+
+            boot();
+        })();
+    </script>
+</body>
+</html>
