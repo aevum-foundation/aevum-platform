@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="Aevum Learn — six learning paths into decentralized compute infrastructure: Beginner, Rust/Systems, Cryptography, Protocol/Blockchain, Compute/GPU, Contributor."
+    >
+    <meta name="theme-color" content="#061426">
+    <meta name="color-scheme" content="dark light">
+
+    <title>Aevum — Learn — Paths</title>
+
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/app-shell.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/pages/learn.css">
+</head>
+
+<body>
+    <div id="header-container" aria-busy="true"></div>
+
+    <main class="learn-page" id="main-content">
+
+        <section class="learn-hero" aria-labelledby="paths-title">
+            <div class="container">
+                <div class="learn-kicker">
+                    <span aria-hidden="true"></span>
+                    PATHS
+                </div>
+
+                <h1 id="paths-title">Six Paths.</h1>
+
+                <p>
+                    Six directions into decentralized infrastructure. Choose the one
+                    that fits — you can move between paths at any time.
+                </p>
+
+                <div class="learn-hero-actions">
+                    <a class="btn btn-primary" href="#beginner">Go to Beginner</a>
+                    <a class="btn btn-secondary" href="/learn/roadmap.html">See Curriculum</a>
+                    <a class="btn btn-secondary" href="/learn/contribute.html">Contribute</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="intro-title">
+            <div class="container">
+                <div class="learn-roadmap-intro">
+                    <span class="learn-kicker">HOW TO READ THIS</span>
+                    <h2 id="intro-title" class="visually-hidden">Introduction</h2>
+                    <p>
+                        Paths describe <strong>direction</strong>: which technical area
+                        you want to explore. They are different from levels, which
+                        describe capability.
+                    </p>
+                    <p>
+                        You can be at Level 1 on the Cryptography Path, or at Level 3
+                        on the Compute Path. See
+                        <a href="/learn/start.html#model">Start</a>
+                        for the full model.
+                    </p>
+                </div>
+
+                <div class="learn-level-labels" aria-label="Path index">
+                    <a class="learn-label" href="#beginner">Beginner</a>
+                    <a class="learn-label" href="#rust-systems">Rust / Systems</a>
+                    <a class="learn-label" href="#cryptography">Cryptography</a>
+                    <a class="learn-label" href="#protocol-blockchain">Protocol / Blockchain</a>
+                    <a class="learn-label" href="#compute-gpu">Compute / GPU</a>
+                    <a class="learn-label" href="#contributor">Contributor</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section">
+            <div class="container">
+                <section id="beginner" class="learn-level" aria-labelledby="beginner-title">
+                    <header class="learn-level-header">
+                        <span class="learn-kicker">PATH 01</span>
+                        <h2 id="beginner-title">Beginner</h2>
+                        <p class="learn-level-focus">
+                            For people with no prior programming experience who want a
+                            real path into systems engineering, cryptography, or
+                            distributed computing.
+                        </p>
+                    </header>
+
+                    <div class="learn-level-body">
+                        <div class="learn-level-topics">
+                            <h3>You will learn</h3>
+                            <ul>
+                                <li>How computers actually work: memory, processes, files, and networks.</li>
+                                <li>The Linux command line, the shell, and everyday tooling.</li>
+                                <li>Version control with Git and collaborative workflows on GitHub.</li>
+                                <li>One first programming language (Rust is preferred).</li>
+                                <li>How to read documentation, write small programs, and debug them.</li>
+                                <li>How to make a first open-source contribution — even a one-line fix.</li>
+                            </ul>
+                        </div>
+
+                        <div class="learn-level-practice">
+                            <h3>You will practice</h3>
+                            <p>
+                                Writing small programs from scratch and reading them
+                                back. Using Git branches, commits, and pull requests on
+                                a real repository. Debugging failures by reading error
+                                messages and logs.
+                            </p>
+                            <div class="learn-level-labels">
+                                <span class="learn-label">beginner</span>
+                                <span class="learn-label">documentation</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="learn-section">
+            <div class="container">
+                <section id="rust-systems" class="learn-level" aria-labelledby="rust-systems-title">
+                    <header class="learn-level-header">
+                        <span class="learn-kicker">PATH 02</span>
+                        <h2 id="rust-systems-title">Rust / Systems</h2>
+                        <p class="learn-level-focus">
+                            For developers with experience in another language who want
+                            to learn Rust and systems programming on a real project.
+                        </p>
+                    </header>
+
+                    <div class="learn-level-body">
+                        <div class="learn-level-topics">
+                            <h3>You will learn</h3>
+                            <ul>
+                                <li>Ownership, borrowing, lifetimes, and the Rust memory model.</li>
+                                <li>Traits, generics, and type-level abstraction in idiomatic Rust.</li>
+                                <li>Error handling, testing, and the Rust toolchain (cargo, clippy, rustfmt).</li>
+                                <li>Async programming, concurrency, executors, and runtimes — and their tradeoffs.</li>
+                                <li>Networking fundamentals: TCP/IP, sockets, DNS, HTTP, peer-to-peer transport.</li>
+                                <li>Filesystems, sockets, memory-mapped I/O, and low-level systems concepts.</li>
+                                <li>How to read and modify an existing production Rust codebase.</li>
+                            </ul>
+                        </div>
+
+                        <div class="learn-level-practice">
+                            <h3>You will practice</h3>
+                            <p>
+                                Ownership and borrowing exercises. Writing
+                                concurrency-safe code and reasoning about its
+                                guarantees. Building and running tests, including
+                                property and integration tests. Profiling small
+                                programs to understand performance tradeoffs.
+                            </p>
+                            <div class="learn-level-labels">
+                                <span class="learn-label">rust</span>
+                                <span class="learn-label">systems</span>
+                                <span class="learn-label">intermediate</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="learn-section">
+            <div class="container">
+                <section id="cryptography" class="learn-level" aria-labelledby="cryptography-title">
+                    <header class="learn-level-header">
+                        <span class="learn-kicker">PATH 03</span>
+                        <h2 id="cryptography-title">Cryptography</h2>
+                        <p class="learn-level-focus">
+                            For people interested in cryptographic primitives,
+                            post-quantum cryptography, and the security foundations
+                            of distributed systems.
+                        </p>
+                    </header>
+
+                    <div class="learn-level-body">
+                        <div class="learn-level-topics">
+                            <h3>You will learn</h3>
+                            <ul>
+                                <li>Cryptographic hash functions, MACs, and the properties that make them useful.</li>
+                                <li>Digital signatures, key exchange, and public-key infrastructure.</li>
+                                <li>Symmetric encryption, AEAD, and secure envelope design.</li>
+                                <li>Post-quantum cryptographic primitives (for example ML-KEM, ML-DSA) and why they matter.</li>
+                                <li>Domain separation, key hierarchies, and cryptographic context binding.</li>
+                                <li>How cryptographic primitives are used in real protocols and storage engines.</li>
+                            </ul>
+                        </div>
+
+                        <div class="learn-level-practice">
+                            <h3>You will practice</h3>
+                            <p>
+                                Implementing toy cryptographic primitives (for learning
+                                only). Inspecting real protocol constructions and
+                                identifying design intent. Identifying common security
+                                failures in cryptographic designs.
+                            </p>
+                            <div class="learn-level-labels">
+                                <span class="learn-label">cryptography</span>
+                                <span class="learn-label">security</span>
+                                <span class="learn-label">advanced</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="learn-section">
+            <div class="container">
+                <section id="protocol-blockchain" class="learn-level" aria-labelledby="protocol-blockchain-title">
+                    <header class="learn-level-header">
+                        <span class="learn-kicker">PATH 04</span>
+                        <h2 id="protocol-blockchain-title">Protocol / Blockchain</h2>
+                        <p class="learn-level-focus">
+                            For people with prior experience in distributed systems
+                            or blockchain who want to understand and contribute to
+                            consensus protocols, state machines, and L1/L2 architecture.
+                        </p>
+                    </header>
+
+                    <div class="learn-level-body">
+                        <div class="learn-level-topics">
+                            <h3>You will learn</h3>
+                            <ul>
+                                <li>Distributed systems fundamentals: consistency, availability, partition tolerance.</li>
+                                <li>Consensus mechanisms: PoW, PoS, BFT, and their tradeoffs.</li>
+                                <li>State machines, epochs, and deterministic execution.</li>
+                                <li>Blockchain architecture: accounts, transactions, state roots, and finality.</li>
+                                <li>L1/L2 separation and its implications for scalability and settlement.</li>
+                                <li>How a decentralized compute network coordinates identity, presence, and settlement.</li>
+                            </ul>
+                        </div>
+
+                        <div class="learn-level-practice">
+                            <h3>You will practice</h3>
+                            <p>
+                                Reading and critiquing protocol specifications.
+                                Reasoning about liveness and safety guarantees of
+                                different consensus designs. Tracing the lifecycle of
+                                a transaction through L1 and L2 layers.
+                            </p>
+                            <div class="learn-level-labels">
+                                <span class="learn-label">protocol</span>
+                                <span class="learn-label">consensus</span>
+                                <span class="learn-label">advanced</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="learn-section">
+            <div class="container">
+                <section id="compute-gpu" class="learn-level" aria-labelledby="compute-gpu-title">
+                    <header class="learn-level-header">
+                        <span class="learn-kicker">PATH 05</span>
+                        <h2 id="compute-gpu-title">Compute / GPU</h2>
+                        <p class="learn-level-focus">
+                            For people interested in distributed compute, GPU
+                            programming, and verification of computational workloads.
+                        </p>
+                    </header>
+
+                    <div class="learn-level-body">
+                        <div class="learn-level-topics">
+                            <h3>You will learn</h3>
+                            <ul>
+                                <li>GPU architecture: warps, memory hierarchy, and execution models.</li>
+                                <li>GPU programming models, vendor-specific platforms such as CUDA and ROCm, and portable abstractions.</li>
+                                <li>How workloads are packaged, distributed, and executed across many nodes.</li>
+                                <li>How computational results can be verified, challenged, reproduced, and rejected when incorrect.</li>
+                                <li>The tradeoffs between deterministic and non-deterministic workloads.</li>
+                                <li>How a compute market prices, schedules, and settles distributed work.</li>
+                            </ul>
+                        </div>
+
+                        <div class="learn-level-practice">
+                            <h3>You will practice</h3>
+                            <p>
+                                Packaging a workload and running it on a compute node.
+                                Executing workloads across multiple nodes and comparing
+                                results. Designing a verification strategy for a
+                                specific workload type.
+                            </p>
+                            <div class="learn-level-labels">
+                                <span class="learn-label">compute</span>
+                                <span class="learn-label">gpu</span>
+                                <span class="learn-label">verification</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="learn-section">
+            <div class="container">
+                <section id="contributor" class="learn-level" aria-labelledby="contributor-title">
+                    <header class="learn-level-header">
+                        <span class="learn-kicker">PATH 06</span>
+                        <h2 id="contributor-title">Contributor</h2>
+                        <p class="learn-level-focus">
+                            For anyone who wants to move from learning to real
+                            contribution — regardless of prior path.
+                        </p>
+                    </header>
+
+                    <div class="learn-level-body">
+                        <div class="learn-level-topics">
+                            <h3>You will learn</h3>
+                            <ul>
+                                <li>The difference between a user, a contributor, and a maintainer.</li>
+                                <li>How to find issues that match your current skill level.</li>
+                                <li>How to write a clear bug report, a feature proposal, or a documentation fix.</li>
+                                <li>How to work with Git branches, commits, and pull requests.</li>
+                                <li>How code review works in an open-source project — both as a reviewer and a reviewee.</li>
+                                <li>How to keep a contribution focused, testable, and reviewable.</li>
+                                <li>How to interact with a project's culture and conventions without friction.</li>
+                            </ul>
+                        </div>
+
+                        <div class="learn-level-practice">
+                            <h3>You will practice</h3>
+                            <p>
+                                Making a scoped contribution to a real project.
+                                Reviewing someone else's pull request and providing
+                                constructive feedback. Responding to review comments
+                                on your own contribution.
+                            </p>
+                            <div class="learn-level-labels">
+                                <span class="learn-label">good first issue</span>
+                                <span class="learn-label">documentation</span>
+                                <span class="learn-label">help wanted</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="relate-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">RELATIONSHIPS</span>
+                    <h2 id="relate-title">How Paths Relate</h2>
+                    <p>Four principles that describe how the six paths fit together.</p>
+                </div>
+
+                <div class="learn-model">
+                    <div class="learn-model-grid">
+                        <div class="learn-model-column">
+                            <h3>Paths overlap</h3>
+                            <p>
+                                A person on the Compute / GPU path will likely use
+                                the Cryptography path's material at some point, and
+                                vice versa. Paths are not isolated tracks.
+                            </p>
+                        </div>
+
+                        <div class="learn-model-column">
+                            <h3>Enter at any point</h3>
+                            <p>
+                                A developer with prior Rust experience can start
+                                directly at Rust / Systems or Protocol / Blockchain.
+                                You don't need to start at Beginner.
+                            </p>
+                        </div>
+
+                        <div class="learn-model-column">
+                            <h3>Leave at any time</h3>
+                            <p>
+                                There is no requirement to finish a path before
+                                starting another. You can return to a path later,
+                                or replace it with something else.
+                            </p>
+                        </div>
+
+                        <div class="learn-model-column">
+                            <h3>Contributor is orthogonal</h3>
+                            <p>
+                                The Contributor path is not a technical direction.
+                                It is the bridge between learning and doing. It can
+                                be entered from any technical path.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="next-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">NEXT</span>
+                    <h2 id="next-title">Where to Go Next</h2>
+                </div>
+
+                <div class="learn-start-grid">
+                    <a class="learn-cta-card" href="/learn/start.html">
+                        <span class="learn-path-label">01</span>
+                        <h3>Start</h3>
+                        <p>How to choose a starting point and understand the model.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="/learn/roadmap.html">
+                        <span class="learn-path-label">02</span>
+                        <h3>Curriculum</h3>
+                        <p>Six curriculum levels, with topics and practice for each.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="/learn/contribute.html">
+                        <span class="learn-path-label">03</span>
+                        <h3>Contribute</h3>
+                        <p>How to open your first issue, make your first PR, and get help.</p>
+                    </a>
+
+                    <a class="learn-cta-card" href="https://github.com/aevum-foundation" target="_blank" rel="noopener">
+                        <span class="learn-path-label">04</span>
+                        <h3>GitHub</h3>
+                        <p>The real project: issues, discussions, and code.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="learn-section" aria-labelledby="related-title">
+            <div class="container">
+                <div class="learn-section-header">
+                    <span class="learn-kicker">RELATED</span>
+                    <h2 id="related-title">Go Deeper</h2>
+                </div>
+
+                <div class="learn-related">
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/docs/community/community-manifesto.md" target="_blank" rel="noopener">Manifesto — why Aevum exists</a>
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/docs/architecture/aevum-learn-v1.md" target="_blank" rel="noopener">Learn v1 architecture</a>
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a>
+                    <a href="https://github.com/aevum-foundation/aevum-platform/blob/master/CODE_OF_CONDUCT.md" target="_blank" rel="noopener">CODE_OF_CONDUCT.md</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="footer-container" aria-busy="true"></div>
+
+    <script>
+        (() => {
+            'use strict';
+            const componentCache = new Map();
+
+            async function loadComponent(id, url) {
+                const el = document.getElementById(id);
+                if (!el) return false;
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+                try {
+                    let html = componentCache.get(url);
+                    if (!html) {
+                        const response = await fetch(url, {
+                            cache: 'default',
+                            signal: controller.signal
+                        });
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        html = await response.text();
+                        componentCache.set(url, html);
+                    }
+                    el.innerHTML = html;
+                    el.setAttribute('aria-busy', 'false');
+                    return true;
+                } catch (error) {
+                    console.error(`[Aevum] Component failed: ${url}`, error);
+                    el.innerHTML = '';
+                    el.setAttribute('aria-busy', 'false');
+                    return false;
+                } finally {
+                    clearTimeout(timeout);
+                }
+            }
+
+            async function boot() {
+                await loadComponent('header-container', '/components/header.html');
+                await loadComponent('footer-container', '/components/footer.html');
+            }
+
+            boot();
+        })();
+    </script>
+</body>
+</html>
