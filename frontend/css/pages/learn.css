@@ -10,7 +10,7 @@
  */
 
 .learn-page {
-    padding: 72px 0 96px;
+    padding: 56px 0 88px;
 }
 
 .learn-hero {
@@ -43,7 +43,7 @@
 .learn-hero h1 {
     margin: 0 0 22px;
     color: var(--color-text-primary);
-    font-size: clamp(42px, 6vw, 68px);
+    font-size: clamp(38px, 5vw, 58px);
     font-weight: 700;
     line-height: 1.02;
     letter-spacing: -0.045em;
@@ -76,7 +76,7 @@
 .learn-section-header h2 {
     margin: 0 0 12px;
     color: var(--color-text-primary);
-    font-size: clamp(28px, 4vw, 38px);
+    font-size: clamp(26px, 3.5vw, 32px);
     font-weight: 680;
     line-height: 1.15;
     letter-spacing: -0.03em;
@@ -378,7 +378,7 @@
 .learn-level-header h2 {
     margin: 0 0 10px;
     color: var(--color-text-primary);
-    font-size: clamp(28px, 4vw, 38px);
+    font-size: clamp(26px, 3.5vw, 32px);
     font-weight: 680;
     line-height: 1.15;
     letter-spacing: -0.03em;
@@ -493,7 +493,7 @@ a.learn-label:hover {
     }
 
     .learn-hero h1 {
-        font-size: 42px;
+        font-size: 34px;
     }
 
     .learn-hero p {
