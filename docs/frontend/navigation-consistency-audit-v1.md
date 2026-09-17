@@ -121,16 +121,16 @@ Current observations:
 
 | # | Item | Decision | Rationale |
 | - | ---- | -------- | --------- |
-| 1 | Community URL | TBD | — |
-| 2 | Protocol group | TBD | — |
-| 3 | Development group | TBD | — |
-| 4 | Genesis | TBD | — |
-| 5 | Learn | TBD | — |
-| 6 | /status.html | TBD | — |
-| 7 | /privacy.html | TBD | — |
-| 8 | /terms.html | TBD | — |
+| 1 | Community URL | ALIGN | Canonical internal route is `/community.html`. The `?t=1` query string is not known to have functional effect. |
+| 2 | Protocol group | ALIGN | Unify Footer and Mobile to a single target set: Overview, Architecture, Consensus, Economics, Security, Genesis. |
+| 3 | Development group | ALIGN | Unify Footer and Mobile to: Documentation, Repositories, Roadmap. Learn is a separate top-level area, not a sub-item of Development. |
+| 4 | Genesis | KEEP | Reference material, accessible from Footer. Not required in Mobile. |
+| 5 | Learn | KEEP | Top-level area. Accessible from Header and Mobile. Not required in Footer. |
+| 6 | /status.html | FUTURE | Planned Network Status component. Dead link must be removed from navigation until the page exists. |
+| 7 | /privacy.html | FUTURE | Required Legal page. Dead link must be removed from navigation until the page exists. |
+| 8 | /terms.html | FUTURE | Required Legal page. Dead link must be removed from navigation until the page exists. |
 
-Decisions use the vocabulary:
+### Vocabulary
 
 - KEEP — no change.
 - ALIGN — make consistent with another navigation.
@@ -139,3 +139,17 @@ Decisions use the vocabulary:
 
 The vocabulary is intentionally separate from the migration
 document's action vocabulary (which includes CREATE).
+
+### Dead links — architecture vs current behavior
+
+Architectural classification:
+
+    /status.html   → FUTURE
+    /privacy.html  → FUTURE
+    /terms.html    → FUTURE
+
+Current navigation behavior:
+
+    Dead links are removed from navigation until the pages exist.
+
+Once the pages exist, navigation entries are restored.
