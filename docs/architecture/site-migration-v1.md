@@ -158,3 +158,35 @@ been reviewed.
 | ------- | ---- | ------ | ------ | ----- |
 | `explorer.html` | Operational | Network | KEEP | Network explorer providing an operational interface for epochs, network activity, transactions, and addresses. |
 | `wallet.html` | Operational | Network | FUTURE | Wallet resource reserved for the planned wallet experience. Current page describes intended functionality but does not provide wallet operations. |
+
+### 3.5 Community
+
+| CURRENT | TYPE | TARGET | ACTION | NOTES |
+| ------- | ---- | ------ | ------ | ----- |
+| `community.html` | Community | Community | KEEP | Community hub. Describes the protocol community, participation paths, rules, and links to Telegram and repositories. References the planned Aevum Forum. |
+
+### 3.6 Reference
+
+| CURRENT | TYPE | TARGET | ACTION | NOTES |
+| ------- | ---- | ------ | ------ | ----- |
+| `genesis.html` | Reference | About | KEEP | Protocol reference artifact covering Genesis, principles, monetary design, L1 flow, and timeline. Not a guided learning page. |
+| `roadmap.html` | Reference | About | KEEP | Public project roadmap covering protocol and platform development. Distinct from the Learn curriculum roadmap. |
+| `repositories.html` | Reference | Build | KEEP | Official open-source entry point for Aevum repositories, capabilities, security, and contribution access. |
+
+### 3.7 Support
+
+| CURRENT | TYPE | TARGET | ACTION | NOTES |
+| ------- | ---- | ------ | ------ | ----- |
+| `support.html` | Support | Support | KEEP | Voluntary protocol support. Explains the support model, contribution principles, and participant guidance. |
+
+---
+
+## 4. Dead Links
+
+Current navigation contains references to resources that do not yet exist.
+
+| CURRENT | TYPE | TARGET | ACTION | NOTES |
+| ------- | ---- | ------ | ------ | ----- |
+| `/privacy.html` | Legal | Support | CREATE | Referenced in footer, file does not exist. Standard legal page. |
+| `/terms.html` | Legal | Support | CREATE | Referenced in footer, file does not exist. Standard legal page. |
+| `/status.html` | Operational | Network | FUTURE | Referenced in navigation but not yet implemented. Reserved for future network status and health reporting. |
