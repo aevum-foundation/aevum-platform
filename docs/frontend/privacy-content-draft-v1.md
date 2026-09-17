@@ -70,7 +70,7 @@ If you use profile or preference features, we may store:
 When you access the website, our servers may record:
 
 - IP address.
-- User-agent (browser and device information).
+- User-agent (browser and device information), where recorded by our infrastructure.
 - Timestamps.
 - Requested URLs.
 
@@ -194,7 +194,7 @@ applicable data protection laws, including:
   about you.
 - **Correction** — request correction of inaccurate
   information.
-- **Deletion** — request deletion of your information.
+- **Deletion** — request deletion of your information, where applicable.
 - **Restriction or objection** — request restriction of, or
   object to, certain processing.
 - **Portability** — request transfer of your information
@@ -215,9 +215,9 @@ or operational limitations.
 The Aevum web platform may use infrastructure located in
 different jurisdictions.
 
-Where information is transferred across borders, we take
-reasonable steps to ensure it is protected in accordance
-with applicable law.
+Where applicable, international transfers of personal
+information are handled in accordance with applicable
+data-protection law.
 
 ---
 
