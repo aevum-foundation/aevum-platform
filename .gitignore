@@ -26,3 +26,8 @@ frontend/.env.local
 
 # Logs
 *.log
+
+# Backups and temporary files
+*.bak
+*.bak-*
+*.tmp
