@@ -100,6 +100,19 @@ implementation.
 FUTURE is not a way to defer uncertain pages. A confirmed future
 user purpose must exist.
 
+#### CREATE
+
+The resource does not currently exist but is required by the
+architecture.
+
+Used for:
+
+- Referenced resources that are missing (dead links).
+- Standard pages required for a complete site (e.g., legal pages).
+
+CREATE applies only to Section 4 (Dead Links), not to Section 3
+(Current Pages).
+
 ### 2.3 Process
 
 Pages are processed in groups defined by Page Classification
@@ -124,6 +137,28 @@ This document applies IA v1 to the current site state.
 No page-level migration decision is made in this document until
 the corresponding page has been analyzed and the analysis has
 been reviewed.
+
+### 2.5 Target classification
+
+The TARGET column uses two kinds of values.
+
+**User-facing sections** (from IA v1, Section 4):
+
+- Learn
+- Build
+- Network
+- Community
+- Support
+
+**Internal target classification** (not user-facing sections):
+
+- **About** — used for reference artifacts that explain the
+  protocol or project (e.g., Genesis, Roadmap). About is an
+  internal classifier, not a top-level navigation section.
+- **Platform entry point** — used for the landing page.
+
+Internal classifications are used for architectural reasoning.
+They do not imply new top-level sections.
 
 ---
 
@@ -190,3 +225,140 @@ Current navigation contains references to resources that do not yet exist.
 | `/privacy.html` | Legal | Support | CREATE | Referenced in footer, file does not exist. Standard legal page. |
 | `/terms.html` | Legal | Support | CREATE | Referenced in footer, file does not exist. Standard legal page. |
 | `/status.html` | Operational | Network | FUTURE | Referenced in navigation but not yet implemented. Reserved for future network status and health reporting. |
+
+---
+
+## 5. Legacy Artifacts
+
+The following files are tracked by Git but are not referenced
+by any active page, stylesheet, or script.
+
+| FILE | ACTION | NOTES |
+| ---- | ------ | ----- |
+| `css/app-shell.css.bak-header-actions-20260902-030442` | REMOVE | Backup artifact. Not referenced. |
+| `css/app-shell.css.bak-mobile-drawer-20260902-025356` | REMOVE | Backup artifact. Not referenced. |
+| `docs.html.bak-20260903-052928` | REMOVE | Backup artifact. Not referenced. |
+| `js/api/store.js.tmp` | REMOVE | Older version (v1) of store.js (v3). Not referenced. |
+| `css/style.css` | REVIEW | Legacy stylesheet. Zero references in active HTML/CSS/JS. Contains legacy tokens and classes that differ from current theme. Requires content audit before removal. |
+
+---
+
+## 6. Navigation Models
+
+The current site uses five independent navigation systems. They
+are documented here as-is, without proposed changes.
+
+Current navigation systems are not fully synchronized.
+Differences are documented here as current-state observations.
+Resolution is deferred to the implementation phase.
+
+### 6.1 Header Navigation
+
+**Structure (desktop):**
+
+    Explorer | Docs | Wallet | Community | Learn | Support
+
+**Purpose:** primary top-level navigation for desktop users.
+
+**Scope:** six items. Flat. No sub-menus.
+
+**Notes:**
+
+- Includes `Learn` → `/learn/`
+- Includes `Community` → `/community.html?t=1`
+- Does not expose `Repositories`, `Roadmap`, or `Genesis` as direct
+  desktop header items.
+
+### 6.2 Footer Navigation
+
+**Structure (5 groups):**
+
+    Protocol:      Architecture, Consensus, Economics, Genesis
+    Network:       Explorer, Network Status
+    Ecosystem:     Wallet, Community
+    Development:   Documentation, Roadmap, Repositories
+    Support:       Support Aevum
+
+**Plus legal:**
+
+    Privacy | Terms
+
+**Purpose:** secondary navigation, deep links.
+
+**Scope:** five groups + legal.
+
+**Notes:**
+
+- References `/status.html` (does not exist)
+- References `/privacy.html` (does not exist)
+- References `/terms.html` (does not exist)
+- `Community` link without `?t=1` (inconsistent with header)
+
+### 6.3 Side-nav / Mobile Drawer
+
+**Structure (5 groups):**
+
+    Protocol:      Overview, Architecture, Consensus, Economics, Security
+    Network:       Explorer, Network Status
+    Ecosystem:     Wallet, Community
+    Development:   Documentation, Repositories, Roadmap, Learn
+    Support:       Support Aevum
+
+**Purpose:** primary mobile navigation.
+
+**Scope:** five groups.
+
+**Notes:**
+
+- Same five group names as footer, but different contents
+- `Protocol` group includes `Overview`, `Security` (not in footer)
+- `Development` group includes `Learn` (not in footer)
+- References `/status.html` (does not exist)
+
+### 6.4 Docs Sidebar
+
+**Structure (8 groups):**
+
+    Introduction:      What is Aevum, Why Aevum, Architecture Overview
+    L1 Architecture:   Slots, Epochs, Presence, EpochSnapshot, Consensus, Finality
+    Monetary System:   Genesis Supply, Emission, Halvings, Maximum Supply, Post-Emission Economy
+    Cryptography:      Addresses, Transactions, State Roots, Wallet Security
+    Network:           Nodes, P2P, Synchronization, Recovery
+    L2:                Overview, Transactions, Smart Contracts, L1 Finality
+    Ecosystem:         Overview, Nexa, Nova, Vault
+    Development:       Repository, Local Development, Testing, Roadmap
+
+**Purpose:** in-page navigation within `docs.html`.
+
+**Scope:** eight groups, anchor links only.
+
+**Notes:**
+
+- Uses active-state styling and ARIA state for sidebar navigation.
+- Styles are inline in `docs.html` (not in an external stylesheet).
+
+### 6.5 Learn Navigation
+
+**Structure (6 pages):**
+
+    /learn/index.html
+    /learn/start.html
+    /learn/roadmap.html
+    /learn/paths.html
+    /learn/contribute.html
+    /learn/community-link.html
+
+**In-page navigation:** each page has its own in-page anchors
+(for example, `#beginner`, `#rust-systems`, `#cryptography`).
+
+**Purpose:** guided learning navigation.
+
+**Scope:** six pages + in-page anchors.
+
+**Notes:**
+
+- No shared sidebar
+- Sequential section navigation is currently used on `paths.html`
+  and `roadmap.html`.
+- Other Learn pages rely on cross-links and in-page anchors rather
+  than the sequential section-navigation pattern.
