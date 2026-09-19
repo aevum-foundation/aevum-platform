@@ -450,47 +450,9 @@
 
     <div id="footer-container" aria-busy="true"></div>
 
-    <script>
-        (() => {
-            'use strict';
-            const componentCache = new Map();
-
-            async function loadComponent(id, url) {
-                const el = document.getElementById(id);
-                if (!el) return false;
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 10000);
-                try {
-                    let html = componentCache.get(url);
-                    if (!html) {
-                        const response = await fetch(url, {
-                            cache: 'default',
-                            signal: controller.signal
-                        });
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        html = await response.text();
-                        componentCache.set(url, html);
-                    }
-                    el.innerHTML = html;
-                    el.setAttribute('aria-busy', 'false');
-                    return true;
-                } catch (error) {
-                    console.error(`[Aevum] Component failed: ${url}`, error);
-                    el.innerHTML = '';
-                    el.setAttribute('aria-busy', 'false');
-                    return false;
-                } finally {
-                    clearTimeout(timeout);
-                }
-            }
-
-            async function boot() {
-                await loadComponent('header-container', '/components/header.html');
-                await loadComponent('footer-container', '/components/footer.html');
-            }
-
-            boot();
-        })();
+    <script type="module">
+        import { boot } from '/js/components.js';
+        boot();
     </script>
 </body>
 </html>
