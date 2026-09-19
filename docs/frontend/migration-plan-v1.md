@@ -129,6 +129,27 @@ Establish a single canonical runtime for all pages.
 
 Risk: Medium.
 
+### Phase 1.0 — Canonical Source Selection
+
+Before extraction, canonical implementations are selected from
+the audited variants.
+
+Decision P1-001 — Canonical Navigation Runtime:
+
+- Source: docs.html
+- Reason: full focus trap, Tab handling,
+  getFocusableElements() with filter, initialized WeakSet,
+  focus restoration, requestAnimationFrame, complete ARIA.
+
+Decision P1-002 — Canonical Component Loader:
+
+- Source: docs.html
+- Reason: fetchWithTimeout, COMPONENT_TIMEOUT_MS,
+  initialized WeakSet, empty response check,
+  credentials same-origin.
+
+Status: SELECTED
+
 ### Scope
 
 Extract into shared modules:
