@@ -123,6 +123,25 @@ None required. Phase 0 is read-only.
 
 ## 6. Phase 1 — Shared Runtime Extraction
 
+**Status: COMPLETE**
+
+Completed:
+
+- Phase 1.0 — Canonical source selection.
+- Phase 1.1 — Navigation runtime selection.
+- Phase 1.2 — js/components.js (81e7b61).
+- Phase 1.3 — js/navigation.js (a83192d).
+- Phase 1.4 — All 15 pages connected (d79ef47).
+- Phase 1.5 — Inline JS / dead-code verification.
+
+Verification:
+
+- 15 / 15 pages return HTTP 200.
+- All pages load shared runtime.
+- No inline loader, nav, or boot logic remains.
+- 4 page modules extracted (docs, explorer, home, support).
+- No console errors reported during verification.
+
 Goal:
 
 Establish a single canonical runtime for all pages.
