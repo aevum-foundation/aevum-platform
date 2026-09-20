@@ -230,7 +230,46 @@ on multiple pages.
 
 ---
 
-## 7. Phase 2 — Page JavaScript Extraction
+## 7. Phase 2 — Page CSS Extraction
+
+**Status: COMPLETE**
+
+Completed:
+
+- 9 top-level pages migrated from inline `<style>` to `css/pages/*.css`.
+- Learn already used `css/pages/learn.css`.
+- Inline `<style>` count: 0.
+- All pages return HTTP 200.
+- All CSS files load with HTTP 200.
+
+Page CSS files:
+
+    css/pages/community.css
+    css/pages/docs.css
+    css/pages/explorer.css
+    css/pages/genesis.css
+    css/pages/home.css
+    css/pages/learn.css
+    css/pages/repositories.css
+    css/pages/roadmap.css
+    css/pages/support.css
+    css/pages/wallet.css
+
+Risk: High (visual regressions).
+
+Verification: production verification passed.
+
+---
+
+## 8. Phase 1.4 — Page JavaScript Extraction
+
+**Status: COMPLETE**
+
+Completed:
+
+- Page-specific JS extracted to js/pages/*.js.
+- All pages use canonical shared runtime.
+- Verification passed in production.
 
 Goal:
 
@@ -282,68 +321,6 @@ planning based on complexity and risk.
 
 ---
 
-## 8. Phase 3 — Page CSS Extraction
-
-Goal:
-
-Move inline `<style>` blocks into css/pages/*.css.
-
-Risk: High.
-
-### Scope
-
-Inline CSS exists on 9 top-level pages:
-
-| Page | Inline CSS lines |
-| ---- | ---------------- |
-| community.html | 695 |
-| genesis.html | 527 |
-| docs.html | 489 |
-| explorer.html | 455 |
-| support.html | 372 |
-| wallet.html | 359 |
-| repositories.html | 354 |
-| index.html | 299 |
-| roadmap.html | 175 |
-
-Total: 3725 lines.
-
-Learn pages already use css/pages/learn.css and require no
-change.
-
-### Deliverables
-
-    css/pages/home.css
-    css/pages/docs.css
-    css/pages/explorer.css
-    css/pages/genesis.css
-    css/pages/community.css
-    css/pages/repositories.css
-    css/pages/roadmap.css
-    css/pages/support.css
-    css/pages/wallet.css
-
-### Order
-
-TBD. Migration order will be determined during execution
-planning based on complexity and risk.
-
-### Verification
-
-- Visual output unchanged.
-- CSS files loaded once.
-- No unused selectors introduced.
-- No duplicated rules introduced.
-
-### Rollback
-
-    git revert <phase-3-commit>
-
-### Exit Criteria
-
-- No inline `<style>` blocks remain in top-level pages.
-- All page CSS is external and cacheable.
-- Verification passes in production.
 
 ---
 
