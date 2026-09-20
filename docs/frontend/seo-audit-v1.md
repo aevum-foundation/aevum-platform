@@ -32,8 +32,8 @@ Checks:
 | Area | Issue | Severity | Status |
 | ---- | ----- | -------- | ------ |
 | Title | Unique per page | — | OK |
-| Meta description | Missing on 9 of 15 pages | MEDIUM | TODO |
-| Canonical | Missing on all 15 pages | MEDIUM | TODO |
+| Meta description | Present on all 15 pages | — | OK |
+| Canonical | Present on all 15 pages | — | OK |
 | robots.txt | Missing | MEDIUM | TODO |
 | sitemap.xml | Missing | MEDIUM | TODO |
 | Open Graph | Missing on all 15 pages | LOW | TODO |
@@ -53,30 +53,27 @@ Status: OK.
 
 ### 3.2 Meta description
 
-Present (6):
+All 15 pages have a `<meta name="description">` tag.
 
-- community.html
-- explorer.html
-- repositories.html
-- roadmap.html
-- support.html
-- wallet.html
+Status: OK.
 
-Missing (9):
+Note: descriptions use a multi-line format:
 
-- docs.html
-- genesis.html
-- index.html
-- learn/community-link.html
-- learn/contribute.html
-- learn/index.html
-- learn/paths.html
-- learn/roadmap.html
-- learn/start.html
+    <meta
+        name="description"
+        content="..."
+    >
 
 ### 3.3 Canonical
 
-No page declares `<link rel="canonical">`.
+All 15 pages declare `<link rel="canonical">`.
+
+Status: OK.
+
+Fixed in Phase 4.2:
+
+- index.html (pilot) — commit 75d5c74
+- remaining 14 pages — commit 0da2532
 
 ### 3.4 Open Graph
 
@@ -96,8 +93,8 @@ No `sitemap.xml` file exists in frontend root.
 
 Planned sequence:
 
-1. Canonical URLs
-2. Meta descriptions
+1. Canonical URLs — COMPLETE (Phase 4.2)
+2. Meta descriptions — ALREADY OK (no action needed)
 3. robots.txt
 4. sitemap.xml
 5. Open Graph
@@ -115,7 +112,7 @@ SEO Audit v1
 State: Audit Complete
 Blockers: NONE
 
-Next: Phase 4.2 — Canonical URLs.
+Next: Phase 4.4 — robots.txt.
 
 ---
 
