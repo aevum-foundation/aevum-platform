@@ -95,13 +95,14 @@ exists to show what is safe to share now. Nothing else.
 | Decision Records infrastructure | ✅     |
 | Documentation Freeze            | ✅     |
 | Deployment Audit v1             | ✅     |
+| A2 Target Architecture          | ✅     |
 
 ### Current State Summary
 
 - **Frontend:** stable. No production defects.
 - **SEO:** full contract deployed on 15/15 pages.
 - **Deployment:** fully manual (audited in A1). No automation exists yet.
-- **Stage 3:** Deployment Automation — A1 complete, A2 pending.
+- **Stage 3:** Deployment Automation — A1 + A2 complete, A3 pending.
 - **Decision Records:** active (`docs/infrastructure/decisions/`).
 - **Architecture debt:** tracked in D-048 (deferred).
 
@@ -126,13 +127,41 @@ exists to show what is safe to share now. Nothing else.
 | Step | Item                                    | Status |
 |------|-----------------------------------------|--------|
 | A1   | Deployment Audit v1                     | DONE   |
-| A2   | Target Deployment Architecture          | TODO   |
+| A2   | Target Deployment Architecture          | DONE   |
 | A3   | Deployment Plan                         | TODO   |
 | A4   | Implementation                          | TODO   |
 | A5   | Validation                              | TODO   |
-| A6   | Legacy `aevum-web` Decision (D-049)     | TODO   |
+| A6   | Legacy `aevum-web` Decision (D-050)     | TODO   |
 
 See: `docs/infrastructure/decisions/D-048-frontend-refactor-deferred.md`
+
+### A2 Outcome (Deployment Architecture)
+
+**Decision:** D-049 — `atomic staging + swap` (V3) with deployment manifest.
+
+**Target architecture:**
+
+```
+/root/aevum-platform              (source of truth)
+        ↓
+/var/www/releases/<revision>/     (immutable snapshots)
+        ↓
+/var/www/active -> releases/...   (symlink)
+        ↓
+Apache DocumentRoot               (serves active release)
+```
+
+**Pipeline:** stage → manifest → verify → activate → retain → prune
+
+**Rollback:** `ln -sfn releases/<previous> active` (instant)
+
+**Key properties:**
+- No Git state on the production host.
+- Each release is an immutable snapshot.
+- Deployment manifest records source revision, timestamp, actor.
+- `aevum-web` is no longer needed for deployment.
+
+See: `docs/infrastructure/decisions/D-049-deployment-architecture.md`
 
 ---
 
@@ -235,8 +264,8 @@ docs/
     ├── deployment-audit-v1.md      (Stage 3 — A1)
 └── decisions/
 ├── POLICY.md
-└── D-048-frontend-refactor-deferred.md
-
+├── D-048-frontend-refactor-deferred.md
+        └── D-049-deployment-architecture.md
 ```
 
 ---
@@ -245,10 +274,11 @@ docs/
 
 ### Current focus — Stage 3 (Deployment Automation)
 
-Next step: **A2 — Target Deployment Architecture**.
+Next step: **A3 — Deployment Plan** (design only, no implementation yet).
 
-A2 must answer the 7 open questions recorded in
-`docs/infrastructure/deployment-audit-v1.md` § 9.
+A3 defines the design of the `aevum-deploy` tool: commands, retention
+policy, verification step, Apache integration, rollback procedure,
+manifest format, and failure handling. Implementation belongs to A4.
 
 ### After Stage 3
 
@@ -258,7 +288,7 @@ A2 must answer the 7 open questions recorded in
    - P2 Navigation Consistency
    - P3 Page Modules
    - P4 CSS Extraction
-3. **`aevum-web` legacy shutdown** — subject to D-049 (A6).
+3. **`aevum-web` legacy shutdown** — subject to D-050 (A6).
 
 ---
 
