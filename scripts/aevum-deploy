@@ -1,0 +1,990 @@
+#!/usr/bin/env python3
+"""
+Aevum Deploy — deployment tool for aevumchain.com
+
+Spec: docs/infrastructure/deployment-plan-v1.md
+
+Python 3 standard library only.
+"""
+
+import argparse
+import fcntl
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+# ---------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------
+
+TOOL_NAME = "aevum-deploy"
+TOOL_VERSION = "0.1.0"
+SCHEMA_VERSION = 1
+
+# Filesystem paths
+RELEASES_DIR = Path("/var/www/releases")
+ACTIVE_LINK = Path("/var/www/active")
+DOCROOT_LINK = Path("/var/www/html")
+LOCK_FILE = Path("/run/aevum-deploy.lock")
+LOG_DIR = Path("/var/log/aevum-deploy")
+SOURCE_REPO = Path("/root/aevum-platform")
+
+# Deployment surface whitelist
+WHITELIST_TOP_FILES = ["robots.txt", "sitemap.xml"]
+WHITELIST_HTML_GLOB = "*.html"
+WHITELIST_DIRS = ["learn", "css", "js", "img", "components"]
+DEFAULT_RETENTION_KEEP = 5
+
+# Exit codes (see deployment-plan-v1.md section 3)
+EXIT_SUCCESS = 0
+EXIT_GENERAL_FAILURE = 1
+EXIT_USAGE_ERROR = 2
+EXIT_VERIFICATION_FAILED = 3
+EXIT_ACTIVATION_FAILED = 4
+EXIT_ROLLBACK_FAILED = 5
+EXIT_RELEASE_NOT_FOUND = 10
+EXIT_PERMISSION_ERROR = 11
+EXIT_RELEASE_EXISTS = 12
+EXIT_RETENTION_FAILURE = 13
+EXIT_CONFLICT = 14
+
+# ---------------------------------------------------------------
+# Revision resolution
+# ---------------------------------------------------------------
+
+def resolve_revision(ref):
+    """Resolve a Git ref to a full commit SHA. Returns (sha, original_ref)."""
+    cmd = ["git", "-C", str(SOURCE_REPO), "rev-parse", "--verify", ref + "^{commit}"]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError("cannot resolve revision: " + ref)
+    full_sha = result.stdout.strip()
+    if not full_sha:
+        raise RuntimeError("empty SHA for: " + ref)
+    return full_sha, ref
+
+def release_dir(sha):
+    """Return the release directory path for a full SHA."""
+    return RELEASES_DIR / sha
+
+# ---------------------------------------------------------------
+# Manifest helpers
+# ---------------------------------------------------------------
+
+def manifest_path(release_path):
+    return Path(release_path) / ".deploy-manifest.json"
+
+def verify_report_path(release_path):
+    return Path(release_path) / ".deploy-verify.json"
+
+def load_manifest(release_path):
+    """Load .deploy-manifest.json from a release directory."""
+    p = manifest_path(release_path)
+    if not p.exists():
+        raise RuntimeError(f"manifest not found: {p}")
+    with p.open() as f:
+        return json.load(f)
+
+def save_manifest(release_path, data):
+    """Write .deploy-manifest.json into a release directory."""
+    p = manifest_path(release_path)
+    with p.open("w") as f:
+        json.dump(data, f, indent=2, sort_keys=False)
+        f.write(chr(10))
+
+# ---------------------------------------------------------------
+# Locking
+# ---------------------------------------------------------------
+
+def acquire_lock():
+    """Acquire exclusive deployment lock. Returns file descriptor. Raises RuntimeError if held."""
+    fd = os.open(str(LOCK_FILE), os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        os.close(fd)
+        raise RuntimeError("lock held by another process")
+    return fd
+
+def release_lock(fd):
+    """Release deployment lock."""
+    try:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
+
+# ---------------------------------------------------------------
+# Filesystem safety helpers
+# ---------------------------------------------------------------
+
+def is_safe_release_path(path):
+    """Return True if path is inside RELEASES_DIR and resolves within it."""
+    try:
+        resolved = Path(path).resolve()
+    except Exception:
+        return False
+    try:
+        resolved.relative_to(RELEASES_DIR.resolve())
+    except ValueError:
+        return False
+    return True
+
+def assert_no_symlinks(root):
+    """Raise RuntimeError if any symlink exists under root."""
+    root = Path(root)
+    for dirpath, dirnames, filenames in os.walk(root):
+        for name in dirnames + filenames:
+            full = Path(dirpath) / name
+            if full.is_symlink():
+                raise RuntimeError("symlink found: " + str(full))
+
+def ensure_log_dir():
+    """Ensure /var/log/aevum-deploy/ exists."""
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+# ---------------------------------------------------------------
+# Logging helpers
+# ---------------------------------------------------------------
+
+def info(msg):
+    print(f"[INFO] {msg}")
+
+def warn(msg):
+    print(f"[WARN] {msg}", file=sys.stderr)
+
+def error(msg):
+    print(f"[ERROR] {msg}", file=sys.stderr)
+
+# ---------------------------------------------------------------
+# Stage: extract deployment surface from a Git revision
+# ---------------------------------------------------------------
+
+def stage_extract(full_sha, release_path):
+    """Extract deployment whitelist from a Git revision into release_path."""
+    release_path = Path(release_path)
+    release_path.mkdir(parents=True, exist_ok=False)
+
+    cmd = [
+        "git", "-C", str(SOURCE_REPO), "archive",
+        "--format=tar", full_sha, "frontend/"
+    ]
+    result = subprocess.run(cmd, capture_output=True)
+    if result.returncode != 0:
+        raise RuntimeError("git archive failed: " + result.stderr.decode())
+
+    import tarfile
+    import io
+    tar_data = io.BytesIO(result.stdout)
+    with tarfile.open(fileobj=tar_data, mode="r:") as tf:
+        for member in tf.getmembers():
+            if not _is_whitelisted_member(member.name):
+                continue
+            _extract_member(tf, member, release_path)
+
+def _is_whitelisted_member(name):
+    """Check whether a tar member name (frontend/...) is in the deployment surface."""
+    if not name.startswith("frontend/"):
+        return False
+    rel = name[len("frontend/"):]
+    if rel == "":
+        return False
+    parts = rel.split("/")
+    top = parts[0]
+    if top in WHITELIST_DIRS:
+        return True
+    if top in WHITELIST_TOP_FILES and len(parts) == 1:
+        return True
+    if top.endswith(".html") and len(parts) == 1:
+        return True
+    return False
+
+def _extract_member(tf, member, dest_root):
+    """Extract one tar member into dest_root, stripping the frontend/ prefix."""
+    rel = member.name[len("frontend/"):]
+    target = dest_root / rel
+    if member.isdir():
+        target.mkdir(parents=True, exist_ok=True)
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    src = tf.extractfile(member)
+    if src is None:
+        return
+    with src, target.open("wb") as out:
+        out.write(src.read())
+
+# ---------------------------------------------------------------
+# Initial manifest + staging safety
+# ---------------------------------------------------------------
+
+def write_initial_manifest(release_path, full_sha, ref_input):
+    """Write initial .deploy-manifest.json with verification=pending."""
+    import datetime
+    data = {
+        "schema_version": SCHEMA_VERSION,
+        "release_id": full_sha,
+        "source_revision": full_sha,
+        "source_ref_input": ref_input,
+        "deployed_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "deployed_by": os.environ.get("USER", "unknown"),
+        "deploy_tool": TOOL_NAME,
+        "deploy_tool_version": TOOL_VERSION,
+        "parent_release": None,
+        "verification": {"status": "pending"},
+    }
+    save_manifest(release_path, data)
+
+def stage_safety_checks(release_path):
+    """Validate staged content: whitelist + no symlinks + regular files."""
+    release_path = Path(release_path)
+    if not release_path.is_dir():
+        raise RuntimeError("release path is not a directory")
+    assert_no_symlinks(release_path)
+    for dirpath, dirnames, filenames in os.walk(release_path):
+        for name in filenames:
+            full = Path(dirpath) / name
+            if not full.is_file():
+                raise RuntimeError("non-regular file: " + str(full))
+    # At least index.html must exist
+    if not (release_path / "index.html").is_file():
+        raise RuntimeError("index.html missing in staged release")
+
+# ---------------------------------------------------------------
+# Verify: structural checks
+# ---------------------------------------------------------------
+
+REQUIRED_MANIFEST_FIELDS = [
+    "schema_version", "release_id", "source_revision",
+    "source_ref_input", "deployed_at", "deployed_by",
+    "deploy_tool", "deploy_tool_version", "parent_release", "verification",
+]
+
+ALLOWED_MANIFEST_FIELDS = set(REQUIRED_MANIFEST_FIELDS)
+
+def check_structural(release_path, checks):
+    """Structural checks: filesystem + manifest structure."""
+    rp = Path(release_path)
+    ok = True
+
+    if not rp.is_dir():
+        checks.append({"name": "release_dir_exists", "severity": "blocking", "status": "failed", "reason": "release directory missing"})
+        return False
+    checks.append({"name": "release_dir_exists", "severity": "blocking", "status": "passed"})
+
+    if not any(rp.iterdir()):
+        checks.append({"name": "release_dir_nonempty", "severity": "blocking", "status": "failed", "reason": "release directory empty"})
+        return False
+    checks.append({"name": "release_dir_nonempty", "severity": "blocking", "status": "passed"})
+
+    # no symlinks + only regular files/dirs
+    symlink_found = None
+    for dirpath, dirnames, filenames in os.walk(rp):
+        for name in dirnames + filenames:
+            full = Path(dirpath) / name
+            if full.is_symlink():
+                symlink_found = str(full)
+                break
+        if symlink_found:
+            break
+    if symlink_found:
+        checks.append({"name": "no_symlinks", "severity": "blocking", "status": "failed", "reason": symlink_found})
+        ok = False
+    else:
+        checks.append({"name": "no_symlinks", "severity": "blocking", "status": "passed"})
+
+    # manifest checks
+    mp = manifest_path(rp)
+    if not mp.exists():
+        checks.append({"name": "manifest_exists", "severity": "blocking", "status": "failed", "reason": "manifest missing"})
+        return False
+    checks.append({"name": "manifest_exists", "severity": "blocking", "status": "passed"})
+
+    try:
+        data = json.loads(mp.read_text())
+    except Exception as e:
+        checks.append({"name": "manifest_json", "severity": "blocking", "status": "failed", "reason": str(e)})
+        return False
+    checks.append({"name": "manifest_json", "severity": "blocking", "status": "passed"})
+
+    if data.get("schema_version") != SCHEMA_VERSION:
+        checks.append({"name": "manifest_schema", "severity": "blocking", "status": "failed", "reason": "schema_version mismatch"})
+        ok = False
+    else:
+        checks.append({"name": "manifest_schema", "severity": "blocking", "status": "passed"})
+
+    missing = [f for f in REQUIRED_MANIFEST_FIELDS if f not in data]
+    if missing:
+        checks.append({"name": "manifest_required_fields", "severity": "blocking", "status": "failed", "reason": "missing: " + ",".join(missing)})
+        ok = False
+    else:
+        checks.append({"name": "manifest_required_fields", "severity": "blocking", "status": "passed"})
+
+    unknown = set(data.keys()) - ALLOWED_MANIFEST_FIELDS
+    if unknown:
+        checks.append({"name": "manifest_unknown_fields", "severity": "blocking", "status": "failed", "reason": "unknown: " + ",".join(sorted(unknown))})
+        ok = False
+    else:
+        checks.append({"name": "manifest_unknown_fields", "severity": "blocking", "status": "passed"})
+
+    return ok
+
+# ---------------------------------------------------------------
+# Verify: content checks
+# ---------------------------------------------------------------
+
+REQUIRED_FILES = [
+    "index.html",
+    "robots.txt",
+    "sitemap.xml",
+    "components/header.html",
+    "components/footer.html",
+]
+
+def _sitemap_url_to_path(url):
+    """Map a sitemap URL to a local file path relative to release root."""
+    prefix = "https://aevumchain.com"
+    if not url.startswith(prefix):
+        return None
+    rel = url[len(prefix):]
+    if rel == "" or rel == "/":
+        return "index.html"
+    if rel.startswith("/"):
+        rel = rel[1:]
+    if rel.endswith("/"):
+        return rel + "index.html"
+    return rel
+
+def _extract_local_assets(html_text):
+    """Extract local (starting with /) asset references from HTML."""
+    import re
+    assets = set()
+    patterns = [
+        r'<link[^>]+href="(/[^"]+)"',
+        r'<script[^>]+src="(/[^"]+)"',
+        r'<img[^>]+src="(/[^"]+)"',
+    ]
+    for pat in patterns:
+        for m in re.finditer(pat, html_text):
+            assets.add(m.group(1))
+    return assets
+
+def check_content(release_path, checks):
+    """Content checks: required files, sitemap coverage, local assets."""
+    rp = Path(release_path)
+    ok = True
+
+    # Required files
+    missing = [f for f in REQUIRED_FILES if not (rp / f).is_file()]
+    if missing:
+        checks.append({"name": "required_files", "severity": "blocking", "status": "failed", "reason": "missing: " + ",".join(missing)})
+        ok = False
+    else:
+        checks.append({"name": "required_files", "severity": "blocking", "status": "passed"})
+
+    # Sitemap coverage
+    sitemap_path = rp / "sitemap.xml"
+    if sitemap_path.is_file():
+        import re
+        text = sitemap_path.read_text()
+        urls = re.findall(r"<loc>([^<]+)</loc>", text)
+        missing_sitemap = []
+        for url in urls:
+            rel = _sitemap_url_to_path(url)
+            if rel is None:
+                continue
+            if not (rp / rel).is_file():
+                missing_sitemap.append(url)
+        if missing_sitemap:
+            checks.append({"name": "sitemap_coverage", "severity": "blocking", "status": "failed", "reason": "missing: " + ",".join(missing_sitemap)})
+            ok = False
+        else:
+            checks.append({"name": "sitemap_coverage", "severity": "blocking", "status": "passed"})
+
+    # HTML local asset references
+    missing_assets = []
+    for html_file in rp.glob("*.html"):
+        text = html_file.read_text()
+        for asset in _extract_local_assets(text):
+            rel = asset.lstrip("/")
+            if not (rp / rel).is_file():
+                missing_assets.append(asset)
+    if missing_assets:
+        checks.append({"name": "html_local_assets", "severity": "blocking", "status": "failed", "reason": "missing: " + ",".join(sorted(set(missing_assets)))})
+        ok = False
+    else:
+        checks.append({"name": "html_local_assets", "severity": "blocking", "status": "passed"})
+
+    return ok
+
+# ---------------------------------------------------------------
+# Verify: semantic + provenance checks
+# ---------------------------------------------------------------
+
+PLACEHOLDER_PATTERNS = ["TODO", "FIXME", "LOREM", "XXX"]
+
+def check_semantic(release_path, checks):
+    """Semantic checks: HTML titles, placeholders, build paths."""
+    rp = Path(release_path)
+    ok = True
+
+    # <title> on every page
+    missing_title = []
+    placeholder_hits = []
+    build_path_hits = []
+    for html_file in rp.glob("*.html"):
+        text = html_file.read_text()
+        if "<title>" not in text:
+            missing_title.append(str(html_file.name))
+        for ph in PLACEHOLDER_PATTERNS:
+            if ph in text:
+                placeholder_hits.append(html_file.name + ":" + ph)
+        if "/root/aevum-platform" in text:
+            build_path_hits.append(html_file.name)
+
+    if missing_title:
+        checks.append({"name": "html_titles", "severity": "blocking", "status": "failed", "reason": "missing: " + ",".join(missing_title)})
+        ok = False
+    else:
+        checks.append({"name": "html_titles", "severity": "blocking", "status": "passed"})
+
+    if placeholder_hits:
+        checks.append({"name": "placeholders", "severity": "blocking", "status": "failed", "reason": ",".join(placeholder_hits)})
+        ok = False
+    else:
+        checks.append({"name": "placeholders", "severity": "blocking", "status": "passed"})
+
+    if build_path_hits:
+        checks.append({"name": "no_build_paths", "severity": "blocking", "status": "failed", "reason": ",".join(build_path_hits)})
+        ok = False
+    else:
+        checks.append({"name": "no_build_paths", "severity": "blocking", "status": "passed"})
+
+    # Advisory: OG + Twitter on all pages
+    missing_og = []
+    missing_tw = []
+    for html_file in rp.glob("*.html"):
+        text = html_file.read_text()
+        if 'property="og:title"' not in text:
+            missing_og.append(html_file.name)
+        if 'name="twitter:card"' not in text:
+            missing_tw.append(html_file.name)
+
+    if missing_og:
+        checks.append({"name": "og_tags", "severity": "advisory", "status": "warning", "reason": ",".join(missing_og)})
+    else:
+        checks.append({"name": "og_tags", "severity": "advisory", "status": "passed"})
+
+    if missing_tw:
+        checks.append({"name": "twitter_tags", "severity": "advisory", "status": "warning", "reason": ",".join(missing_tw)})
+    else:
+        checks.append({"name": "twitter_tags", "severity": "advisory", "status": "passed"})
+
+    return ok
+
+def check_provenance(release_path, checks):
+    """Provenance checks: manifest identity consistency."""
+    rp = Path(release_path)
+    ok = True
+    try:
+        data = load_manifest(rp)
+    except RuntimeError as e:
+        checks.append({"name": "provenance_manifest", "severity": "blocking", "status": "failed", "reason": str(e)})
+        return False
+
+    if data.get("release_id") != rp.name:
+        checks.append({"name": "provenance_release_id", "severity": "blocking", "status": "failed", "reason": "release_id != dirname"})
+        ok = False
+    else:
+        checks.append({"name": "provenance_release_id", "severity": "blocking", "status": "passed"})
+
+    if data.get("release_id") != data.get("source_revision"):
+        checks.append({"name": "provenance_source_match", "severity": "blocking", "status": "failed", "reason": "release_id != source_revision"})
+        ok = False
+    else:
+        checks.append({"name": "provenance_source_match", "severity": "blocking", "status": "passed"})
+
+    return ok
+
+# ---------------------------------------------------------------
+# Verify orchestration
+# ---------------------------------------------------------------
+
+def run_verify(release_path):
+    """Run all verification checks. Write report. Update manifest. Return status string."""
+    import datetime
+    rp = Path(release_path)
+    checks = []
+
+    check_structural(rp, checks)
+    check_content(rp, checks)
+    check_semantic(rp, checks)
+    check_provenance(rp, checks)
+
+    blocking_failed = [c for c in checks if c.get("severity") == "blocking" and c.get("status") == "failed"]
+    status = "passed" if not blocking_failed else "failed"
+
+    report = {
+        "schema_version": SCHEMA_VERSION,
+        "release_id": rp.name,
+        "verified_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "status": status,
+        "checks": checks,
+    }
+    report_path = verify_report_path(rp)
+    with report_path.open("w") as f:
+        json.dump(report, f, indent=2)
+        f.write(chr(10))
+
+    data = load_manifest(rp)
+    data["verification"]["status"] = status
+    save_manifest(rp, data)
+
+    return status
+
+# ---------------------------------------------------------------
+# Activate helpers
+# ---------------------------------------------------------------
+
+def inspect_active():
+    """Return state of /var/www/active: absent | valid_symlink | broken_symlink | regular."""
+    if not ACTIVE_LINK.exists() and not ACTIVE_LINK.is_symlink():
+        return "absent"
+    if ACTIVE_LINK.is_symlink():
+        target = os.readlink(str(ACTIVE_LINK))
+        if Path(target).exists():
+            return "valid_symlink"
+        return "broken_symlink"
+    return "regular"
+
+def read_active_target():
+    """Return the resolved target path of /var/www/active, or None if not a symlink."""
+    if not ACTIVE_LINK.is_symlink():
+        return None
+    return os.readlink(str(ACTIVE_LINK))
+
+def atomic_replace_symlink(target, link_path):
+    """Create a temporary symlink and atomically replace link_path."""
+    import tempfile
+    link_path = Path(link_path)
+    target = Path(target)
+    pid = os.getpid()
+    tmp = link_path.parent / (".active." + str(pid) + ".tmp")
+    if tmp.is_symlink() or tmp.exists():
+        tmp.unlink()
+    os.symlink(str(target), str(tmp))
+    os.replace(str(tmp), str(link_path))
+
+def verify_active_post(expected_release_id):
+    """Return (ok, reason). Check readlink + manifest status."""
+    if not ACTIVE_LINK.is_symlink():
+        return False, "active is not a symlink"
+    target = os.readlink(str(ACTIVE_LINK))
+    expected_target = str(release_dir(expected_release_id))
+    if target != expected_target:
+        return False, "active points to " + target + " not " + expected_target
+    manifest_file = Path(target) / ".deploy-manifest.json"
+    if not manifest_file.is_file():
+        return False, "active manifest missing"
+    try:
+        data = json.loads(manifest_file.read_text())
+    except Exception as e:
+        return False, "manifest parse error: " + str(e)
+    if data.get("release_id") != expected_release_id:
+        return False, "manifest release_id mismatch"
+    v = data.get("verification", {})
+    if v.get("status") != "passed":
+        return False, "manifest verification not passed"
+    return True, "ok"
+
+# ---------------------------------------------------------------
+# Commands (stubs for A4.1 — implementation in A4.2+)
+# ---------------------------------------------------------------
+
+def cmd_deploy(args):
+    lock_fd = None
+    try:
+        lock_fd = acquire_lock()
+    except RuntimeError:
+        error("another deployment is in progress")
+        return EXIT_CONFLICT
+
+    try:
+        full_sha, ref_input = resolve_revision(args.revision)
+        info("resolved " + ref_input + " -> " + full_sha)
+
+        rel_dir = release_dir(full_sha)
+        if rel_dir.exists():
+            error("release already exists: " + str(rel_dir))
+            return EXIT_RELEASE_EXISTS
+
+        info("staging into " + str(rel_dir))
+        stage_extract(full_sha, rel_dir)
+        write_initial_manifest(rel_dir, full_sha, ref_input)
+        stage_safety_checks(rel_dir)
+        info("stage complete")
+        info("running verification")
+        status = run_verify(rel_dir)
+        if status != "passed":
+            error("verification failed")
+            return EXIT_VERIFICATION_FAILED
+        info("verification passed")
+
+        # determine parent_release + finalize manifest
+        parent = None
+        if ACTIVE_LINK.is_symlink():
+            parent = Path(os.readlink(str(ACTIVE_LINK))).name
+        data = load_manifest(rel_dir)
+        data["parent_release"] = parent
+        save_manifest(rel_dir, data)
+        info("parent_release: " + str(parent))
+
+        # atomic swap
+        info("activating release")
+        atomic_replace_symlink(rel_dir, ACTIVE_LINK)
+        info("active -> " + str(rel_dir))
+
+        ok, reason = verify_active_post(full_sha)
+        if not ok:
+            warn("post-activate verification failed: " + reason)
+            return EXIT_SUCCESS
+
+        info("deployment complete")
+        return EXIT_SUCCESS
+    except RuntimeError as e:
+        error(str(e))
+        return EXIT_GENERAL_FAILURE
+    finally:
+        if lock_fd is not None:
+            release_lock(lock_fd)
+
+def cmd_activate(args):
+    """Activate a verified release."""
+    lock_fd = None
+    try:
+        lock_fd = acquire_lock()
+    except RuntimeError:
+        error("another deployment is in progress")
+        return EXIT_CONFLICT
+
+    try:
+        rel_dir = release_dir(args.release_id)
+        if not rel_dir.is_dir():
+            error("release not found: " + args.release_id)
+            return EXIT_RELEASE_NOT_FOUND
+
+        try:
+            data = load_manifest(rel_dir)
+        except RuntimeError as e:
+            error(str(e))
+            return EXIT_GENERAL_FAILURE
+
+        v = data.get("verification", {})
+        if v.get("status") != "passed":
+            error("release verification status is not passed")
+            return EXIT_ACTIVATION_FAILED
+
+        state = inspect_active()
+        if state == "regular":
+            error("active is a regular directory (not a symlink)")
+            return EXIT_CONFLICT
+        if state == "broken_symlink":
+            error("active is a broken symlink")
+            return EXIT_CONFLICT
+
+        info("active state: " + state)
+
+        if state == "valid_symlink":
+            current = read_active_target()
+            if current == str(rel_dir):
+                info("already active")
+                return EXIT_SUCCESS
+
+        info("creating temporary symlink")
+        atomic_replace_symlink(rel_dir, ACTIVE_LINK)
+        info("active -> " + str(rel_dir))
+
+        info("post-activate verification")
+        ok, reason = verify_active_post(args.release_id)
+        if not ok:
+            warn("post-activate verification failed: " + reason)
+            return EXIT_SUCCESS
+
+        info("activation successful")
+        return EXIT_SUCCESS
+
+    except RuntimeError as e:
+        error(str(e))
+        return EXIT_ACTIVATION_FAILED
+    finally:
+        if lock_fd is not None:
+            release_lock(lock_fd)
+
+def cmd_rollback(args):
+    """Rollback to a previous release."""
+    lock_fd = None
+    try:
+        lock_fd = acquire_lock()
+    except RuntimeError:
+        error("another deployment is in progress")
+        return EXIT_CONFLICT
+
+    try:
+        target_id = args.release_id
+        if not target_id:
+            if not ACTIVE_LINK.is_symlink():
+                error("no active deployment; explicit release_id required")
+                return EXIT_RELEASE_NOT_FOUND
+            active_path = Path(os.readlink(str(ACTIVE_LINK)))
+            try:
+                data = load_manifest(active_path)
+            except RuntimeError as e:
+                error(str(e))
+                return EXIT_ROLLBACK_FAILED
+            target_id = data.get("parent_release")
+            if not target_id:
+                error("no parent_release recorded")
+                return EXIT_RELEASE_NOT_FOUND
+
+        target_dir = release_dir(target_id)
+        if not target_dir.is_dir():
+            error("target release not found: " + target_id)
+            return EXIT_RELEASE_NOT_FOUND
+
+        try:
+            target_manifest = load_manifest(target_dir)
+        except RuntimeError as e:
+            error(str(e))
+            return EXIT_ROLLBACK_FAILED
+
+        if target_manifest.get("verification", {}).get("status") != "passed":
+            error("target release verification is not passed")
+            return EXIT_ROLLBACK_FAILED
+
+        if ACTIVE_LINK.is_symlink():
+            current = os.readlink(str(ACTIVE_LINK))
+            if current == str(target_dir):
+                info("target is already active")
+                return EXIT_SUCCESS
+
+        info("rolling back to " + target_id)
+        atomic_replace_symlink(target_dir, ACTIVE_LINK)
+        info("active -> " + str(target_dir))
+
+        ok, reason = verify_active_post(target_id)
+        if not ok:
+            warn("post-rollback verification failed: " + reason)
+            return EXIT_ROLLBACK_FAILED
+
+        info("rollback successful")
+        return EXIT_SUCCESS
+    except RuntimeError as e:
+        error(str(e))
+        return EXIT_ROLLBACK_FAILED
+    finally:
+        if lock_fd is not None:
+            release_lock(lock_fd)
+
+def cmd_list(args):
+    """List releases in RELEASES_DIR."""
+    if not RELEASES_DIR.is_dir():
+        info("no releases directory")
+        return EXIT_SUCCESS
+    entries = sorted([d for d in RELEASES_DIR.iterdir() if d.is_dir()])
+    if not entries:
+        info("no releases")
+        return EXIT_SUCCESS
+    active_target = None
+    if ACTIVE_LINK.is_symlink():
+        active_target = os.readlink(str(ACTIVE_LINK))
+    for entry in entries:
+        marker = " *" if str(entry) == active_target else "  "
+        manifest_file = entry / ".deploy-manifest.json"
+        status = "?"
+        if manifest_file.is_file():
+            try:
+                data = json.loads(manifest_file.read_text())
+                status = data.get("verification", {}).get("status", "?")
+            except Exception:
+                status = "invalid"
+        print(marker + " " + entry.name + "  [" + status + "]")
+    return EXIT_SUCCESS
+
+def cmd_status(args):
+    """Show current deployment status."""
+    if ACTIVE_LINK.is_symlink():
+        target = os.readlink(str(ACTIVE_LINK))
+        info("active: " + target)
+        manifest_file = Path(target) / ".deploy-manifest.json"
+        if manifest_file.is_file():
+            try:
+                data = json.loads(manifest_file.read_text())
+                info("release_id: " + str(data.get("release_id", "?")))
+                info("deployed_at: " + str(data.get("deployed_at", "?")))
+                info("deployed_by: " + str(data.get("deployed_by", "?")))
+                info("verification: " + str(data.get("verification", {}).get("status", "?")))
+                info("parent_release: " + str(data.get("parent_release", "?")))
+            except Exception as e:
+                warn("cannot read manifest: " + str(e))
+    elif ACTIVE_LINK.exists():
+        warn("active is not a symlink")
+    else:
+        info("active: absent (no deployment pointer)")
+    return EXIT_SUCCESS
+
+def cmd_prune(args):
+    """Remove old releases according to retention policy."""
+    import shutil
+    import datetime
+    lock_fd = None
+    try:
+        lock_fd = acquire_lock()
+    except RuntimeError:
+        error("another deployment is in progress")
+        return EXIT_CONFLICT
+
+    try:
+        keep = DEFAULT_RETENTION_KEEP
+        if not RELEASES_DIR.is_dir():
+            info("no releases directory")
+            return EXIT_SUCCESS
+
+        active_target = None
+        if ACTIVE_LINK.is_symlink():
+            active_target = os.readlink(str(ACTIVE_LINK))
+
+        entries = sorted([d for d in RELEASES_DIR.iterdir() if d.is_dir()], key=lambda p: p.stat().st_mtime, reverse=True)
+
+        candidates = []
+        deleted = []
+        failed = []
+        skipped = []
+
+        for idx, entry in enumerate(entries):
+            name = entry.name
+            if str(entry) == active_target:
+                skipped.append({"release": name, "reason": "active"})
+                continue
+            if (entry / ".do-not-prune").exists():
+                skipped.append({"release": name, "reason": "protected_marker"})
+                continue
+            if idx < keep:
+                skipped.append({"release": name, "reason": "within_retention"})
+                continue
+            if not is_safe_release_path(entry):
+                skipped.append({"release": name, "reason": "unsafe_path"})
+                continue
+            candidates.append(entry)
+
+        for entry in candidates:
+            try:
+                shutil.rmtree(entry)
+                deleted.append(entry.name)
+                info("removed " + entry.name)
+            except Exception as e:
+                failed.append({"release": entry.name, "reason": str(e)})
+                warn("failed to remove " + entry.name + ": " + str(e))
+
+        ensure_log_dir()
+        ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
+        report = {
+            "pruned_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "active_release": active_target,
+            "policy": {"keep": keep},
+            "candidates": [c.name for c in candidates],
+            "deleted": deleted,
+            "failed": failed,
+            "skipped": skipped,
+        }
+        report_path = LOG_DIR / ("prune-" + ts + ".json")
+        with report_path.open("w") as f:
+            json.dump(report, f, indent=2)
+            f.write(chr(10))
+
+        if failed:
+            error("retention failure")
+            return EXIT_RETENTION_FAILURE
+        info("prune complete: " + str(len(deleted)) + " removed")
+        return EXIT_SUCCESS
+    except RuntimeError as e:
+        error(str(e))
+        return EXIT_RETENTION_FAILURE
+    finally:
+        if lock_fd is not None:
+            release_lock(lock_fd)
+
+def cmd_verify(args):
+    """Standalone verify on an existing release."""
+    rel_dir = release_dir(args.release_id)
+    if not rel_dir.is_dir():
+        error("release not found: " + args.release_id)
+        return EXIT_RELEASE_NOT_FOUND
+    try:
+        status = run_verify(rel_dir)
+    except RuntimeError as e:
+        error(str(e))
+        return EXIT_VERIFICATION_FAILED
+    if status == "passed":
+        info("verification passed")
+        return EXIT_SUCCESS
+    error("verification failed")
+    return EXIT_VERIFICATION_FAILED
+
+# ---------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        prog=TOOL_NAME,
+        description="Aevum deployment tool",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"{TOOL_NAME} {TOOL_VERSION}",
+    )
+
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_deploy = sub.add_parser("deploy", help="Deploy a revision")
+    p_deploy.add_argument("revision", help="Git revision (SHA, tag, branch)")
+    p_deploy.set_defaults(func=cmd_deploy)
+
+    p_rollback = sub.add_parser("rollback", help="Rollback to a previous release")
+    p_rollback.add_argument("release_id", nargs="?", help="Optional release ID")
+    p_rollback.set_defaults(func=cmd_rollback)
+
+    p_list = sub.add_parser("list", help="List releases")
+    p_list.set_defaults(func=cmd_list)
+
+    p_status = sub.add_parser("status", help="Show current deployment status")
+    p_status.set_defaults(func=cmd_status)
+
+    p_prune = sub.add_parser("prune", help="Remove old releases according to retention policy")
+    p_prune.set_defaults(func=cmd_prune)
+
+    p_activate = sub.add_parser("activate", help="Activate a verified release")
+    p_activate.add_argument("release_id", help="Release ID (full SHA)")
+    p_activate.set_defaults(func=cmd_activate)
+
+    p_verify = sub.add_parser("verify", help="Verify a release without activating")
+    p_verify.add_argument("release_id", help="Release ID (full SHA)")
+    p_verify.set_defaults(func=cmd_verify)
+
+    return parser
+
+def main():
+    parser = build_parser()
+    args = parser.parse_args()
+    try:
+        return args.func(args)
+    except KeyboardInterrupt:
+        error("interrupted")
+        return EXIT_GENERAL_FAILURE
+    except Exception as e:
+        error(f"unexpected error: {e}")
+        return EXIT_GENERAL_FAILURE
+
+if __name__ == "__main__":
+    sys.exit(main())
