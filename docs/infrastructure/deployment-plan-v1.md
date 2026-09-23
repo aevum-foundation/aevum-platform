@@ -1062,3 +1062,23 @@ Implementation belongs to A4.
 Validation belongs to A5.
 
 Legacy aevum-web disposition belongs to A6.
+
+---
+
+## 14. Implementation Status
+
+| Step | Description                        | Status    |
+|------|------------------------------------|-----------|
+| A1   | Deployment Audit                   | COMPLETE  |
+| A2   | Target Architecture                | COMPLETE  |
+| A3   | Deployment Plan (this document)    | COMPLETE  |
+| A4   | Implementation (`scripts/aevum-deploy`) | COMPLETE |
+| A5   | Validation                         | COMPLETE  |
+| A6   | Legacy Cleanup                     | PENDING   |
+
+Related decisions:
+
+- D-049 — Deployment Architecture
+- D-050 — Deployment Migration
+
+Tool: `scripts/aevum-deploy`, version 0.1.0.

@@ -96,13 +96,17 @@ exists to show what is safe to share now. Nothing else.
 | Documentation Freeze            | ✅     |
 | Deployment Audit v1             | ✅     |
 | A2 Target Architecture          | ✅     |
+| A3 Deployment Plan              | ✅     |
+| A4 Implementation               | ✅     |
+| A5 Deployment Migration         | ✅     |
 
 ### Current State Summary
 
 - **Frontend:** stable. No production defects.
 - **SEO:** full contract deployed on 15/15 pages.
-- **Deployment:** fully manual (audited in A1). No automation exists yet.
-- **Stage 3:** Deployment Automation — A1 + A2 complete, A3 pending.
+- **Deployment:** automated via `aevum-deploy` (V3 atomic staging + swap).
+- **Stage 3:** Deployment Automation — A1–A5 complete, A6 pending.
+- **Production topology:** Apache → /var/www/html → /var/www/active → /var/www/releases/<id>.
 - **Decision Records:** active (`docs/infrastructure/decisions/`).
 - **Architecture debt:** tracked in D-048 (deferred).
 
@@ -128,10 +132,10 @@ exists to show what is safe to share now. Nothing else.
 |------|-----------------------------------------|--------|
 | A1   | Deployment Audit v1                     | DONE   |
 | A2   | Target Deployment Architecture          | DONE   |
-| A3   | Deployment Plan                         | TODO   |
-| A4   | Implementation                          | TODO   |
-| A5   | Validation                              | TODO   |
-| A6   | Legacy `aevum-web` Decision (D-050)     | TODO   |
+| A3   | Deployment Plan                         | DONE   |
+| A4   | Implementation                          | DONE   |
+| A5   | Validation                              | DONE   |
+| A6   | Legacy `aevum-web` Decision (D-051)     | TODO   |
 
 See: `docs/infrastructure/decisions/D-048-frontend-refactor-deferred.md`
 
@@ -265,7 +269,8 @@ docs/
 └── decisions/
 ├── POLICY.md
 ├── D-048-frontend-refactor-deferred.md
-        └── D-049-deployment-architecture.md
+        ├── D-049-deployment-architecture.md
+        └── D-050-deployment-migration.md
 ```
 
 ---
@@ -288,7 +293,7 @@ manifest format, and failure handling. Implementation belongs to A4.
    - P2 Navigation Consistency
    - P3 Page Modules
    - P4 CSS Extraction
-3. **`aevum-web` legacy shutdown** — subject to D-050 (A6).
+3. **`aevum-web` legacy shutdown** — subject to D-051 (A6).
 
 ---
 
