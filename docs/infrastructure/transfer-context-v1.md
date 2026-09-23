@@ -93,12 +93,15 @@ exists to show what is safe to share now. Nothing else.
 | Production Hygiene              | ✅     |
 | Source of Truth documentation   | ✅     |
 | Decision Records infrastructure | ✅     |
+| Documentation Freeze            | ✅     |
+| Deployment Audit v1             | ✅     |
 
 ### Current State Summary
 
 - **Frontend:** stable. No production defects.
 - **SEO:** full contract deployed on 15/15 pages.
-- **Deployment:** manual, source → production, verified.
+- **Deployment:** fully manual (audited in A1). No automation exists yet.
+- **Stage 3:** Deployment Automation — A1 complete, A2 pending.
 - **Decision Records:** active (`docs/infrastructure/decisions/`).
 - **Architecture debt:** tracked in D-048 (deferred).
 
@@ -113,10 +116,21 @@ exists to show what is safe to share now. Nothing else.
 
 | Priority | Item                                    | Status      |
 |----------|-----------------------------------------|-------------|
-| P1       | Documentation Freeze                    | In progress |
+| P1       | Deployment Automation (Stage 3)         | In progress |
 | P2       | Decision Records — expand as needed     | Active      |
 | P3       | Frontend Refactor                       | Deferred    |
 | P4       | Protocol Development                    | Parallel    |
+
+### Stage 3 progress
+
+| Step | Item                                    | Status |
+|------|-----------------------------------------|--------|
+| A1   | Deployment Audit v1                     | DONE   |
+| A2   | Target Deployment Architecture          | TODO   |
+| A3   | Deployment Plan                         | TODO   |
+| A4   | Implementation                          | TODO   |
+| A5   | Validation                              | TODO   |
+| A6   | Legacy `aevum-web` Decision (D-049)     | TODO   |
 
 See: `docs/infrastructure/decisions/D-048-frontend-refactor-deferred.md`
 
@@ -218,6 +232,7 @@ docs/
 └── infrastructure/
 ├── source-of-truth.md
 ├── transfer-context-v1.md      ← this file
+    ├── deployment-audit-v1.md      (Stage 3 — A1)
 └── decisions/
 ├── POLICY.md
 └── D-048-frontend-refactor-deferred.md
@@ -228,7 +243,14 @@ docs/
 
 ## 10. Next Planned Work
 
-After Documentation Freeze completes:
+### Current focus — Stage 3 (Deployment Automation)
+
+Next step: **A2 — Target Deployment Architecture**.
+
+A2 must answer the 7 open questions recorded in
+`docs/infrastructure/deployment-audit-v1.md` § 9.
+
+### After Stage 3
 
 1. **Review D-048** — decide whether frontend refactor trigger has
    fired.
@@ -236,10 +258,7 @@ After Documentation Freeze completes:
    - P2 Navigation Consistency
    - P3 Page Modules
    - P4 CSS Extraction
-3. **Deployment Automation** — replace manual source → production
-   copy with a deterministic deploy script.
-4. **`aevum-web` legacy shutdown** — after deploy automation is in
-   place and verified.
+3. **`aevum-web` legacy shutdown** — subject to D-049 (A6).
 
 ---
 
