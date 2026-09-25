@@ -105,7 +105,7 @@ exists to show what is safe to share now. Nothing else.
 - **Frontend:** stable. No production defects.
 - **SEO:** full contract deployed on 15/15 pages.
 - **Deployment:** automated via `aevum-deploy` (V3 atomic staging + swap).
-- **Stage 3:** Deployment Automation — A1–A5 complete, A6 pending.
+- **Stage 3:** Deployment Automation — COMPLETE (A1–A6).
 - **Production topology:** Apache → /var/www/html → /var/www/active → /var/www/releases/<id>.
 - **Decision Records:** active (`docs/infrastructure/decisions/`).
 - **Architecture debt:** tracked in D-048 (deferred).
@@ -121,10 +121,10 @@ exists to show what is safe to share now. Nothing else.
 
 | Priority | Item                                    | Status      |
 |----------|-----------------------------------------|-------------|
-| P1       | Deployment Automation (Stage 3)         | In progress |
-| P2       | Decision Records — expand as needed     | Active      |
-| P3       | Frontend Refactor                       | Deferred    |
-| P4       | Protocol Development                    | Parallel    |
+| P1       | Deployment Automation (Stage 3)         | DONE        |
+| P2       | Protocol Core                           | Next        |
+| P3       | Decision Records — expand as needed     | Active      |
+| P4       | Frontend Refactor                       | Deferred    |
 
 ### Stage 3 progress
 
@@ -135,7 +135,7 @@ exists to show what is safe to share now. Nothing else.
 | A3   | Deployment Plan                         | DONE   |
 | A4   | Implementation                          | DONE   |
 | A5   | Validation                              | DONE   |
-| A6   | Legacy `aevum-web` Decision (D-051)     | TODO   |
+| A6   | Legacy `aevum-web` Decision (D-051)     | DONE   |
 
 See: `docs/infrastructure/decisions/D-048-frontend-refactor-deferred.md`
 
@@ -270,30 +270,50 @@ docs/
 ├── POLICY.md
 ├── D-048-frontend-refactor-deferred.md
         ├── D-049-deployment-architecture.md
-        └── D-050-deployment-migration.md
+        ├── D-050-deployment-migration.md
+        └── D-051-legacy-aevum-web-disposition.md
 ```
 
 ---
 
 ## 10. Next Planned Work
 
-### Current focus — Stage 3 (Deployment Automation)
+### Current focus — Protocol Core
 
-Next step: **A3 — Deployment Plan** (design only, no implementation yet).
+Stage 3 (Deployment Automation) is COMPLETE (A1–A6).
 
-A3 defines the design of the `aevum-deploy` tool: commands, retention
-policy, verification step, Apache integration, rollback procedure,
-manifest format, and failure handling. Implementation belongs to A4.
+Next step: **Protocol Core Audit.**
 
-### After Stage 3
+Before any protocol changes, a fresh audit of the core is required:
 
-1. **Review D-048** — decide whether frontend refactor trigger has
-   fired.
-2. **Phase C — Frontend Refactor:**
-   - P2 Navigation Consistency
-   - P3 Page Modules
-   - P4 CSS Extraction
-3. **`aevum-web` legacy shutdown** — subject to D-051 (A6).
+- Consensus
+- Presence
+- Emission
+- Settlement
+- Epoch Snapshot
+- Networking
+- Storage
+- Crypto
+- L2 Interfaces
+- Legacy Modules
+
+Reason: the architecture has evolved significantly (block model
+removed, slot/epoch model established, emission v15, EpochSnapshot v2,
+legacy modules still present).
+
+### After Protocol Core
+
+1. **Platform Backend** — stabilize auth, sessions, permissions.
+2. **Unified Account** — single Aevum account across services.
+3. **Waitlist / Early Access** — begin collecting future users.
+4. **Community Hub** — lightweight community inside the platform.
+5. **Forum** — full community platform.
+6. **Mainnet Integration.**
+
+### Deferred
+
+- Frontend Refactor (D-048)
+- `html.old` removal (D-051, event-based)
 
 ---
 
