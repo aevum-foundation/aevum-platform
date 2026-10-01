@@ -49,6 +49,7 @@ pub mod topic_state;
 pub mod source;
 pub mod publication;
 pub mod opportunity;
+pub mod events;
 
 // ---------------------------------------------------------------------------
 // Storage struct
@@ -215,3 +216,4 @@ pub(crate) const EVENT_PREFIX: &str = "growth:event:event:";
 pub(crate) const EVENT_TIMELINE_PREFIX: &str = "growth:event:timeline:";
 pub(crate) const EVENT_BY_KIND_PREFIX: &str = "growth:event:by_kind:";
 pub(crate) const EVENT_BY_TOPIC_PREFIX: &str = "growth:event:by_topic:";
+pub(crate) const EVENT_TIMELINE_ASC_PREFIX: &str = "growth:event:timeline_asc:";
