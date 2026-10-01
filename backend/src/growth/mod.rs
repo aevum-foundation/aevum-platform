@@ -25,3 +25,4 @@ pub mod events;
 pub mod storage;
 pub mod validation;
 pub mod aevumdb;
+pub mod in_memory;
