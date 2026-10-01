@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<rss version="2.0"><channel>
+  <item><title>No identity</title></item>
+  <item>
+    <title>OK</title>
+    <link>https://example.com/ok</link>
+  </item>
+</channel></rss>

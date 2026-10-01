@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <entry>
+    <title>No Id</title>
+    <link rel="alternate" href="https://example.com/1"/>
+  </entry>
+</feed>

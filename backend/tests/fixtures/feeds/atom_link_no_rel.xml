@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <entry>
+    <title>Link Without Rel</title>
+    <link href="https://example.com/1"/>
+  </entry>
+</feed>
