@@ -47,6 +47,7 @@ use crate::error::ApiError;
 // Entity modules are declared as they are implemented.
 pub mod topic_state;
 pub mod source;
+pub mod publication;
 
 // ---------------------------------------------------------------------------
 // Storage struct

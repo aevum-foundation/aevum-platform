@@ -100,6 +100,24 @@ impl PublicationId {
     pub fn as_hex(&self) -> String {
         hex::encode(self.0)
     }
+
+    /// Construct a `PublicationId` from its canonical 32-character
+    /// lowercase hex encoding.
+    ///
+    /// Returns `None` if the input is not exactly 32 hex characters
+    /// or does not decode to 16 bytes.
+    pub fn from_hex(s: &str) -> Option<Self> {
+        if s.len() != 32 {
+            return None;
+        }
+        let bytes = hex::decode(s).ok()?;
+        if bytes.len() != 16 {
+            return None;
+        }
+        let mut out = [0u8; 16];
+        out.copy_from_slice(&bytes);
+        Some(Self(out))
+    }
 }
 
 impl fmt::Display for PublicationId {
