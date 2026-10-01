@@ -46,6 +46,7 @@ use crate::error::ApiError;
 
 // Entity modules are declared as they are implemented.
 pub mod topic_state;
+pub mod source;
 
 // ---------------------------------------------------------------------------
 // Storage struct
@@ -187,20 +188,19 @@ pub(crate) fn map_db_error(error: DbError) -> ApiError {
 // ---------------------------------------------------------------------------
 
 // Source
-pub(crate) const SOURCE_PREFIX: &str = "growth:source:";
-pub(crate) const SOURCE_BY_HANDLE_PREFIX: &str = "growth:source:by_handle:";
+pub(crate) const SOURCE_PREFIX: &str = "growth:source:id:";
 pub(crate) const SOURCE_BY_TOPIC_PREFIX: &str = "growth:source:by_topic:";
 pub(crate) const SOURCE_BY_STATUS_PREFIX: &str = "growth:source:by_status:";
 
 // Publication
-pub(crate) const PUBLICATION_PREFIX: &str = "growth:publication:";
+pub(crate) const PUBLICATION_PREFIX: &str = "growth:publication:id:";
 pub(crate) const PUBLICATION_BY_SOURCE_PREFIX: &str = "growth:publication:by_source:";
 pub(crate) const PUBLICATION_BY_TOPIC_PREFIX: &str = "growth:publication:by_topic:";
 pub(crate) const PUBLICATION_BY_TIME_PREFIX: &str = "growth:publication:by_time:";
 pub(crate) const PUBLICATION_BY_EXTERNAL_PREFIX: &str = "growth:publication:by_external:";
 
 // Opportunity
-pub(crate) const OPPORTUNITY_PREFIX: &str = "growth:opportunity:";
+pub(crate) const OPPORTUNITY_PREFIX: &str = "growth:opportunity:id:";
 pub(crate) const OPPORTUNITY_BY_TOPIC_PREFIX: &str = "growth:opportunity:by_topic:";
 pub(crate) const OPPORTUNITY_BY_KIND_PREFIX: &str = "growth:opportunity:by_kind:";
 pub(crate) const OPPORTUNITY_BY_SCORE_PREFIX: &str = "growth:opportunity:by_score:";
