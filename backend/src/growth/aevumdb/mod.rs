@@ -48,6 +48,7 @@ use crate::error::ApiError;
 pub mod topic_state;
 pub mod source;
 pub mod publication;
+pub mod opportunity;
 
 // ---------------------------------------------------------------------------
 // Storage struct
