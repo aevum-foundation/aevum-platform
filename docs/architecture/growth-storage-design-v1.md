@@ -76,7 +76,6 @@ or inverted score), not through engine behavior.
 All Growth keys use the domain root:
 growth:
 
-text
 
 No other prefix is permitted. `platform:` is not used.
 
@@ -120,7 +119,6 @@ ts_micros = timestamp.timestamp_micros()
 asc = format!("{:020}", ts_micros)
 desc = format!("{:020}", u64::MAX - ts_micros)
 
-text
 
 All timestamps use UTC, microseconds, unsigned, width 20.
 
@@ -129,7 +127,6 @@ score_bp ∈ [0, 10_000]
 inv_score = u64::MAX - (score_bp as u64)
 desc = format!("{:020}", inv_score)
 
-text
 
 Score is always stored in basis points (`u32`), but the encoded
 value is `u64` to guarantee a uniform width of 20 digits.
@@ -150,7 +147,6 @@ Publications have two timestamp fields:
 Growth defines:
 effective_ts = published_at.unwrap_or(ingested_at)
 
-text
 
 `effective_ts` is the ONLY timestamp used in Publication indexes.
 `published_at` remains available in the stored record but MUST
@@ -184,16 +180,13 @@ The rule MUST be reflected in the ordering contract table
 ## 8. Key Layout — Source
 
 Primary:
-growth:source:{source_id}
+growth:source:id:{source_id}
 
-text
 
 Secondary indexes:
-growth:source:by_handle:{platform}:{handle}:{source_id}
 growth:source:by_topic:{topic}:{source_id}
 growth:source:by_status:{status}:{source_id}
 
-text
 
 Notes:
 
@@ -208,25 +201,24 @@ Notes:
 
 Uniqueness:
 
-- `by_handle` enforces that a given platform handle maps to at
-  most one Source. Write logic MUST check for existing
-  `by_handle` entries before insert.
+- There is no storage-level uniqueness constraint on Source in
+  Phase 1. Uniqueness is provided by `SourceId`, which is
+  deterministic over `(platform, feed_url)`: two writes for the
+  same feed overwrite the same primary key.
 
 ---
 
 ## 9. Key Layout — Publication
 
 Primary:
-growth:publication:{publication_id}
+growth:publication:id:{publication_id}
 
-text
 
 Secondary indexes:
 growth:publication:by_source:{source_id}:{inv_ts}:{publication_id}
 growth:publication:by_topic:{topic}:{inv_ts}:{publication_id}
 growth:publication:by_time:{inv_ts}:{publication_id}
 
-text
 
 Where:
 
@@ -235,13 +227,24 @@ Where:
 - `by_time` provides a global recent-publications feed.
 - `by_source` and `by_topic` provide filtered feeds.
 
-Additional uniqueness index:
-growth:publication:by_external:{source_id}:{external_id}:{publication_id}
+Deterministic lookup index:
+growth:publication:by_external:{source_id}:{external_id}
 
-text
 
 Used by `publication_exists(source_id, external_id)` to answer in
 O(1) without scanning publications.
+
+`by_external` is NOT a storage-level uniqueness constraint. It is
+a deterministic lookup keyed by `(source_id, external_id)`.
+Uniqueness is guaranteed by `PublicationId`, which is itself
+deterministic:
+
+    PublicationId = SHA256("pub:" + source_id + ":" + external_id)[..16]
+
+Two publications with the same `(source_id, external_id)` produce
+the same `PublicationId` and therefore overwrite the same primary
+key. There is no possibility of two logical publications sharing
+the same external identity.
 
 All publication indexes MUST be written in the same batch as the
 primary. They MUST be deleted in the same batch as the primary
@@ -253,16 +256,14 @@ are immutable and are not deleted).
 ## 10. Key Layout — Opportunity
 
 Primary:
-growth:opportunity:{opportunity_id}
+growth:opportunity:id:{opportunity_id}
 
-text
 
 Secondary indexes:
 growth:opportunity:by_topic:{topic}:{inv_score}:{opportunity_id}
 growth:opportunity:by_kind:{kind}:{inv_score}:{opportunity_id}
 growth:opportunity:by_score:{inv_score}:{opportunity_id}
 
-text
 
 Where:
 
@@ -282,7 +283,6 @@ Opportunity is hard-deleted.
 Primary (and only) key:
 growth:topic:state:{topic}
 
-text
 
 Notes:
 
@@ -299,7 +299,6 @@ Topic itself is a compile-time enum. There is no persisted
 introduced later, it MUST use:
 growth:topic:{topic}
 
-text
 
 ---
 
@@ -308,29 +307,45 @@ text
 Primary:
 growth:event:event:{event_id}
 
-text
 
 Secondary indexes:
 growth:event:timeline:{inv_ts}:{event_id}
+growth:event:timeline_asc:{ts}:{event_id}
 growth:event:by_kind:{kind}:{inv_ts}:{event_id}
 growth:event:by_topic:{topic}:{inv_ts}:{event_id}
 
-text
 
 Where:
 
 - `inv_ts = u64::MAX - occurred_at_micros`, encoded as `{:020}`.
+- `ts = occurred_at_micros`, encoded as `{:020}`.
 - `event_id` is UUID v4 (hyphenated), acts as tie-breaker.
-- `timeline` provides a global recent-events feed.
-- `by_kind` and `by_topic` provide filtered event feeds.
+
+Two timeline indexes are maintained because the two read
+operations require opposite orders:
+
+- `timeline` (inverted timestamp) provides DESC order for
+  `get_recent_events` and for the `prune_events_before` scan.
+- `timeline_asc` (ascending timestamp) provides ASC order for
+  `get_events_since`.
+
+`by_kind` and `by_topic` use inverted timestamp and provide DESC
+order, matching `get_recent_events` semantics.
 
 Events are append-only. There is no `delete_event` primitive.
 Events are removed only via `prune_events_before(ts)`.
 
-For `get_events_since(ts, limit)` the adapter uses
-`timeline` and scans ASC through a forward scan over the
-inverted-time key space. The exact mechanism is left to the
-adapter, but it MUST NOT require `range_scan`.
+For `get_events_since(ts, limit)` the adapter currently performs a
+full scan of `timeline_asc`, filters `occurred_at >= ts` in the
+adapter, and truncates to `limit`. This is correctness-neutral but
+not optimal. A future AevumDB `range_scan(start, end, limit)`
+primitive will replace the full scan without changing the public
+contract.
+
+`prune_events_before(ts)` currently scans the full `timeline` and
+filters `occurred_at < ts`. It does not use the ordering as an
+early-exit optimization. A future `range_scan` will allow the
+scan to stop at the cutoff.
 
 All event indexes are written in the same batch as the primary.
 
@@ -340,12 +355,18 @@ All event indexes are written in the same batch as the primary.
 
 Growth applies the following uniqueness rules:
 
-- **Source**: unique by `by_handle` (per platform+handle). The
-  adapter MUST check `by_handle` before writing a new Source.
-- **Publication**: unique by
-  `by_external:{source_id}:{external_id}`. The adapter MUST check
-  this index before inserting a Publication. This is the
-  `publication_exists` primitive.
+- **Source**: no storage-level uniqueness constraint in Phase 1.
+  `SourceId` is deterministic (see section 4), so two writes for
+  the same `(platform, feed_url)` produce the same primary key
+  and overwrite the same record. A `by_handle` index will be
+  introduced when the `Source` model gains an explicit `handle`
+  field (see section 23).
+- **Publication**: no storage-level uniqueness constraint.
+  `PublicationId` is deterministic (see section 4), so two writes
+  for the same `(source_id, external_id)` produce the same
+  primary key and overwrite the same record. The `by_external`
+  index (section 9) is a deterministic lookup for
+  `publication_exists`, not a constraint.
 - **Opportunity**: no uniqueness constraint. Each detection is a
   new record.
 - **GrowthEvent**: no uniqueness constraint. Each emission is a
@@ -404,6 +425,11 @@ Declared per STORAGE STANDARD v1 section 16.
 
 Cascade rules:
 
+- **Publication is immutable after write.** Its `published_at`,
+  `ingested_at`, `topics`, `source_id`, and `external_id` MUST NOT
+  change once stored. `put_publication` is therefore an idempotent
+  upsert keyed by deterministic `PublicationId`; it does not
+  remove stale index entries.
 - Source soft delete MUST NOT remove its Publications. Publications
   remain part of the historical record.
 - If a Source is ever hard-deleted (future), the adapter MUST
@@ -456,7 +482,7 @@ per the general rule in section 7.
 Multi-key writes MUST use a single `db.batch()` per logical
 operation. This applies to:
 
-- Source insert: primary + `by_handle` + `by_topic` + `by_status`
+- Source insert: primary + `by_topic` + `by_status`
 - Source update: primary + affected indexes
 - Publication insert: primary + `by_source` + `by_topic` +
   `by_time` + `by_external`
@@ -470,7 +496,6 @@ Batch size for `prune_events_before` is capped by a private
 implementation constant:
 const PRUNE_BATCH_SIZE: usize = 500;
 
-text
 
 This constant is an implementation detail and MUST NOT be part
 of the public contract. It MAY be tuned without a version bump.
@@ -512,7 +537,6 @@ The adapter MUST be implementable today even if
 back to:
 prefix_scan(prefix) + take(limit) in memory
 
-text
 
 The fallback is correctness-neutral. It is less efficient for
 large prefixes. Growth MUST NOT block on the availability of
@@ -520,6 +544,12 @@ large prefixes. Growth MUST NOT block on the availability of
 
 If and when `prefix_scan_limited` is confirmed in production,
 the adapter MAY switch to it without changing its public contract.
+
+The same pattern applies to `range_scan(start, end, limit)`.
+Growth currently performs full scans for `get_events_since` and
+`prune_events_before` and filters in the adapter. When
+`range_scan` becomes available, the adapter MAY switch to it
+without changing the public contract.
 
 The list methods most likely to benefit:
 
@@ -550,8 +580,8 @@ Required tests:
    newer event sorts before older event in a DESC index).
 3. **Prefix boundaries** — a prefix MUST NOT match a sibling
    entity. For example,
-   `growth:source:by_handle:rss:` MUST NOT match
-   `growth:source:by_handle:atom:`.
+   `growth:source:by_topic:rust:` MUST NOT match
+   `growth:source:by_topic:post_quantum:`.
 4. **Timestamp encoding** — `format!("{:020}", ts)` MUST be
    monotone: for `ts_a < ts_b`, the encoded strings satisfy
    `enc_a < enc_b`.
