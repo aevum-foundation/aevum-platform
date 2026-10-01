@@ -15,6 +15,7 @@
 //! ```
 
 pub mod rss;
+pub mod fetcher;
 
 use chrono::{DateTime, Utc};
 
