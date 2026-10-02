@@ -263,34 +263,42 @@ where
     S: PublicationStorage + SourceStorage + OpportunityStorage + Send + Sync,
     F: Fetch,
 {
-    /// Load trends and detect opportunities with evidence.
-    ///
-    /// This is the single analysis entrypoint used by the CLI, the
-    /// HTTP API, and (future) the scheduler.
-    ///
-    /// # Evidence
-    ///
-    /// Each detected opportunity carries the IDs of the publications
-    /// that contributed to the signal. Evidence is looked up per
-    /// topic from the most recent publications. Topics that do not
-    /// fire any signal are never looked up.
-    ///
-    /// # Phase 1 limitation
-    ///
-    /// Loads at most `ANALYSIS_MAX_PUBLICATIONS` recent publications.
-    /// Correctness-neutral for small datasets, incomplete at scale.
-    /// The correct approach is a time-bounded scan `[now - 30d, now]`
-    /// (AevumDB Tier-1 primitive, tracked in module docs).
-    pub async fn analyze_opportunities(
+    // ─── Data access ────────────────────────────────────────
+
+    /// List sources from storage.
+    pub async fn list_sources(&self, limit: usize) -> Result<Vec<Source>, ApiError> {
+        self.storage.list_sources(limit).await
+    }
+
+    /// List the most recent publications.
+    pub async fn list_recent_publications(
         &self,
-    ) -> Result<AnalysisResult, ApiError> {
-        // 1. Load recent publications once.
+        limit: usize,
+    ) -> Result<Vec<Publication>, ApiError> {
+        self.storage.list_recent_publications(limit).await
+    }
+
+    /// List recent publications for a specific topic.
+    pub async fn list_publications_by_topic(
+        &self,
+        topic: Topic,
+        limit: usize,
+    ) -> Result<Vec<Publication>, ApiError> {
+        self.storage.list_publications_by_topic(topic, limit).await
+    }
+
+    // ─── Trend analysis ─────────────────────────────────────
+
+    /// Compute trends for every topic.
+    ///
+    /// Does NOT detect opportunities. This method is the only
+    /// dependency of the trend endpoints.
+    pub async fn compute_trends(&self) -> Result<Vec<TopicTrend>, ApiError> {
         let publications = self
             .storage
             .list_recent_publications(ANALYSIS_MAX_PUBLICATIONS)
             .await?;
 
-        // 2. Build trend inputs.
         let inputs: Vec<TrendInput> = publications
             .iter()
             .map(|p| TrendInput {
@@ -299,44 +307,91 @@ where
             })
             .collect();
 
-        // 3. Compute trends.
         let now = Utc::now();
-        let trends = trends::compute_all(&inputs, now);
+        Ok(trends::compute_all(&inputs, now))
+    }
 
-        // 4. Build evidence map: topic -> publications within the
-        //    signal window.
-        //
-        // The acceleration and emerging detectors both consider
-        // only publications within the last 30 days. We therefore
-        // restrict evidence to the same window. This keeps
-        // `Opportunity::evidence` consistent with the trend counts
-        // that produced the signal.
-        //
-        // Phase 1 uses 30 days as the widest signal window. If a
-        // future detector uses a different window, this filter must
-        // be extended (e.g. per-kind evidence maps).
+    /// Compute the trend for a single topic.
+    ///
+    /// Returns the `TopicTrend` entry for the requested topic from
+    /// `compute_trends()`. Always present, because `compute_all`
+    /// returns one entry per `Topic::ALL` member.
+    pub async fn trend_for_topic(
+        &self,
+        topic: Topic,
+    ) -> Result<TopicTrend, ApiError> {
+        let trends = self.compute_trends().await?;
+        trends
+            .into_iter()
+            .find(|t| t.topic == topic)
+            .ok_or_else(|| {
+                log::error!("Growth service: no trend for topic {:?}", topic);
+                ApiError::Internal
+            })
+    }
+
+    // ─── Evidence ───────────────────────────────────────────
+
+    /// Collect evidence publications for a topic.
+    ///
+    /// This is a dumb data-access method: it does NOT filter by
+    /// time window, score, or signal type. All policy lives in the
+    /// caller (opportunity engine, topic_report, HTML renderer).
+    pub async fn collect_evidence(
+        &self,
+        topic: Topic,
+        limit: usize,
+    ) -> Result<Vec<OpportunityEvidence>, ApiError> {
+        let publications = self
+            .storage
+            .list_publications_by_topic(topic, limit)
+            .await?;
+
+        Ok(publications
+            .into_iter()
+            .map(|p| {
+                let effective_ts = p.published_at.unwrap_or(p.ingested_at);
+                OpportunityEvidence {
+                    publication_id: Some(p.id),
+                    effective_ts,
+                }
+            })
+            .collect())
+    }
+
+    // ─── Opportunity analysis ───────────────────────────────
+
+    /// Load trends and detect opportunities with evidence.
+    ///
+    /// This is the single analysis entrypoint used by the CLI and
+    /// (future) the scheduler.
+    ///
+    /// # Evidence
+    ///
+    /// Each detected opportunity carries the IDs of the publications
+    /// that contributed to the signal. Evidence is restricted to the
+    /// 30-day signal window, matching `count_30d`.
+    pub async fn analyze_opportunities(&self) -> Result<AnalysisResult, ApiError> {
+        let trends = self.compute_trends().await?;
         let now = Utc::now();
         let evidence_cutoff = now - chrono::Duration::days(30);
 
         let mut evidence_map: HashMap<Topic, Vec<OpportunityEvidence>> =
             HashMap::new();
-        for p in &publications {
-            let effective_ts = p.published_at.unwrap_or(p.ingested_at);
-            if effective_ts < evidence_cutoff {
+        for trend in &trends {
+            if trend.count_30d == 0 {
                 continue;
             }
-            for topic in &p.topics {
-                evidence_map
-                    .entry(*topic)
-                    .or_default()
-                    .push(OpportunityEvidence {
-                        publication_id: Some(p.id),
-                        effective_ts,
-                    });
+            let evidence = self.collect_evidence(trend.topic, ANALYSIS_MAX_PUBLICATIONS).await?;
+            let filtered: Vec<OpportunityEvidence> = evidence
+                .into_iter()
+                .filter(|e| e.effective_ts >= evidence_cutoff)
+                .collect();
+            if !filtered.is_empty() {
+                evidence_map.insert(trend.topic, filtered);
             }
         }
 
-        // 5. Detect opportunities, passing real evidence.
         let opportunities = opportunities::detect_all(&trends, now, |topic| {
             evidence_map.get(&topic).cloned().unwrap_or_default()
         });
@@ -345,6 +400,34 @@ where
             trends,
             opportunities,
         })
+    }
+
+    /// Return opportunities for a single topic.
+    pub async fn opportunities_for_topic(
+        &self,
+        topic: Topic,
+    ) -> Result<Vec<Opportunity>, ApiError> {
+        let trends = self.compute_trends().await?;
+        let now = Utc::now();
+        let evidence_cutoff = now - chrono::Duration::days(30);
+
+        let topic_trends: Vec<TopicTrend> = trends
+            .into_iter()
+            .filter(|t| t.topic == topic)
+            .collect();
+
+        if topic_trends.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let evidence = self.collect_evidence(topic, ANALYSIS_MAX_PUBLICATIONS).await?;
+        let evidence: Vec<OpportunityEvidence> = evidence
+            .into_iter()
+            .filter(|e| e.effective_ts >= evidence_cutoff)
+            .collect();
+
+        let opps = opportunities::detect_all(&topic_trends, now, |_t| evidence.clone());
+        Ok(opps)
     }
 }
 
@@ -632,6 +715,72 @@ mod tests {
             .unwrap();
         assert_eq!(pubs.len(), 1);
         assert!(pubs[0].url.is_none());
+    }
+
+    #[tokio::test]
+    async fn compute_trends_returns_only_trends() {
+        let storage = InMemoryGrowthStorage::new();
+        let fetcher = StubFetcher::ok(RSS_ONE_ITEM);
+        let service = GrowthService::with_fetcher(storage, fetcher);
+
+        let source = make_source(vec![Topic::StorageSystems]);
+        service.ingest_source(&source).await.unwrap();
+
+        let trends = service.compute_trends().await.unwrap();
+        assert_eq!(trends.len(), 6, "one trend per Topic::ALL entry");
+    }
+
+    #[tokio::test]
+    async fn trend_for_topic_returns_single_trend() {
+        let storage = InMemoryGrowthStorage::new();
+        let fetcher = StubFetcher::ok(RSS_ONE_ITEM);
+        let service = GrowthService::with_fetcher(storage, fetcher);
+
+        let source = make_source(vec![Topic::StorageSystems]);
+        service.ingest_source(&source).await.unwrap();
+
+        let trend = service.trend_for_topic(Topic::StorageSystems).await.unwrap();
+        assert_eq!(trend.topic, Topic::StorageSystems);
+        assert_eq!(trend.count_30d, 1);
+    }
+
+    #[tokio::test]
+    async fn opportunities_for_topic_returns_filtered() {
+        let storage = InMemoryGrowthStorage::new();
+        let fetcher = StubFetcher::ok(RSS_ONE_ITEM);
+        let service = GrowthService::with_fetcher(storage, fetcher);
+
+        let source = make_source(vec![Topic::StorageSystems]);
+        service.ingest_source(&source).await.unwrap();
+
+        let opps = service
+            .opportunities_for_topic(Topic::StorageSystems)
+            .await
+            .unwrap();
+
+        // Only opportunities for the requested topic.
+        for opp in &opps {
+            assert_eq!(opp.topic, Topic::StorageSystems);
+        }
+    }
+
+    #[tokio::test]
+    async fn collect_evidence_is_dumb_data_access() {
+        let storage = InMemoryGrowthStorage::new();
+        let fetcher = StubFetcher::ok(RSS_ONE_ITEM);
+        let service = GrowthService::with_fetcher(storage, fetcher);
+
+        let source = make_source(vec![Topic::StorageSystems]);
+        service.ingest_source(&source).await.unwrap();
+
+        let evidence = service
+            .collect_evidence(Topic::StorageSystems, 10)
+            .await
+            .unwrap();
+
+        // Should have exactly one publication for this topic.
+        assert_eq!(evidence.len(), 1);
+        assert!(evidence[0].publication_id.is_some());
     }
 
     #[tokio::test]
