@@ -29,5 +29,6 @@ pub mod in_memory;
 pub mod ingestion;
 pub mod registry;
 pub mod analysis;
+pub mod service;
 #[cfg(test)]
 pub mod conformance;
