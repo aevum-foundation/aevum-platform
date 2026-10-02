@@ -12,6 +12,7 @@ use crate::error::ApiError;
 use super::models::{
     Opportunity, Publication, Source, TopicTrend,
 };
+use super::service::TopicReport;
 use super::validation::ValidationError;
 
 // ---------------------------------------------------------------------------
@@ -126,6 +127,41 @@ pub struct GrowthMetricsResponse {
 // Domain → API conversions
 // ---------------------------------------------------------------------------
 
+/// Health/status snapshot for the Growth subsystem.
+///
+/// Served by `GET /growth/health`.
+#[derive(Debug, Clone, Serialize)]
+pub struct GrowthHealthResponse {
+    pub sources: usize,
+    pub topics: usize,
+    pub opportunities: usize,
+    pub generated_at: DateTime<Utc>,
+}
+
+/// Summary of a single topic for `GET /growth/topics`.
+#[derive(Debug, Clone, Serialize)]
+pub struct TopicSummaryResponse {
+    pub topic: String,
+    pub count_24h: u32,
+    pub count_7d: u32,
+    pub count_30d: u32,
+    pub ratio_7d_vs_30d_bp: u32,
+    /// True when `ratio_7d_vs_30d_bp` exceeds the acceleration
+    /// threshold (2.0×). Presentation layers use this without
+    /// re-deriving the threshold.
+    pub accelerating: bool,
+}
+
+/// Full report for `GET /growth/topics/{topic}`.
+#[derive(Debug, Clone, Serialize)]
+pub struct TopicReportResponse {
+    pub topic: String,
+    pub generated_at: DateTime<Utc>,
+    pub trend: TopicTrendResponse,
+    pub recent_publications: Vec<PublicationResponse>,
+    pub opportunities: Vec<OpportunityResponse>,
+}
+
 impl From<&Source> for SourceResponse {
     fn from(source: &Source) -> Self {
         Self {
@@ -205,6 +241,40 @@ impl From<&Opportunity> for OpportunityResponse {
 // ---------------------------------------------------------------------------
 // ValidationError → ApiError
 // ---------------------------------------------------------------------------
+
+impl From<&TopicTrend> for TopicSummaryResponse {
+    fn from(trend: &TopicTrend) -> Self {
+        use crate::growth::analysis::trends::ACCELERATION_THRESHOLD_BP;
+        Self {
+            topic: trend.topic.as_str().to_owned(),
+            count_24h: trend.count_24h,
+            count_7d: trend.count_7d,
+            count_30d: trend.count_30d,
+            ratio_7d_vs_30d_bp: trend.ratio_7d_vs_30d_bp,
+            accelerating: trend.ratio_7d_vs_30d_bp > ACCELERATION_THRESHOLD_BP,
+        }
+    }
+}
+
+impl From<TopicReport> for TopicReportResponse {
+    fn from(report: TopicReport) -> Self {
+        Self {
+            topic: report.trend.topic.as_str().to_owned(),
+            generated_at: report.generated_at,
+            trend: TopicTrendResponse::from(&report.trend),
+            recent_publications: report
+                .recent_publications
+                .iter()
+                .map(PublicationResponse::from)
+                .collect(),
+            opportunities: report
+                .opportunities
+                .iter()
+                .map(OpportunityResponse::from)
+                .collect(),
+        }
+    }
+}
 
 impl From<ValidationError> for ApiError {
     fn from(error: ValidationError) -> Self {

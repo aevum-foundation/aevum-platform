@@ -25,6 +25,8 @@ pub mod events;
 pub mod storage;
 pub mod validation;
 pub mod aevumdb;
+pub mod api;
+pub mod api_impl;
 pub mod in_memory;
 pub mod ingestion;
 pub mod registry;

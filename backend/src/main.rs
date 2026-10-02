@@ -71,12 +71,41 @@ async fn main() -> std::io::Result<()> {
     let notification_api: std::sync::Arc<dyn NotificationApi> = notification_service.clone();
     let notification_api_data = actix_web::web::Data::new(notification_api);
 
+    // ─── Growth API ────────────────────────────────────────
+    //
+    // Opens its own AevumDB handle at AEVUM_GROWTH_DB (default
+    // ./data/growth). The single-writer advisory lock inside
+    // AevumDb::open prevents this process from sharing the
+    // directory with a concurrently running `growth ingest` CLI.
+    let growth_db_path = std::env::var("AEVUM_GROWTH_DB")
+        .ok()
+        .filter(|p| !p.trim().is_empty())
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| std::path::PathBuf::from("./data/growth"));
+
+    tracing::info!("Growth: opening AevumDB at {}", growth_db_path.display());
+
+    let growth_storage = aevum_platform_api::growth::aevumdb::AevumDbGrowthStorage::open(
+        aevum_db::DbConfig::plaintext(growth_db_path),
+        aevum_db::DbRuntime::plaintext(),
+    )
+    .expect("Growth: failed to open AevumDB");
+
+    let growth_service = std::sync::Arc::new(
+        aevum_platform_api::growth::service::GrowthService::new(growth_storage)
+            .expect("Growth: failed to build GrowthService"),
+    );
+
+    let growth_api = aevum_platform_api::growth::api_impl::into_app(growth_service);
+    let growth_api_data = actix_web::web::Data::new(growth_api);
+
     let server = HttpServer::new(move || {
         App::new()
             .app_data(actix_web::web::Data::new(app_state.clone()))
             .app_data(auth_api_data.clone())
             .app_data(community_api_data.clone())
             .app_data(notification_api_data.clone())
+            .app_data(growth_api_data.clone())
             .wrap(Logger::default())
             .wrap(AuthMiddleware::new(auth_middleware_data.clone()))
             .wrap(CsrfMiddleware::new(actix_web::web::Data::new(
@@ -86,6 +115,7 @@ async fn main() -> std::io::Result<()> {
             .configure(api::auth::configure)
             .configure(api::community::configure)
             .configure(api::notifications::configure)
+            .configure(api::growth::configure)
     })
     .bind((host.as_str(), port))?
     .disable_signals()
