@@ -54,7 +54,7 @@ impl LimitQuery {
 // ---------------------------------------------------------------------------
 
 /// GET /growth/health
-#[get("/growth/health")]
+#[get("/api/growth/health")]
 pub async fn health(
     service: web::Data<AppGrowthService>,
 ) -> Result<HttpResponse, ApiError> {
@@ -63,7 +63,7 @@ pub async fn health(
 }
 
 /// GET /growth/topics
-#[get("/growth/topics")]
+#[get("/api/growth/topics")]
 pub async fn list_topics(
     service: web::Data<AppGrowthService>,
 ) -> Result<HttpResponse, ApiError> {
@@ -75,7 +75,7 @@ pub async fn list_topics(
 ///
 /// `{topic}` is a canonical URL slug ("post_quantum", "rust", ...).
 /// Unknown slugs return 400 with a validation error.
-#[get("/growth/topics/{topic}")]
+#[get("/api/growth/topics/{topic}")]
 pub async fn topic_report(
     service: web::Data<AppGrowthService>,
     path: web::Path<String>,
@@ -87,7 +87,7 @@ pub async fn topic_report(
 }
 
 /// GET /growth/opportunities?limit=N
-#[get("/growth/opportunities")]
+#[get("/api/growth/opportunities")]
 pub async fn list_opportunities(
     service: web::Data<AppGrowthService>,
     query: web::Query<LimitQuery>,
@@ -98,7 +98,7 @@ pub async fn list_opportunities(
 }
 
 /// GET /growth/sources?limit=N
-#[get("/growth/sources")]
+#[get("/api/growth/sources")]
 pub async fn list_sources(
     service: web::Data<AppGrowthService>,
     query: web::Query<LimitQuery>,
