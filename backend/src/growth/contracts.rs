@@ -96,6 +96,10 @@ pub struct TopicTrendResponse {
     pub count_7d: u32,
     pub count_30d: u32,
     pub ratio_7d_vs_30d_bp: u32,
+    /// True when `ratio_7d_vs_30d_bp` exceeds the acceleration
+    /// threshold (2.0×). Presentation layers use this without
+    /// re-deriving the threshold.
+    pub accelerating: bool,
     pub computed_at: DateTime<Utc>,
 }
 
@@ -209,12 +213,14 @@ impl From<&Publication> for PublicationResponse {
 
 impl From<&TopicTrend> for TopicTrendResponse {
     fn from(trend: &TopicTrend) -> Self {
+        use crate::growth::analysis::trends::ACCELERATION_THRESHOLD_BP;
         Self {
             topic: trend.topic.as_str().to_owned(),
             count_24h: trend.count_24h,
             count_7d: trend.count_7d,
             count_30d: trend.count_30d,
             ratio_7d_vs_30d_bp: trend.ratio_7d_vs_30d_bp,
+            accelerating: trend.ratio_7d_vs_30d_bp > ACCELERATION_THRESHOLD_BP,
             computed_at: trend.computed_at,
         }
     }

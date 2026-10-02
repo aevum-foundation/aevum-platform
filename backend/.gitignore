@@ -1,0 +1,10 @@
+# Runtime database directories
+/data/
+*.db/
+*.db.lock
+
+# Local AevumDB files
+**/metadata.lock
+
+# Build artifacts
+/target/

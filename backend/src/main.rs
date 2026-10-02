@@ -116,6 +116,7 @@ async fn main() -> std::io::Result<()> {
             .configure(api::community::configure)
             .configure(api::notifications::configure)
             .configure(api::growth::configure)
+            .configure(api::public::configure)
     })
     .bind((host.as_str(), port))?
     .disable_signals()
