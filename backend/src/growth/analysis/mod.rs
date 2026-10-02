@@ -8,3 +8,4 @@
 
 pub mod classifier;
 pub mod trends;
+pub mod opportunities;
