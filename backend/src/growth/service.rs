@@ -72,16 +72,38 @@
 
 use chrono::Utc;
 
+use std::collections::HashMap;
+
 use crate::error::ApiError;
 use crate::growth::analysis::classifier;
+use crate::growth::analysis::opportunities::{self, OpportunityEvidence};
+use crate::growth::analysis::trends::{self, TrendInput};
 use crate::growth::ingestion::fetcher::Fetcher;
 use crate::growth::ingestion::rss;
-use crate::growth::models::{Publication, PublicationId, Source};
-use crate::growth::storage::{PublicationStorage, SourceStorage};
+use crate::growth::models::{
+    Opportunity, Publication, PublicationId, Source, Topic, TopicTrend,
+};
+use crate::growth::storage::{OpportunityStorage, PublicationStorage, SourceStorage};
 
 // ---------------------------------------------------------------------------
 // Stats
 // ---------------------------------------------------------------------------
+
+/// Result of an analysis run.
+///
+/// Carries both the trend snapshot and the opportunities detected
+/// from it, so that callers (CLI, HTTP API, scheduler) share the
+/// same view of "what was computed in this pass".
+#[derive(Debug, Clone)]
+pub struct AnalysisResult {
+    pub trends: Vec<TopicTrend>,
+    pub opportunities: Vec<Opportunity>,
+}
+
+/// Maximum number of publications loaded per analysis run.
+///
+/// See the module docs for the Phase 1 limitation.
+const ANALYSIS_MAX_PUBLICATIONS: usize = 10_000;
 
 /// Summary of a single source ingestion run.
 ///
@@ -233,6 +255,96 @@ where
     /// Access the underlying storage.
     pub fn storage(&self) -> &S {
         &self.storage
+    }
+}
+
+impl<S, F> GrowthService<S, F>
+where
+    S: PublicationStorage + SourceStorage + OpportunityStorage + Send + Sync,
+    F: Fetch,
+{
+    /// Load trends and detect opportunities with evidence.
+    ///
+    /// This is the single analysis entrypoint used by the CLI, the
+    /// HTTP API, and (future) the scheduler.
+    ///
+    /// # Evidence
+    ///
+    /// Each detected opportunity carries the IDs of the publications
+    /// that contributed to the signal. Evidence is looked up per
+    /// topic from the most recent publications. Topics that do not
+    /// fire any signal are never looked up.
+    ///
+    /// # Phase 1 limitation
+    ///
+    /// Loads at most `ANALYSIS_MAX_PUBLICATIONS` recent publications.
+    /// Correctness-neutral for small datasets, incomplete at scale.
+    /// The correct approach is a time-bounded scan `[now - 30d, now]`
+    /// (AevumDB Tier-1 primitive, tracked in module docs).
+    pub async fn analyze_opportunities(
+        &self,
+    ) -> Result<AnalysisResult, ApiError> {
+        // 1. Load recent publications once.
+        let publications = self
+            .storage
+            .list_recent_publications(ANALYSIS_MAX_PUBLICATIONS)
+            .await?;
+
+        // 2. Build trend inputs.
+        let inputs: Vec<TrendInput> = publications
+            .iter()
+            .map(|p| TrendInput {
+                topics: p.topics.clone(),
+                effective_ts: p.published_at.unwrap_or(p.ingested_at),
+            })
+            .collect();
+
+        // 3. Compute trends.
+        let now = Utc::now();
+        let trends = trends::compute_all(&inputs, now);
+
+        // 4. Build evidence map: topic -> publications within the
+        //    signal window.
+        //
+        // The acceleration and emerging detectors both consider
+        // only publications within the last 30 days. We therefore
+        // restrict evidence to the same window. This keeps
+        // `Opportunity::evidence` consistent with the trend counts
+        // that produced the signal.
+        //
+        // Phase 1 uses 30 days as the widest signal window. If a
+        // future detector uses a different window, this filter must
+        // be extended (e.g. per-kind evidence maps).
+        let now = Utc::now();
+        let evidence_cutoff = now - chrono::Duration::days(30);
+
+        let mut evidence_map: HashMap<Topic, Vec<OpportunityEvidence>> =
+            HashMap::new();
+        for p in &publications {
+            let effective_ts = p.published_at.unwrap_or(p.ingested_at);
+            if effective_ts < evidence_cutoff {
+                continue;
+            }
+            for topic in &p.topics {
+                evidence_map
+                    .entry(*topic)
+                    .or_default()
+                    .push(OpportunityEvidence {
+                        publication_id: Some(p.id),
+                        effective_ts,
+                    });
+            }
+        }
+
+        // 5. Detect opportunities, passing real evidence.
+        let opportunities = opportunities::detect_all(&trends, now, |topic| {
+            evidence_map.get(&topic).cloned().unwrap_or_default()
+        });
+
+        Ok(AnalysisResult {
+            trends,
+            opportunities,
+        })
     }
 }
 
@@ -520,5 +632,34 @@ mod tests {
             .unwrap();
         assert_eq!(pubs.len(), 1);
         assert!(pubs[0].url.is_none());
+    }
+
+    #[tokio::test]
+    async fn analyze_opportunities_returns_evidence() {
+        // Ingest several publications for a topic, then run
+        // analyze_opportunities and verify that each detected
+        // opportunity carries non-empty evidence.
+        let storage = InMemoryGrowthStorage::new();
+        let fetcher = StubFetcher::ok(RSS_ONE_ITEM);
+        let service = GrowthService::with_fetcher(storage, fetcher);
+
+        // Base topic = StorageSystems so RSS_ONE_ITEM
+        // ("Rust 1.99 with LSM compaction") classifies cleanly.
+        let source = make_source(vec![Topic::StorageSystems]);
+        service.ingest_source(&source).await.unwrap();
+
+        let result = service.analyze_opportunities().await.unwrap();
+
+        // Any detected opportunity MUST carry evidence.
+        for opp in &result.opportunities {
+            assert!(
+                !opp.evidence.is_empty(),
+                "opportunity for topic {:?} has empty evidence",
+                opp.topic,
+            );
+        }
+
+        // We also expect at least one trend to be present.
+        assert!(!result.trends.is_empty());
     }
 }

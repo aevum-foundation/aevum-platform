@@ -68,7 +68,6 @@ use clap::{Parser, Subcommand};
 
 use aevum_platform_api::growth::aevumdb::AevumDbGrowthStorage;
 use aevum_platform_api::growth::analysis::trends::{self, TrendInput};
-use aevum_platform_api::growth::analysis::opportunities;
 use aevum_platform_api::growth::models::SourceStatus;
 use aevum_platform_api::growth::registry::seed;
 use aevum_platform_api::growth::service::GrowthService;
@@ -308,36 +307,34 @@ async fn cmd_trends(
 async fn cmd_opportunities(
     service: &GrowthService<AevumDbGrowthStorage>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let inputs = load_trend_inputs(service).await?;
-    let now = chrono::Utc::now();
-    let trends = trends::compute_all(&inputs, now);
+    // Single analysis entrypoint. Loads trends + detects
+    // opportunities with real evidence.
+    let result = service
+        .analyze_opportunities()
+        .await
+        .map_err(|e| format!("analyze_opportunities failed: {:?}", e))?;
 
-    // Phase 1: evidence wiring is not yet implemented. The
-    // detector supports an evidence lookup closure; wiring it up
-    // belongs to `GrowthService::analyze_opportunities` (Tier-1).
-    // Until then opportunities are emitted without evidence IDs.
-    let opps = opportunities::detect_all(&trends, now, |_topic| Vec::new());
-
-    if opps.is_empty() {
+    if result.opportunities.is_empty() {
         println!("no opportunities detected");
         return Ok(());
     }
 
     println!(
-        "{:<24}  {:<22}  {:>8}  {}",
-        "topic", "kind", "score_bp", "detected_at"
+        "{:<24}  {:<22}  {:>8}  {:>8}  {}",
+        "topic", "kind", "score_bp", "evidence", "detected_at"
     );
-    println!("{}", "-".repeat(80));
-    for o in &opps {
+    println!("{}", "-".repeat(96));
+    for o in &result.opportunities {
         println!(
-            "{:<24}  {:<22}  {:>8}  {}",
+            "{:<24}  {:<22}  {:>8}  {:>8}  {}",
             o.topic.as_str(),
             format!("{:?}", o.kind),
             o.score_bp,
+            o.evidence.len(),
             o.detected_at.to_rfc3339(),
         );
     }
-    println!("\ntotal: {}", opps.len());
+    println!("\ntotal: {}", result.opportunities.len());
     Ok(())
 }
 
