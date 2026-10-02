@@ -70,7 +70,7 @@
 //! ingestion; the caller may retry safely because re-ingestion is
 //! idempotent.
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 
 use std::collections::HashMap;
 
@@ -100,10 +100,41 @@ pub struct AnalysisResult {
     pub opportunities: Vec<Opportunity>,
 }
 
+/// Global analytical snapshot.
+///
+/// Single source of truth for the public presentation layer:
+/// HTTP JSON API, HTML topic pages, RSS feed, and future AI
+/// summaries all read from the same snapshot so that they never
+/// disagree about "what Aevum currently sees".
+#[derive(Debug, Clone)]
+pub struct GrowthSnapshot {
+    pub trends: Vec<TopicTrend>,
+    pub opportunities: Vec<Opportunity>,
+    pub generated_at: DateTime<Utc>,
+}
+
+/// Per-topic analytical report.
+///
+/// Used by `/growth/topics/{topic}` (JSON and HTML).
+#[derive(Debug, Clone)]
+pub struct TopicReport {
+    pub trend: TopicTrend,
+    pub recent_publications: Vec<Publication>,
+    pub opportunities: Vec<Opportunity>,
+    pub generated_at: DateTime<Utc>,
+}
+
 /// Maximum number of publications loaded per analysis run.
 ///
 /// See the module docs for the Phase 1 limitation.
 const ANALYSIS_MAX_PUBLICATIONS: usize = 10_000;
+
+/// Maximum number of publications included in a `TopicReport`.
+///
+/// The report is served from a single HTML page or JSON endpoint,
+/// so it must stay small. Larger sets are handled by a dedicated
+/// paginated endpoint.
+const TOPIC_REPORT_MAX_PUBLICATIONS: usize = 50;
 
 /// Summary of a single source ingestion run.
 ///
@@ -428,6 +459,54 @@ where
 
         let opps = opportunities::detect_all(&topic_trends, now, |_t| evidence.clone());
         Ok(opps)
+    }
+
+    // ─── Snapshots ──────────────────────────────────────────
+
+    /// Global analytical snapshot.
+    ///
+    /// Single entrypoint for the public presentation layer. Computes
+    /// trends once, detects opportunities once, and stamps the
+    /// result with `generated_at`.
+    ///
+    /// Presentation layers (HTTP, HTML, RSS, AI summaries) SHOULD
+    /// use this method rather than recomputing pieces themselves.
+    pub async fn snapshot(&self) -> Result<GrowthSnapshot, ApiError> {
+        let result = self.analyze_opportunities().await?;
+        Ok(GrowthSnapshot {
+            trends: result.trends,
+            opportunities: result.opportunities,
+            generated_at: Utc::now(),
+        })
+    }
+
+    /// Per-topic analytical report.
+    ///
+    /// Composes:
+    /// - the trend for `topic`;
+    /// - a bounded list of recent publications for `topic`;
+    /// - opportunities that belong to `topic`;
+    /// - a UTC timestamp.
+    ///
+    /// `TOPIC_REPORT_MAX_PUBLICATIONS` bounds the publication list
+    /// so that the report stays small and can be served from an
+    /// HTML page or JSON endpoint without pagination.
+    pub async fn topic_report(
+        &self,
+        topic: Topic,
+    ) -> Result<TopicReport, ApiError> {
+        let trend = self.trend_for_topic(topic).await?;
+        let recent_publications = self
+            .list_publications_by_topic(topic, TOPIC_REPORT_MAX_PUBLICATIONS)
+            .await?;
+        let opportunities = self.opportunities_for_topic(topic).await?;
+
+        Ok(TopicReport {
+            trend,
+            recent_publications,
+            opportunities,
+            generated_at: Utc::now(),
+        })
     }
 }
 
@@ -781,6 +860,41 @@ mod tests {
         // Should have exactly one publication for this topic.
         assert_eq!(evidence.len(), 1);
         assert!(evidence[0].publication_id.is_some());
+    }
+
+    #[tokio::test]
+    async fn snapshot_contains_trends_and_opportunities() {
+        let storage = InMemoryGrowthStorage::new();
+        let fetcher = StubFetcher::ok(RSS_ONE_ITEM);
+        let service = GrowthService::with_fetcher(storage, fetcher);
+
+        let source = make_source(vec![Topic::StorageSystems]);
+        service.ingest_source(&source).await.unwrap();
+
+        let snapshot = service.snapshot().await.unwrap();
+        assert_eq!(snapshot.trends.len(), 6, "one trend per Topic::ALL");
+        // generated_at must be recent.
+        let now = chrono::Utc::now();
+        let delta = now - snapshot.generated_at;
+        assert!(delta.num_seconds() < 5, "generated_at must be recent");
+    }
+
+    #[tokio::test]
+    async fn topic_report_includes_trend_publications_opportunities() {
+        let storage = InMemoryGrowthStorage::new();
+        let fetcher = StubFetcher::ok(RSS_ONE_ITEM);
+        let service = GrowthService::with_fetcher(storage, fetcher);
+
+        let source = make_source(vec![Topic::StorageSystems]);
+        service.ingest_source(&source).await.unwrap();
+
+        let report = service.topic_report(Topic::StorageSystems).await.unwrap();
+        assert_eq!(report.trend.topic, Topic::StorageSystems);
+        assert!(!report.recent_publications.is_empty());
+        // opportunities may be empty, but must all belong to the topic.
+        for opp in &report.opportunities {
+            assert_eq!(opp.topic, Topic::StorageSystems);
+        }
     }
 
     #[tokio::test]
