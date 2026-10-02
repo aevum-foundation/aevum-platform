@@ -28,5 +28,6 @@ pub mod aevumdb;
 pub mod in_memory;
 pub mod ingestion;
 pub mod registry;
+pub mod analysis;
 #[cfg(test)]
 pub mod conformance;
