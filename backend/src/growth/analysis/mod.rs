@@ -7,3 +7,4 @@
 //! - `opportunities` — signal detection (planned)
 
 pub mod classifier;
+pub mod trends;
