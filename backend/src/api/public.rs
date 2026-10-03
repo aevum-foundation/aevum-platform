@@ -39,14 +39,12 @@
 //! Rendered by `render_cta`, which reads `PUBLIC_IDENTITY`. Adding
 //! a new channel is a one-line change in `PUBLIC_IDENTITY`.
 
-use actix_web::{get, web, HttpResponse};
+use actix_web::{route, web, HttpResponse};
 use chrono::{DateTime, Utc};
 
 use crate::error::ApiError;
 use crate::growth::api::AppGrowthService;
-use crate::growth::contracts::{
-    OpportunityResponse, TopicReportResponse, TopicSummaryResponse,
-};
+use crate::growth::contracts::{OpportunityResponse, TopicReportResponse, TopicSummaryResponse};
 use crate::growth::models::Topic;
 
 // ---------------------------------------------------------------------------
@@ -117,10 +115,8 @@ impl LimitQuery {
 // ---------------------------------------------------------------------------
 
 /// GET /growth — index page.
-#[get("/growth")]
-pub async fn growth_index(
-    service: web::Data<AppGrowthService>,
-) -> Result<HttpResponse, ApiError> {
+#[route("/growth", method = "GET", method = "HEAD")]
+pub async fn growth_index(service: web::Data<AppGrowthService>) -> Result<HttpResponse, ApiError> {
     let topics = service.list_topics().await?;
     let base = public_url();
     let body = render_index_page(&base, &topics);
@@ -128,10 +124,8 @@ pub async fn growth_index(
 }
 
 /// GET /growth/topics — list of topics.
-#[get("/growth/topics")]
-pub async fn topics_index(
-    service: web::Data<AppGrowthService>,
-) -> Result<HttpResponse, ApiError> {
+#[route("/growth/topics", method = "GET", method = "HEAD")]
+pub async fn topics_index(service: web::Data<AppGrowthService>) -> Result<HttpResponse, ApiError> {
     let topics = service.list_topics().await?;
     let base = public_url();
     let body = render_topics_page(&base, &topics);
@@ -139,7 +133,7 @@ pub async fn topics_index(
 }
 
 /// GET /growth/topics/{topic} — topic page.
-#[get("/growth/topics/{topic}")]
+#[route("/growth/topics/{topic}", method = "GET", method = "HEAD")]
 pub async fn topic_page(
     service: web::Data<AppGrowthService>,
     path: web::Path<String>,
@@ -153,7 +147,7 @@ pub async fn topic_page(
 }
 
 /// GET /growth/opportunities — list of signals.
-#[get("/growth/opportunities")]
+#[route("/growth/opportunities", method = "GET", method = "HEAD")]
 pub async fn opportunities_page(
     service: web::Data<AppGrowthService>,
     query: web::Query<LimitQuery>,
@@ -168,10 +162,8 @@ pub async fn opportunities_page(
 }
 
 /// GET /sitemap.xml — only URLs that actually exist.
-#[get("/sitemap.xml")]
-pub async fn sitemap(
-    service: web::Data<AppGrowthService>,
-) -> Result<HttpResponse, ApiError> {
+#[route("/sitemap.xml", method = "GET", method = "HEAD")]
+pub async fn sitemap(service: web::Data<AppGrowthService>) -> Result<HttpResponse, ApiError> {
     let topics = service.list_topics().await?;
     let base = public_url();
     let body = render_sitemap(&base, &topics);
@@ -181,7 +173,7 @@ pub async fn sitemap(
 }
 
 /// GET /robots.txt — crawler policy.
-#[get("/robots.txt")]
+#[route("/robots.txt", method = "GET", method = "HEAD")]
 pub async fn robots() -> HttpResponse {
     let body = render_robots();
     HttpResponse::Ok()
@@ -340,10 +332,7 @@ fn render_cta() -> String {
         None => items.push_str(r#"<li><span class="soon">Telegram — coming soon</span></li>"#),
     }
     match PUBLIC_IDENTITY.x {
-        Some(url) => items.push_str(&format!(
-            r#"<li><a href="{}">X</a></li>"#,
-            html_escape(url),
-        )),
+        Some(url) => items.push_str(&format!(r#"<li><a href="{}">X</a></li>"#, html_escape(url),)),
         None => items.push_str(r#"<li><span class="soon">X — coming soon</span></li>"#),
     }
     format!(
@@ -365,7 +354,11 @@ fn render_index_page(base: &str, topics: &[TopicSummaryResponse]) -> String {
 
     let mut items = String::new();
     for t in topics {
-        let class = if t.accelerating { "accelerating" } else { "normal" };
+        let class = if t.accelerating {
+            "accelerating"
+        } else {
+            "normal"
+        };
         items.push_str(&format!(
             r#"<li><a href="{base}/growth/topics/{slug}">{slug}</a> — 7d: {c7}, 30d: {c30}, ratio <span class="{class}">{ratio}</span></li>"#,
             base = html_escape(base),
@@ -406,7 +399,11 @@ fn render_topics_page(base: &str, topics: &[TopicSummaryResponse]) -> String {
 
     let mut rows = String::new();
     for t in topics {
-        let class = if t.accelerating { "accelerating" } else { "normal" };
+        let class = if t.accelerating {
+            "accelerating"
+        } else {
+            "normal"
+        };
         rows.push_str(&format!(
             r#"<li><a href="{base}/growth/topics/{slug}">{slug}</a> — 24h: {c24}, 7d: {c7}, 30d: {c30}, ratio <span class="{class}">{ratio}</span></li>"#,
             base = html_escape(base),
@@ -496,7 +493,13 @@ fn render_topic_page(base: &str, report: &TopicReportResponse) -> String {
             let link = p
                 .url
                 .as_deref()
-                .map(|u| format!(r#"<a href="{}">{}</a>"#, html_escape(u), html_escape(&p.title)))
+                .map(|u| {
+                    format!(
+                        r#"<a href="{}">{}</a>"#,
+                        html_escape(u),
+                        html_escape(&p.title)
+                    )
+                })
                 .unwrap_or_else(|| html_escape(&p.title));
             let date = p
                 .published_at

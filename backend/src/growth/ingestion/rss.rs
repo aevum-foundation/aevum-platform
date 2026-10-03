@@ -176,7 +176,10 @@ impl EntryBuilder {
             FeedType::Atom => {
                 let id = self.id.trim();
                 if !id.is_empty() {
-                    (id.to_owned(), first_non_empty(&self.link_alternate, &self.link))
+                    (
+                        id.to_owned(),
+                        first_non_empty(&self.link_alternate, &self.link),
+                    )
                 } else if !self.link_alternate.trim().is_empty() {
                     (
                         self.link_alternate.trim().to_owned(),
@@ -233,9 +236,7 @@ impl EntryBuilder {
 
         Some(ParsedPublication {
             external_id,
-            url: url
-                .map(|s| s.trim().to_owned())
-                .filter(|s| !s.is_empty()),
+            url: url.map(|s| s.trim().to_owned()).filter(|s| !s.is_empty()),
             title,
             summary: summary_text
                 .map(|s| s.trim().to_owned())
@@ -294,7 +295,10 @@ pub fn parse(xml: &str) -> Result<Vec<ParsedPublication>, ApiError> {
     }
 
     if !state.root_seen {
-        return Err(log_and(FeedError::WrongRoot, "no <rss> / <feed> seen".into()));
+        return Err(log_and(
+            FeedError::WrongRoot,
+            "no <rss> / <feed> seen".into(),
+        ));
     }
 
     // Refuse to return a partially-parsed feed: any element that

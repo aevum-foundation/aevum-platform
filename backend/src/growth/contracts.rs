@@ -9,9 +9,7 @@ use serde::Serialize;
 
 use crate::error::ApiError;
 
-use super::models::{
-    Opportunity, Publication, Source, TopicTrend,
-};
+use super::models::{Opportunity, Publication, Source, TopicTrend};
 use super::service::TopicReport;
 use super::validation::ValidationError;
 
@@ -19,38 +17,26 @@ use super::validation::ValidationError;
 // Stable validation error vocabulary
 // ---------------------------------------------------------------------------
 
-pub const SOURCE_FEED_URL_INVALID_SCHEME_CODE: &str =
-    "GROWTH_SOURCE_FEED_URL_INVALID_SCHEME";
-pub const SOURCE_FEED_URL_INVALID_SCHEME_MESSAGE: &str =
-    "Source feed URL must use http or https";
+pub const SOURCE_FEED_URL_INVALID_SCHEME_CODE: &str = "GROWTH_SOURCE_FEED_URL_INVALID_SCHEME";
+pub const SOURCE_FEED_URL_INVALID_SCHEME_MESSAGE: &str = "Source feed URL must use http or https";
 
-pub const SOURCE_TOPICS_REQUIRED_CODE: &str =
-    "GROWTH_SOURCE_TOPICS_REQUIRED";
-pub const SOURCE_TOPICS_REQUIRED_MESSAGE: &str =
-    "Source must contain at least one topic";
+pub const SOURCE_TOPICS_REQUIRED_CODE: &str = "GROWTH_SOURCE_TOPICS_REQUIRED";
+pub const SOURCE_TOPICS_REQUIRED_MESSAGE: &str = "Source must contain at least one topic";
 
-pub const SOURCE_TOPICS_DUPLICATE_CODE: &str =
-    "GROWTH_SOURCE_TOPICS_DUPLICATE";
-pub const SOURCE_TOPICS_DUPLICATE_MESSAGE: &str =
-    "Source contains duplicate topics";
+pub const SOURCE_TOPICS_DUPLICATE_CODE: &str = "GROWTH_SOURCE_TOPICS_DUPLICATE";
+pub const SOURCE_TOPICS_DUPLICATE_MESSAGE: &str = "Source contains duplicate topics";
 
-pub const PUBLICATION_EXTERNAL_ID_REQUIRED_CODE: &str =
-    "GROWTH_PUBLICATION_EXTERNAL_ID_REQUIRED";
-pub const PUBLICATION_EXTERNAL_ID_REQUIRED_MESSAGE: &str =
-    "Publication external_id is required";
+pub const PUBLICATION_EXTERNAL_ID_REQUIRED_CODE: &str = "GROWTH_PUBLICATION_EXTERNAL_ID_REQUIRED";
+pub const PUBLICATION_EXTERNAL_ID_REQUIRED_MESSAGE: &str = "Publication external_id is required";
 
-pub const PUBLICATION_TITLE_REQUIRED_CODE: &str =
-    "GROWTH_PUBLICATION_TITLE_REQUIRED";
-pub const PUBLICATION_TITLE_REQUIRED_MESSAGE: &str =
-    "Publication title is required";
+pub const PUBLICATION_TITLE_REQUIRED_CODE: &str = "GROWTH_PUBLICATION_TITLE_REQUIRED";
+pub const PUBLICATION_TITLE_REQUIRED_MESSAGE: &str = "Publication title is required";
 
-pub const OPPORTUNITY_SCORE_OUT_OF_RANGE_CODE: &str =
-    "GROWTH_OPPORTUNITY_SCORE_OUT_OF_RANGE";
+pub const OPPORTUNITY_SCORE_OUT_OF_RANGE_CODE: &str = "GROWTH_OPPORTUNITY_SCORE_OUT_OF_RANGE";
 pub const OPPORTUNITY_SCORE_OUT_OF_RANGE_MESSAGE: &str =
     "Opportunity score must be between 0 and 10000 basis points";
 
-pub const OPPORTUNITY_EVIDENCE_REQUIRED_CODE: &str =
-    "GROWTH_OPPORTUNITY_EVIDENCE_REQUIRED";
+pub const OPPORTUNITY_EVIDENCE_REQUIRED_CODE: &str = "GROWTH_OPPORTUNITY_EVIDENCE_REQUIRED";
 pub const OPPORTUNITY_EVIDENCE_REQUIRED_MESSAGE: &str =
     "Opportunity must contain at least one evidence publication";
 
@@ -290,10 +276,9 @@ impl From<ValidationError> for ApiError {
                 SOURCE_FEED_URL_INVALID_SCHEME_MESSAGE,
             ),
 
-            ValidationError::SourceTopicsEmpty => (
-                SOURCE_TOPICS_REQUIRED_CODE,
-                SOURCE_TOPICS_REQUIRED_MESSAGE,
-            ),
+            ValidationError::SourceTopicsEmpty => {
+                (SOURCE_TOPICS_REQUIRED_CODE, SOURCE_TOPICS_REQUIRED_MESSAGE)
+            }
 
             ValidationError::SourceTopicsDuplicate { .. } => (
                 SOURCE_TOPICS_DUPLICATE_CODE,
@@ -337,8 +322,7 @@ mod tests {
     use url::Url;
 
     use crate::growth::models::{
-        OpportunityId, OpportunityKind, Platform, PublicationId, Source,
-        Topic,
+        OpportunityId, OpportunityKind, Platform, PublicationId, Source, Topic,
     };
 
     fn test_source() -> Source {
@@ -436,11 +420,7 @@ mod tests {
 
     #[test]
     fn validation_error_maps_to_stable_api_error() {
-        let error = ApiError::from(
-            ValidationError::SourceTopicsDuplicate {
-                topic: Topic::Rust,
-            },
-        );
+        let error = ApiError::from(ValidationError::SourceTopicsDuplicate { topic: Topic::Rust });
 
         assert_eq!(error.code(), SOURCE_TOPICS_DUPLICATE_CODE);
         assert_eq!(error.message(), SOURCE_TOPICS_DUPLICATE_MESSAGE);
@@ -448,11 +428,7 @@ mod tests {
 
     #[test]
     fn validation_error_does_not_leak_topic_detail() {
-        let error = ApiError::from(
-            ValidationError::SourceTopicsDuplicate {
-                topic: Topic::Rust,
-            },
-        );
+        let error = ApiError::from(ValidationError::SourceTopicsDuplicate { topic: Topic::Rust });
 
         assert_eq!(error.code(), SOURCE_TOPICS_DUPLICATE_CODE);
         assert_eq!(error.message(), SOURCE_TOPICS_DUPLICATE_MESSAGE);

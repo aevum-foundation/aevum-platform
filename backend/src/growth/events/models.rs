@@ -67,9 +67,7 @@ impl GrowthEventKind {
             "source_paused" => Some(Self::SourcePaused),
             "source_resumed" => Some(Self::SourceResumed),
             "publication_ingested" => Some(Self::PublicationIngested),
-            "publication_skipped_duplicate" => {
-                Some(Self::PublicationSkippedDuplicate)
-            }
+            "publication_skipped_duplicate" => Some(Self::PublicationSkippedDuplicate),
             "topic_classified" => Some(Self::TopicClassified),
             "topic_state_updated" => Some(Self::TopicStateUpdated),
             "trend_computed" => Some(Self::TrendComputed),
@@ -119,7 +117,10 @@ mod tests {
 
     #[test]
     fn kind_as_str_is_stable() {
-        assert_eq!(GrowthEventKind::SourceRegistered.as_str(), "source_registered");
+        assert_eq!(
+            GrowthEventKind::SourceRegistered.as_str(),
+            "source_registered"
+        );
         assert_eq!(
             GrowthEventKind::PublicationIngested.as_str(),
             "publication_ingested"

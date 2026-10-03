@@ -81,7 +81,8 @@ impl Default for InMemoryGrowthStorage {
 
 impl std::fmt::Debug for InMemoryGrowthStorage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("InMemoryGrowthStorage").finish_non_exhaustive()
+        f.debug_struct("InMemoryGrowthStorage")
+            .finish_non_exhaustive()
     }
 }
 
@@ -247,10 +248,7 @@ impl PublicationStorage for InMemoryGrowthStorage {
         Ok(())
     }
 
-    async fn get_publication(
-        &self,
-        id: PublicationId,
-    ) -> Result<Option<Publication>, ApiError> {
+    async fn get_publication(&self, id: PublicationId) -> Result<Option<Publication>, ApiError> {
         let map = Self::lock(&self.publications)?;
         Ok(map.get(&id).cloned())
     }
@@ -304,10 +302,7 @@ impl PublicationStorage for InMemoryGrowthStorage {
         Ok(items)
     }
 
-    async fn list_recent_publications(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<Publication>, ApiError> {
+    async fn list_recent_publications(&self, limit: usize) -> Result<Vec<Publication>, ApiError> {
         if limit == 0 {
             return Ok(Vec::new());
         }
@@ -340,10 +335,7 @@ impl OpportunityStorage for InMemoryGrowthStorage {
         Ok(())
     }
 
-    async fn get_opportunity(
-        &self,
-        id: OpportunityId,
-    ) -> Result<Option<Opportunity>, ApiError> {
+    async fn get_opportunity(&self, id: OpportunityId) -> Result<Option<Opportunity>, ApiError> {
         let map = Self::lock(&self.opportunities)?;
         Ok(map.get(&id).cloned())
     }
@@ -357,11 +349,8 @@ impl OpportunityStorage for InMemoryGrowthStorage {
             return Ok(Vec::new());
         }
         let map = Self::lock(&self.opportunities)?;
-        let mut items: Vec<Opportunity> = map
-            .values()
-            .filter(|o| o.topic == topic)
-            .cloned()
-            .collect();
+        let mut items: Vec<Opportunity> =
+            map.values().filter(|o| o.topic == topic).cloned().collect();
         sort_opportunities_desc(&mut items);
         items.truncate(limit);
         Ok(items)
@@ -376,20 +365,14 @@ impl OpportunityStorage for InMemoryGrowthStorage {
             return Ok(Vec::new());
         }
         let map = Self::lock(&self.opportunities)?;
-        let mut items: Vec<Opportunity> = map
-            .values()
-            .filter(|o| o.kind == kind)
-            .cloned()
-            .collect();
+        let mut items: Vec<Opportunity> =
+            map.values().filter(|o| o.kind == kind).cloned().collect();
         sort_opportunities_desc(&mut items);
         items.truncate(limit);
         Ok(items)
     }
 
-    async fn list_top_opportunities(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<Opportunity>, ApiError> {
+    async fn list_top_opportunities(&self, limit: usize) -> Result<Vec<Opportunity>, ApiError> {
         if limit == 0 {
             return Ok(Vec::new());
         }
@@ -402,9 +385,7 @@ impl OpportunityStorage for InMemoryGrowthStorage {
 }
 
 fn sort_opportunities_desc(items: &mut [Opportunity]) {
-    items.sort_by(|a, b| {
-        cmp_score_desc_then_uuid(a.score_bp, a.id.0, b.score_bp, b.id.0)
-    });
+    items.sort_by(|a, b| cmp_score_desc_then_uuid(a.score_bp, a.id.0, b.score_bp, b.id.0));
 }
 
 // ---------------------------------------------------------------------------
@@ -453,11 +434,8 @@ impl GrowthEventStorage for InMemoryGrowthStorage {
             return Ok(Vec::new());
         }
         let events = Self::lock(&self.events)?;
-        let mut items: Vec<GrowthEvent> = events
-            .iter()
-            .filter(|e| e.kind == kind)
-            .cloned()
-            .collect();
+        let mut items: Vec<GrowthEvent> =
+            events.iter().filter(|e| e.kind == kind).cloned().collect();
         sort_events_desc(&mut items);
         items.truncate(limit);
         Ok(items)
@@ -576,11 +554,7 @@ mod tests {
         }
     }
 
-    fn make_event(
-        kind: GrowthEventKind,
-        topic: Option<Topic>,
-        at: DateTime<Utc>,
-    ) -> GrowthEvent {
+    fn make_event(kind: GrowthEventKind, topic: Option<Topic>, at: DateTime<Utc>) -> GrowthEvent {
         GrowthEvent::new(kind, topic, json!({}), at)
     }
 

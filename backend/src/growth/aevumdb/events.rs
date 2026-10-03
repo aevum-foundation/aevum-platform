@@ -189,10 +189,7 @@ impl GrowthEventStorage for AevumDbGrowthStorage {
         self.list_events_desc_via_index(&prefix, limit).await
     }
 
-    async fn get_recent_events(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<GrowthEvent>, ApiError> {
+    async fn get_recent_events(&self, limit: usize) -> Result<Vec<GrowthEvent>, ApiError> {
         if limit == 0 {
             return Ok(Vec::new());
         }
@@ -465,8 +462,11 @@ mod tests {
         let primary = event_key(id);
         let timeline = event_timeline_key("00000000000000000000", id);
         let timeline_asc = event_timeline_asc_key("00000000000000000000", id);
-        let by_kind =
-            event_by_kind_key(GrowthEventKind::SourceRegistered, "00000000000000000000", id);
+        let by_kind = event_by_kind_key(
+            GrowthEventKind::SourceRegistered,
+            "00000000000000000000",
+            id,
+        );
         assert!(!timeline.starts_with(&primary));
         assert!(!timeline_asc.starts_with(&primary));
         assert!(!by_kind.starts_with(&primary));
@@ -492,10 +492,7 @@ mod tests {
         assert_eq!(by_kind.len(), 1);
         assert_eq!(by_kind[0].id, event.id);
 
-        let by_topic = storage
-            .get_events_by_topic(Topic::Rust, 10)
-            .await
-            .unwrap();
+        let by_topic = storage.get_events_by_topic(Topic::Rust, 10).await.unwrap();
         assert_eq!(by_topic.len(), 1);
         assert_eq!(by_topic[0].id, event.id);
 
@@ -517,10 +514,7 @@ mod tests {
             .unwrap();
         assert_eq!(by_kind.len(), 1);
 
-        let by_topic = storage
-            .get_events_by_topic(Topic::Rust, 10)
-            .await
-            .unwrap();
+        let by_topic = storage.get_events_by_topic(Topic::Rust, 10).await.unwrap();
         assert!(by_topic.is_empty());
     }
 
@@ -586,8 +580,16 @@ mod tests {
         let now = Utc::now();
         let cutoff = now - Duration::hours(2);
 
-        let old = make_event(GrowthEventKind::SourceRegistered, None, now - Duration::hours(3));
-        let young = make_event(GrowthEventKind::SourceRegistered, None, now - Duration::hours(1));
+        let old = make_event(
+            GrowthEventKind::SourceRegistered,
+            None,
+            now - Duration::hours(3),
+        );
+        let young = make_event(
+            GrowthEventKind::SourceRegistered,
+            None,
+            now - Duration::hours(1),
+        );
 
         storage.record_event(old).await.unwrap();
         storage.record_event(young.clone()).await.unwrap();
@@ -634,10 +636,7 @@ mod tests {
         storage.record_event(b.clone()).await.unwrap();
         storage.record_event(c).await.unwrap();
 
-        let rust = storage
-            .get_events_by_topic(Topic::Rust, 10)
-            .await
-            .unwrap();
+        let rust = storage.get_events_by_topic(Topic::Rust, 10).await.unwrap();
         assert_eq!(rust.len(), 1);
         assert_eq!(rust[0].id, a.id);
 

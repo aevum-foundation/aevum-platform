@@ -5,9 +5,7 @@
 
 use std::fmt;
 
-use crate::growth::models::{
-    Opportunity, Publication, Source, Topic, TopicTrend,
-};
+use crate::growth::models::{Opportunity, Publication, Source, Topic, TopicTrend};
 
 // ---------------------------------------------------------------------------
 // Limits
@@ -128,9 +126,7 @@ pub fn validate_topic_trend(_trend: &TopicTrend) -> Result<(), ValidationError> 
 // Opportunity
 // ---------------------------------------------------------------------------
 
-pub fn validate_opportunity(
-    opportunity: &Opportunity,
-) -> Result<(), ValidationError> {
+pub fn validate_opportunity(opportunity: &Opportunity) -> Result<(), ValidationError> {
     if opportunity.score_bp > SCORE_BP_MAX {
         return Err(ValidationError::OpportunityScoreOutOfRange {
             max: SCORE_BP_MAX,
@@ -158,8 +154,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::growth::models::{
-        OpportunityId, OpportunityKind, Platform, PublicationId, SourceId,
-        SourceStatus,
+        OpportunityId, OpportunityKind, Platform, PublicationId, SourceId, SourceStatus,
     };
 
     fn test_source() -> Source {
@@ -238,9 +233,7 @@ mod tests {
 
         assert_eq!(
             validate_source(&source),
-            Err(ValidationError::SourceTopicsDuplicate {
-                topic: Topic::Rust
-            })
+            Err(ValidationError::SourceTopicsDuplicate { topic: Topic::Rust })
         );
     }
 
@@ -320,8 +313,7 @@ mod tests {
 
     #[test]
     fn validation_error_implements_error() {
-        let error: Box<dyn std::error::Error> =
-            Box::new(ValidationError::SourceTopicsEmpty);
+        let error: Box<dyn std::error::Error> = Box::new(ValidationError::SourceTopicsEmpty);
 
         assert!(error.to_string().contains("at least one topic"));
     }
@@ -343,10 +335,7 @@ mod tests {
             &Url::parse("https://other.example.com/feed.xml").unwrap(),
         );
 
-        publication.id = PublicationId::from_parts(
-            other_source,
-            &Uuid::new_v4().to_string(),
-        );
+        publication.id = PublicationId::from_parts(other_source, &Uuid::new_v4().to_string());
 
         assert!(validate_publication(&publication).is_ok());
     }

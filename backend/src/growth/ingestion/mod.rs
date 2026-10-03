@@ -14,8 +14,8 @@
 //! ingestion/mod.rs      →  shared types (this file)
 //! ```
 
-pub mod rss;
 pub mod fetcher;
+pub mod rss;
 
 use chrono::{DateTime, Utc};
 

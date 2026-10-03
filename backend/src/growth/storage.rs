@@ -22,8 +22,8 @@ use crate::error::ApiError;
 
 use super::events::{GrowthEvent, GrowthEventKind};
 use super::models::{
-    Opportunity, OpportunityId, OpportunityKind, Publication, PublicationId,
-    Source, SourceId, SourceStatus, Topic, TopicState,
+    Opportunity, OpportunityId, OpportunityKind, Publication, PublicationId, Source, SourceId,
+    SourceStatus, Topic, TopicState,
 };
 
 // ---------------------------------------------------------------------------
@@ -59,15 +59,9 @@ pub trait SourceStorage: Send + Sync {
 
 #[async_trait]
 pub trait PublicationStorage: Send + Sync {
-    async fn put_publication(
-        &self,
-        publication: &Publication,
-    ) -> Result<(), ApiError>;
+    async fn put_publication(&self, publication: &Publication) -> Result<(), ApiError>;
 
-    async fn get_publication(
-        &self,
-        id: PublicationId,
-    ) -> Result<Option<Publication>, ApiError>;
+    async fn get_publication(&self, id: PublicationId) -> Result<Option<Publication>, ApiError>;
 
     async fn publication_exists(
         &self,
@@ -87,10 +81,7 @@ pub trait PublicationStorage: Send + Sync {
         limit: usize,
     ) -> Result<Vec<Publication>, ApiError>;
 
-    async fn list_recent_publications(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<Publication>, ApiError>;
+    async fn list_recent_publications(&self, limit: usize) -> Result<Vec<Publication>, ApiError>;
 }
 
 // ---------------------------------------------------------------------------
@@ -99,15 +90,9 @@ pub trait PublicationStorage: Send + Sync {
 
 #[async_trait]
 pub trait OpportunityStorage: Send + Sync {
-    async fn put_opportunity(
-        &self,
-        opportunity: &Opportunity,
-    ) -> Result<(), ApiError>;
+    async fn put_opportunity(&self, opportunity: &Opportunity) -> Result<(), ApiError>;
 
-    async fn get_opportunity(
-        &self,
-        id: OpportunityId,
-    ) -> Result<Option<Opportunity>, ApiError>;
+    async fn get_opportunity(&self, id: OpportunityId) -> Result<Option<Opportunity>, ApiError>;
 
     async fn list_opportunities_by_topic(
         &self,
@@ -121,10 +106,7 @@ pub trait OpportunityStorage: Send + Sync {
         limit: usize,
     ) -> Result<Vec<Opportunity>, ApiError>;
 
-    async fn list_top_opportunities(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<Opportunity>, ApiError>;
+    async fn list_top_opportunities(&self, limit: usize) -> Result<Vec<Opportunity>, ApiError>;
 }
 
 // ---------------------------------------------------------------------------
@@ -133,15 +115,9 @@ pub trait OpportunityStorage: Send + Sync {
 
 #[async_trait]
 pub trait TopicStateStorage: Send + Sync {
-    async fn put_topic_state(
-        &self,
-        state: &TopicState,
-    ) -> Result<(), ApiError>;
+    async fn put_topic_state(&self, state: &TopicState) -> Result<(), ApiError>;
 
-    async fn get_topic_state(
-        &self,
-        topic: Topic,
-    ) -> Result<Option<TopicState>, ApiError>;
+    async fn get_topic_state(&self, topic: Topic) -> Result<Option<TopicState>, ApiError>;
 
     /// Safe to expose without a `limit` because `Topic::ALL` is a fixed,
     /// small set.
@@ -168,10 +144,7 @@ pub trait GrowthEventStorage: Send + Sync {
         limit: usize,
     ) -> Result<Vec<GrowthEvent>, ApiError>;
 
-    async fn get_recent_events(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<GrowthEvent>, ApiError>;
+    async fn get_recent_events(&self, limit: usize) -> Result<Vec<GrowthEvent>, ApiError>;
 
     async fn get_events_since(
         &self,
@@ -181,10 +154,7 @@ pub trait GrowthEventStorage: Send + Sync {
 
     /// Remove events older than `ts`, together with their secondary
     /// indexes. Returns the number of primary records removed.
-    async fn prune_events_before(
-        &self,
-        ts: DateTime<Utc>,
-    ) -> Result<usize, ApiError>;
+    async fn prune_events_before(&self, ts: DateTime<Utc>) -> Result<usize, ApiError>;
 }
 
 // ---------------------------------------------------------------------------
@@ -203,11 +173,7 @@ pub trait GrowthEventStorage: Send + Sync {
 /// automatically implement `GrowthStorage` via the blanket impl
 /// below.
 pub trait GrowthStorage:
-    SourceStorage
-    + PublicationStorage
-    + OpportunityStorage
-    + TopicStateStorage
-    + GrowthEventStorage
+    SourceStorage + PublicationStorage + OpportunityStorage + TopicStateStorage + GrowthEventStorage
 {
 }
 

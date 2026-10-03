@@ -10,9 +10,7 @@ use crate::error::ApiError;
 use crate::growth::models::{Topic, TopicState};
 use crate::growth::storage::TopicStateStorage;
 
-use super::{
-    deserialize, map_db_error, serialize, AevumDbGrowthStorage, TOPIC_STATE_PREFIX,
-};
+use super::{deserialize, map_db_error, serialize, AevumDbGrowthStorage, TOPIC_STATE_PREFIX};
 
 // ---------------------------------------------------------------------------
 // Key builder (canonical, pub(crate) for Key Layout Contract tests)
@@ -31,21 +29,12 @@ impl TopicStateStorage for AevumDbGrowthStorage {
     async fn put_topic_state(&self, state: &TopicState) -> Result<(), ApiError> {
         let key = topic_state_key(state.topic);
         let bytes = serialize(state)?;
-        self.db()
-            .put(key.as_bytes(), &bytes)
-            .map_err(map_db_error)
+        self.db().put(key.as_bytes(), &bytes).map_err(map_db_error)
     }
 
-    async fn get_topic_state(
-        &self,
-        topic: Topic,
-    ) -> Result<Option<TopicState>, ApiError> {
+    async fn get_topic_state(&self, topic: Topic) -> Result<Option<TopicState>, ApiError> {
         let key = topic_state_key(topic);
-        match self
-            .db()
-            .get(key.as_bytes())
-            .map_err(map_db_error)?
-        {
+        match self.db().get(key.as_bytes()).map_err(map_db_error)? {
             None => Ok(None),
             Some(bytes) => Ok(Some(deserialize::<TopicState>(&bytes)?)),
         }
@@ -102,10 +91,7 @@ mod tests {
             topic_state_key(Topic::DistributedSystems),
             "growth:topic:state:distributed_systems"
         );
-        assert_eq!(
-            topic_state_key(Topic::Rust),
-            "growth:topic:state:rust"
-        );
+        assert_eq!(topic_state_key(Topic::Rust), "growth:topic:state:rust");
         assert_eq!(
             topic_state_key(Topic::BlockchainArchitecture),
             "growth:topic:state:blockchain_architecture"
@@ -208,11 +194,7 @@ mod tests {
         };
         storage.put_topic_state(&second).await.unwrap();
 
-        let loaded = storage
-            .get_topic_state(Topic::Rust)
-            .await
-            .unwrap()
-            .unwrap();
+        let loaded = storage.get_topic_state(Topic::Rust).await.unwrap().unwrap();
         assert_eq!(loaded.publication_count, 99);
         assert_eq!(loaded.source_count, 5);
     }

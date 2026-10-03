@@ -50,10 +50,7 @@ pub trait GrowthApi: Send + Sync {
     ///
     /// Bounded by `limit`. There is no unbounded variant; the
     /// caller decides the page size.
-    async fn list_opportunities(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<OpportunityResponse>, ApiError>;
+    async fn list_opportunities(&self, limit: usize) -> Result<Vec<OpportunityResponse>, ApiError>;
 
     /// List sources currently in the registry.
     async fn list_sources(&self, limit: usize) -> Result<Vec<SourceResponse>, ApiError>;

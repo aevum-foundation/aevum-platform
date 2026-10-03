@@ -11,7 +11,7 @@ use async_trait::async_trait;
 
 use crate::error::ApiError;
 use crate::growth::aevumdb::AevumDbGrowthStorage;
-use crate::growth::api::{GrowthApi, AppGrowthService};
+use crate::growth::api::{AppGrowthService, GrowthApi};
 use crate::growth::contracts::{
     GrowthHealthResponse, OpportunityResponse, SourceResponse, TopicReportResponse,
     TopicSummaryResponse,
@@ -58,10 +58,7 @@ impl GrowthApi for GrowthApiImpl {
         Ok(TopicReportResponse::from(report))
     }
 
-    async fn list_opportunities(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<OpportunityResponse>, ApiError> {
+    async fn list_opportunities(&self, limit: usize) -> Result<Vec<OpportunityResponse>, ApiError> {
         let result = self.service.analyze_opportunities().await?;
         Ok(result
             .opportunities

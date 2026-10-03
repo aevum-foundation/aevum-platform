@@ -492,7 +492,13 @@ mod tests {
         let inputs = vec![
             trend(Topic::Rust, 10, 20, 30, ACCELERATION_THRESHOLD_BP + 10_000),
             trend(Topic::PostQuantum, 5, 5, 5, 0),
-            trend(Topic::GpuCompute, 10, 20, 30, ACCELERATION_THRESHOLD_BP + 5_000),
+            trend(
+                Topic::GpuCompute,
+                10,
+                20,
+                30,
+                ACCELERATION_THRESHOLD_BP + 5_000,
+            ),
         ];
         let opps = detect_all(&inputs, fixed_now(), no_evidence);
         let topics: Vec<_> = opps.iter().map(|o| o.topic).collect();

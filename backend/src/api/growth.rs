@@ -17,7 +17,7 @@
 //! - GET /growth/opportunities?limit=N
 //! - GET /growth/sources?limit=N
 
-use actix_web::{get, web, HttpResponse};
+use actix_web::{route, web, HttpResponse};
 
 use crate::error::ApiError;
 use crate::growth::api::AppGrowthService;
@@ -54,19 +54,15 @@ impl LimitQuery {
 // ---------------------------------------------------------------------------
 
 /// GET /growth/health
-#[get("/api/growth/health")]
-pub async fn health(
-    service: web::Data<AppGrowthService>,
-) -> Result<HttpResponse, ApiError> {
+#[route("/api/growth/health", method = "GET", method = "HEAD")]
+pub async fn health(service: web::Data<AppGrowthService>) -> Result<HttpResponse, ApiError> {
     let body = service.health().await?;
     Ok(HttpResponse::Ok().json(body))
 }
 
 /// GET /growth/topics
-#[get("/api/growth/topics")]
-pub async fn list_topics(
-    service: web::Data<AppGrowthService>,
-) -> Result<HttpResponse, ApiError> {
+#[route("/api/growth/topics", method = "GET", method = "HEAD")]
+pub async fn list_topics(service: web::Data<AppGrowthService>) -> Result<HttpResponse, ApiError> {
     let body = service.list_topics().await?;
     Ok(HttpResponse::Ok().json(body))
 }
@@ -75,7 +71,7 @@ pub async fn list_topics(
 ///
 /// `{topic}` is a canonical URL slug ("post_quantum", "rust", ...).
 /// Unknown slugs return 400 with a validation error.
-#[get("/api/growth/topics/{topic}")]
+#[route("/api/growth/topics/{topic}", method = "GET", method = "HEAD")]
 pub async fn topic_report(
     service: web::Data<AppGrowthService>,
     path: web::Path<String>,
@@ -87,23 +83,27 @@ pub async fn topic_report(
 }
 
 /// GET /growth/opportunities?limit=N
-#[get("/api/growth/opportunities")]
+#[route("/api/growth/opportunities", method = "GET", method = "HEAD")]
 pub async fn list_opportunities(
     service: web::Data<AppGrowthService>,
     query: web::Query<LimitQuery>,
 ) -> Result<HttpResponse, ApiError> {
-    let limit = query.into_inner().resolve(DEFAULT_OPPORTUNITY_LIMIT, MAX_OPPORTUNITY_LIMIT);
+    let limit = query
+        .into_inner()
+        .resolve(DEFAULT_OPPORTUNITY_LIMIT, MAX_OPPORTUNITY_LIMIT);
     let body = service.list_opportunities(limit).await?;
     Ok(HttpResponse::Ok().json(body))
 }
 
 /// GET /growth/sources?limit=N
-#[get("/api/growth/sources")]
+#[route("/api/growth/sources", method = "GET", method = "HEAD")]
 pub async fn list_sources(
     service: web::Data<AppGrowthService>,
     query: web::Query<LimitQuery>,
 ) -> Result<HttpResponse, ApiError> {
-    let limit = query.into_inner().resolve(DEFAULT_SOURCE_LIMIT, MAX_SOURCE_LIMIT);
+    let limit = query
+        .into_inner()
+        .resolve(DEFAULT_SOURCE_LIMIT, MAX_SOURCE_LIMIT);
     let body = service.list_sources(limit).await?;
     Ok(HttpResponse::Ok().json(body))
 }
@@ -182,7 +182,9 @@ mod tests {
 
     #[test]
     fn limit_query_is_capped() {
-        let q = LimitQuery { limit: Some(10_000) };
+        let q = LimitQuery {
+            limit: Some(10_000),
+        };
         assert_eq!(q.resolve(50, 500), 500);
     }
 

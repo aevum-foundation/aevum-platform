@@ -65,7 +65,6 @@ pub const SEED_FEEDS: &[SeedFeed] = &[
         homepage: Some("https://eprint.iacr.org"),
         topics: &[Topic::PostQuantum],
     },
-
     // ─── distributed_systems ──────────────────────────
     SeedFeed {
         platform: Platform::Rss,
@@ -79,7 +78,6 @@ pub const SEED_FEEDS: &[SeedFeed] = &[
         homepage: Some("https://muratbuffalo.blogspot.com/"),
         topics: &[Topic::DistributedSystems],
     },
-
     // ─── rust ─────────────────────────────────────────
     SeedFeed {
         platform: Platform::Atom,
@@ -87,7 +85,6 @@ pub const SEED_FEEDS: &[SeedFeed] = &[
         homepage: Some("https://blog.rust-lang.org/"),
         topics: &[Topic::Rust],
     },
-
     // ─── blockchain_architecture ──────────────────────
     SeedFeed {
         platform: Platform::Rss,
@@ -95,7 +92,6 @@ pub const SEED_FEEDS: &[SeedFeed] = &[
         homepage: Some("https://blog.ethereum.org/"),
         topics: &[Topic::BlockchainArchitecture],
     },
-
     // ─── gpu_compute ──────────────────────────────────
     SeedFeed {
         platform: Platform::Atom,
@@ -109,7 +105,6 @@ pub const SEED_FEEDS: &[SeedFeed] = &[
         homepage: Some("https://huggingface.co/blog"),
         topics: &[Topic::GpuCompute],
     },
-
     // ─── storage_systems ──────────────────────────────
     SeedFeed {
         platform: Platform::Rss,

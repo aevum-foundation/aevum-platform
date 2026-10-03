@@ -33,7 +33,12 @@ pub(crate) fn source_key(id: SourceId) -> String {
 }
 
 pub(crate) fn source_by_topic_key(topic: Topic, id: SourceId) -> String {
-    format!("{}{}:{}", SOURCE_BY_TOPIC_PREFIX, topic.as_str(), id.as_hex())
+    format!(
+        "{}{}:{}",
+        SOURCE_BY_TOPIC_PREFIX,
+        topic.as_str(),
+        id.as_hex()
+    )
 }
 
 pub(crate) fn source_by_topic_prefix(topic: Topic) -> String {
@@ -335,7 +340,10 @@ mod tests {
         storage.put_source(&a).await.unwrap();
         storage.put_source(&b).await.unwrap();
 
-        let rust = storage.list_sources_by_topic(Topic::Rust, 10).await.unwrap();
+        let rust = storage
+            .list_sources_by_topic(Topic::Rust, 10)
+            .await
+            .unwrap();
         assert_eq!(rust.len(), 1);
         assert_eq!(rust[0].id, a.id);
 

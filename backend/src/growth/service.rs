@@ -80,9 +80,7 @@ use crate::growth::analysis::opportunities::{self, OpportunityEvidence};
 use crate::growth::analysis::trends::{self, TrendInput};
 use crate::growth::ingestion::fetcher::Fetcher;
 use crate::growth::ingestion::rss;
-use crate::growth::models::{
-    Opportunity, Publication, PublicationId, Source, Topic, TopicTrend,
-};
+use crate::growth::models::{Opportunity, Publication, PublicationId, Source, Topic, TopicTrend};
 use crate::growth::storage::{OpportunityStorage, PublicationStorage, SourceStorage};
 
 // ---------------------------------------------------------------------------
@@ -236,12 +234,8 @@ where
                 continue;
             }
 
-            let topics = classifier::classify(
-                &entry.title,
-                entry.summary.as_deref(),
-                &source.topics,
-            )
-            .topics;
+            let topics =
+                classifier::classify(&entry.title, entry.summary.as_deref(), &source.topics).topics;
 
             if topics.is_empty() {
                 log::warn!(
@@ -253,11 +247,7 @@ where
             let url = entry.url.and_then(|raw| match url::Url::parse(&raw) {
                 Ok(u) => Some(u),
                 Err(err) => {
-                    log::warn!(
-                        "Growth service: invalid publication URL {:?}: {}",
-                        raw,
-                        err
-                    );
+                    log::warn!("Growth service: invalid publication URL {:?}: {}", raw, err);
                     None
                 }
             });
@@ -347,10 +337,7 @@ where
     /// Returns the `TopicTrend` entry for the requested topic from
     /// `compute_trends()`. Always present, because `compute_all`
     /// returns one entry per `Topic::ALL` member.
-    pub async fn trend_for_topic(
-        &self,
-        topic: Topic,
-    ) -> Result<TopicTrend, ApiError> {
+    pub async fn trend_for_topic(&self, topic: Topic) -> Result<TopicTrend, ApiError> {
         let trends = self.compute_trends().await?;
         trends
             .into_iter()
@@ -407,13 +394,14 @@ where
         let now = Utc::now();
         let evidence_cutoff = now - chrono::Duration::days(30);
 
-        let mut evidence_map: HashMap<Topic, Vec<OpportunityEvidence>> =
-            HashMap::new();
+        let mut evidence_map: HashMap<Topic, Vec<OpportunityEvidence>> = HashMap::new();
         for trend in &trends {
             if trend.count_30d == 0 {
                 continue;
             }
-            let evidence = self.collect_evidence(trend.topic, ANALYSIS_MAX_PUBLICATIONS).await?;
+            let evidence = self
+                .collect_evidence(trend.topic, ANALYSIS_MAX_PUBLICATIONS)
+                .await?;
             let filtered: Vec<OpportunityEvidence> = evidence
                 .into_iter()
                 .filter(|e| e.effective_ts >= evidence_cutoff)
@@ -442,16 +430,16 @@ where
         let now = Utc::now();
         let evidence_cutoff = now - chrono::Duration::days(30);
 
-        let topic_trends: Vec<TopicTrend> = trends
-            .into_iter()
-            .filter(|t| t.topic == topic)
-            .collect();
+        let topic_trends: Vec<TopicTrend> =
+            trends.into_iter().filter(|t| t.topic == topic).collect();
 
         if topic_trends.is_empty() {
             return Ok(Vec::new());
         }
 
-        let evidence = self.collect_evidence(topic, ANALYSIS_MAX_PUBLICATIONS).await?;
+        let evidence = self
+            .collect_evidence(topic, ANALYSIS_MAX_PUBLICATIONS)
+            .await?;
         let evidence: Vec<OpportunityEvidence> = evidence
             .into_iter()
             .filter(|e| e.effective_ts >= evidence_cutoff)
@@ -491,10 +479,7 @@ where
     /// `TOPIC_REPORT_MAX_PUBLICATIONS` bounds the publication list
     /// so that the report stays small and can be served from an
     /// HTML page or JSON endpoint without pagination.
-    pub async fn topic_report(
-        &self,
-        topic: Topic,
-    ) -> Result<TopicReport, ApiError> {
+    pub async fn topic_report(&self, topic: Topic) -> Result<TopicReport, ApiError> {
         let trend = self.trend_for_topic(topic).await?;
         let recent_publications = self
             .list_publications_by_topic(topic, TOPIC_REPORT_MAX_PUBLICATIONS)
@@ -818,7 +803,10 @@ mod tests {
         let source = make_source(vec![Topic::StorageSystems]);
         service.ingest_source(&source).await.unwrap();
 
-        let trend = service.trend_for_topic(Topic::StorageSystems).await.unwrap();
+        let trend = service
+            .trend_for_topic(Topic::StorageSystems)
+            .await
+            .unwrap();
         assert_eq!(trend.topic, Topic::StorageSystems);
         assert_eq!(trend.count_30d, 1);
     }

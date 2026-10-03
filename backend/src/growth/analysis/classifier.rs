@@ -259,11 +259,7 @@ const DICTS: &[TopicDict] = &[
 /// A `ClassificationResult` whose `topics` field is the
 /// deterministic union of `base_topics` and any topics detected
 /// by keyword matching.
-pub fn classify(
-    title: &str,
-    summary: Option<&str>,
-    base_topics: &[Topic],
-) -> ClassificationResult {
+pub fn classify(title: &str, summary: Option<&str>, base_topics: &[Topic]) -> ClassificationResult {
     let haystack = build_haystack(title, summary);
 
     // Detected topics in dictionary order (deterministic).
@@ -429,11 +425,7 @@ mod tests {
 
     #[test]
     fn evidence_records_matched_terms() {
-        let r = classify(
-            "LSM compaction and the WAL",
-            None,
-            &[],
-        );
+        let r = classify("LSM compaction and the WAL", None, &[]);
         let entry = r
             .evidence
             .iter()
@@ -453,11 +445,7 @@ mod tests {
 
     #[test]
     fn output_topics_are_in_enum_order() {
-        let r = classify(
-            "Rust on GPU with Raft consensus",
-            None,
-            &[],
-        );
+        let r = classify("Rust on GPU with Raft consensus", None, &[]);
         // Must be sorted by Topic::ALL order, not by detection order.
         let expected: Vec<Topic> = Topic::ALL
             .iter()

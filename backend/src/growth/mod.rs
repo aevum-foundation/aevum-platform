@@ -19,18 +19,18 @@
 //!
 //! See PHASE_1_PLAN.md for the current implementation scope.
 
-pub mod models;
-pub mod contracts;
-pub mod events;
-pub mod storage;
-pub mod validation;
 pub mod aevumdb;
+pub mod analysis;
 pub mod api;
 pub mod api_impl;
-pub mod in_memory;
-pub mod ingestion;
-pub mod registry;
-pub mod analysis;
-pub mod service;
 #[cfg(test)]
 pub mod conformance;
+pub mod contracts;
+pub mod events;
+pub mod in_memory;
+pub mod ingestion;
+pub mod models;
+pub mod registry;
+pub mod service;
+pub mod storage;
+pub mod validation;

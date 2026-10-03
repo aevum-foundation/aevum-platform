@@ -52,11 +52,7 @@ pub(crate) fn opportunity_key(id: OpportunityId) -> String {
     format!("{}{}", OPPORTUNITY_PREFIX, id.0)
 }
 
-pub(crate) fn opportunity_by_topic_key(
-    topic: Topic,
-    inv_score: &str,
-    id: OpportunityId,
-) -> String {
+pub(crate) fn opportunity_by_topic_key(topic: Topic, inv_score: &str, id: OpportunityId) -> String {
     format!(
         "{}{}:{}:{}",
         OPPORTUNITY_BY_TOPIC_PREFIX,
@@ -120,10 +116,7 @@ impl OpportunityStorage for AevumDbGrowthStorage {
         batch.commit().map_err(map_db_error)
     }
 
-    async fn get_opportunity(
-        &self,
-        id: OpportunityId,
-    ) -> Result<Option<Opportunity>, ApiError> {
+    async fn get_opportunity(&self, id: OpportunityId) -> Result<Option<Opportunity>, ApiError> {
         let key = opportunity_key(id);
         match self.db().get(key.as_bytes()).map_err(map_db_error)? {
             None => Ok(None),
@@ -155,10 +148,7 @@ impl OpportunityStorage for AevumDbGrowthStorage {
         self.list_opportunities_via_index(&prefix, limit).await
     }
 
-    async fn list_top_opportunities(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<Opportunity>, ApiError> {
+    async fn list_top_opportunities(&self, limit: usize) -> Result<Vec<Opportunity>, ApiError> {
         if limit == 0 {
             return Ok(Vec::new());
         }
@@ -249,11 +239,7 @@ mod tests {
         PublicationId::from_hex(&"0".repeat(32)).unwrap()
     }
 
-    fn make_opportunity(
-        topic: Topic,
-        kind: OpportunityKind,
-        score_bp: u32,
-    ) -> Opportunity {
+    fn make_opportunity(topic: Topic, kind: OpportunityKind, score_bp: u32) -> Opportunity {
         Opportunity {
             id: OpportunityId::new(),
             kind,
@@ -307,8 +293,7 @@ mod tests {
     fn primary_prefix_does_not_match_secondary_keys() {
         let opp = make_opportunity(Topic::Rust, OpportunityKind::TopicAccelerating, 5000);
         let primary = opportunity_key(opp.id);
-        let by_topic =
-            opportunity_by_topic_key(Topic::Rust, "00000000000000000000", opp.id);
+        let by_topic = opportunity_by_topic_key(Topic::Rust, "00000000000000000000", opp.id);
         let by_score = opportunity_by_score_key("00000000000000000000", opp.id);
         assert!(!by_topic.starts_with(&primary));
         assert!(!by_score.starts_with(&primary));
@@ -356,11 +341,7 @@ mod tests {
     async fn list_by_topic_filters_correctly() {
         let (storage, _temp) = test_storage();
         let rust = make_opportunity(Topic::Rust, OpportunityKind::TopicAccelerating, 5000);
-        let pq = make_opportunity(
-            Topic::PostQuantum,
-            OpportunityKind::TopicEmerging,
-            6000,
-        );
+        let pq = make_opportunity(Topic::PostQuantum, OpportunityKind::TopicEmerging, 6000);
 
         storage.put_opportunity(&rust).await.unwrap();
         storage.put_opportunity(&pq).await.unwrap();

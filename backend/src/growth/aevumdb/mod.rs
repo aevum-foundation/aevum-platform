@@ -45,11 +45,11 @@ use serde::Serialize;
 use crate::error::ApiError;
 
 // Entity modules are declared as they are implemented.
-pub mod topic_state;
-pub mod source;
-pub mod publication;
-pub mod opportunity;
 pub mod events;
+pub mod opportunity;
+pub mod publication;
+pub mod source;
+pub mod topic_state;
 
 // ---------------------------------------------------------------------------
 // Storage struct

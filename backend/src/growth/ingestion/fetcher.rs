@@ -116,11 +116,7 @@ impl Fetcher {
                 match self.try_once(url).await {
                     Ok(body) => Ok(body),
                     Err(FetchAttempt::Transport(e2)) => {
-                        log::error!(
-                            "Growth fetcher: transport error on retry: {} ({})",
-                            url,
-                            e2
-                        );
+                        log::error!("Growth fetcher: transport error on retry: {} ({})", url, e2);
                         Err(api_error(FETCH_TRANSPORT_CODE, FETCH_TRANSPORT_MSG))
                     }
                     Err(FetchAttempt::Status(status)) => {
@@ -138,11 +134,7 @@ impl Fetcher {
                 }
             }
             Err(FetchAttempt::Status(status)) => {
-                log::warn!(
-                    "Growth fetcher: non-success status: {} ({})",
-                    url,
-                    status
-                );
+                log::warn!("Growth fetcher: non-success status: {} ({})", url, status);
                 Err(api_error(FETCH_STATUS_CODE, FETCH_STATUS_MSG))
             }
             Err(FetchAttempt::Body(msg)) => {

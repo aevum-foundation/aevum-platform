@@ -109,12 +109,7 @@ fn fixed_publication(
     }
 }
 
-fn fixed_opportunity(
-    id: &str,
-    topic: Topic,
-    kind: OpportunityKind,
-    score_bp: u32,
-) -> Opportunity {
+fn fixed_opportunity(id: &str, topic: Topic, kind: OpportunityKind, score_bp: u32) -> Opportunity {
     Opportunity {
         id: OpportunityId(Uuid::parse_str(id).unwrap()),
         kind,
@@ -126,7 +121,12 @@ fn fixed_opportunity(
     }
 }
 
-fn fixed_event(id: &str, kind: GrowthEventKind, topic: Option<Topic>, at: DateTime<Utc>) -> GrowthEvent {
+fn fixed_event(
+    id: &str,
+    kind: GrowthEventKind,
+    topic: Option<Topic>,
+    at: DateTime<Utc>,
+) -> GrowthEvent {
     GrowthEvent {
         id: Uuid::parse_str(id).unwrap(),
         occurred_at: at,
@@ -215,8 +215,16 @@ async fn empty_backend_source_lists_agree() {
         proj_sources(&db.list_sources_by_topic(Topic::Rust, 10).await.unwrap())
     );
     assert_eq!(
-        proj_sources(&mem.list_sources_by_status(SourceStatus::Active, 10).await.unwrap()),
-        proj_sources(&db.list_sources_by_status(SourceStatus::Active, 10).await.unwrap())
+        proj_sources(
+            &mem.list_sources_by_status(SourceStatus::Active, 10)
+                .await
+                .unwrap()
+        ),
+        proj_sources(
+            &db.list_sources_by_status(SourceStatus::Active, 10)
+                .await
+                .unwrap()
+        )
     );
 }
 
@@ -300,7 +308,11 @@ async fn source_soft_delete_is_idempotent_in_both() {
     let mem = in_memory();
     let (db, _t) = aevumdb();
 
-    let src = fixed_source("https://example.com/a.xml", vec![Topic::Rust], SourceStatus::Active);
+    let src = fixed_source(
+        "https://example.com/a.xml",
+        vec![Topic::Rust],
+        SourceStatus::Active,
+    );
     mem.put_source(&src).await.unwrap();
     db.put_source(&src).await.unwrap();
 
@@ -310,8 +322,16 @@ async fn source_soft_delete_is_idempotent_in_both() {
     db.delete_source(src.id).await.unwrap();
 
     assert_eq!(
-        proj_sources(&mem.list_sources_by_status(SourceStatus::Disabled, 10).await.unwrap()),
-        proj_sources(&db.list_sources_by_status(SourceStatus::Disabled, 10).await.unwrap())
+        proj_sources(
+            &mem.list_sources_by_status(SourceStatus::Disabled, 10)
+                .await
+                .unwrap()
+        ),
+        proj_sources(
+            &db.list_sources_by_status(SourceStatus::Disabled, 10)
+                .await
+                .unwrap()
+        )
     );
 }
 
@@ -359,14 +379,28 @@ async fn publication_ordering_by_effective_ts_matches() {
     let mem = in_memory();
     let (db, _t) = aevumdb();
 
-    let src = fixed_source("https://example.com/a.xml", vec![Topic::Rust], SourceStatus::Active);
+    let src = fixed_source(
+        "https://example.com/a.xml",
+        vec![Topic::Rust],
+        SourceStatus::Active,
+    );
     mem.put_source(&src).await.unwrap();
     db.put_source(&src).await.unwrap();
 
     let now = Utc::now();
-    let p1 = fixed_publication(src.id, "1", vec![Topic::Rust], Some(now - Duration::hours(3)));
+    let p1 = fixed_publication(
+        src.id,
+        "1",
+        vec![Topic::Rust],
+        Some(now - Duration::hours(3)),
+    );
     let p2 = fixed_publication(src.id, "2", vec![Topic::Rust], Some(now));
-    let p3 = fixed_publication(src.id, "3", vec![Topic::Rust], Some(now - Duration::hours(1)));
+    let p3 = fixed_publication(
+        src.id,
+        "3",
+        vec![Topic::Rust],
+        Some(now - Duration::hours(1)),
+    );
 
     for p in [&p1, &p2, &p3] {
         mem.put_publication(p).await.unwrap();
@@ -388,7 +422,11 @@ async fn publication_effective_ts_fallback_matches() {
     let mem = in_memory();
     let (db, _t) = aevumdb();
 
-    let src = fixed_source("https://example.com/a.xml", vec![Topic::Rust], SourceStatus::Active);
+    let src = fixed_source(
+        "https://example.com/a.xml",
+        vec![Topic::Rust],
+        SourceStatus::Active,
+    );
     mem.put_source(&src).await.unwrap();
     db.put_source(&src).await.unwrap();
 
@@ -409,7 +447,11 @@ async fn publication_overwrite_semantics_match() {
     let mem = in_memory();
     let (db, _t) = aevumdb();
 
-    let src = fixed_source("https://example.com/a.xml", vec![Topic::Rust], SourceStatus::Active);
+    let src = fixed_source(
+        "https://example.com/a.xml",
+        vec![Topic::Rust],
+        SourceStatus::Active,
+    );
     mem.put_source(&src).await.unwrap();
     db.put_source(&src).await.unwrap();
 
@@ -432,8 +474,16 @@ async fn publication_exists_matches() {
     let mem = in_memory();
     let (db, _t) = aevumdb();
 
-    let a = fixed_source("https://example.com/a.xml", vec![Topic::Rust], SourceStatus::Active);
-    let b = fixed_source("https://example.com/b.xml", vec![Topic::Rust], SourceStatus::Active);
+    let a = fixed_source(
+        "https://example.com/a.xml",
+        vec![Topic::Rust],
+        SourceStatus::Active,
+    );
+    let b = fixed_source(
+        "https://example.com/b.xml",
+        vec![Topic::Rust],
+        SourceStatus::Active,
+    );
     mem.put_source(&a).await.unwrap();
     mem.put_source(&b).await.unwrap();
     db.put_source(&a).await.unwrap();
@@ -463,9 +513,24 @@ async fn opportunity_ordering_by_score_matches() {
     let mem = in_memory();
     let (db, _t) = aevumdb();
 
-    let a = fixed_opportunity(OP_ID_A, Topic::Rust, OpportunityKind::TopicAccelerating, 2000);
-    let b = fixed_opportunity(OP_ID_B, Topic::Rust, OpportunityKind::TopicAccelerating, 9000);
-    let c = fixed_opportunity(OP_ID_C, Topic::Rust, OpportunityKind::TopicAccelerating, 5000);
+    let a = fixed_opportunity(
+        OP_ID_A,
+        Topic::Rust,
+        OpportunityKind::TopicAccelerating,
+        2000,
+    );
+    let b = fixed_opportunity(
+        OP_ID_B,
+        Topic::Rust,
+        OpportunityKind::TopicAccelerating,
+        9000,
+    );
+    let c = fixed_opportunity(
+        OP_ID_C,
+        Topic::Rust,
+        OpportunityKind::TopicAccelerating,
+        5000,
+    );
     for o in [&a, &b, &c] {
         mem.put_opportunity(o).await.unwrap();
         db.put_opportunity(o).await.unwrap();
@@ -476,8 +541,16 @@ async fn opportunity_ordering_by_score_matches() {
         proj_opportunities(&db.list_top_opportunities(10).await.unwrap())
     );
     assert_eq!(
-        proj_opportunities(&mem.list_opportunities_by_topic(Topic::Rust, 10).await.unwrap()),
-        proj_opportunities(&db.list_opportunities_by_topic(Topic::Rust, 10).await.unwrap())
+        proj_opportunities(
+            &mem.list_opportunities_by_topic(Topic::Rust, 10)
+                .await
+                .unwrap()
+        ),
+        proj_opportunities(
+            &db.list_opportunities_by_topic(Topic::Rust, 10)
+                .await
+                .unwrap()
+        )
     );
     assert_eq!(
         proj_opportunities(
@@ -499,8 +572,18 @@ async fn opportunity_score_ties_break_by_uuid_in_both() {
     let (db, _t) = aevumdb();
 
     // Two opportunities with identical score → tie-break by id.
-    let a = fixed_opportunity(OP_ID_A, Topic::Rust, OpportunityKind::TopicAccelerating, 5000);
-    let b = fixed_opportunity(OP_ID_B, Topic::Rust, OpportunityKind::TopicAccelerating, 5000);
+    let a = fixed_opportunity(
+        OP_ID_A,
+        Topic::Rust,
+        OpportunityKind::TopicAccelerating,
+        5000,
+    );
+    let b = fixed_opportunity(
+        OP_ID_B,
+        Topic::Rust,
+        OpportunityKind::TopicAccelerating,
+        5000,
+    );
     for o in [&b, &a] {
         mem.put_opportunity(o).await.unwrap();
         db.put_opportunity(o).await.unwrap();
@@ -545,9 +628,19 @@ async fn events_desc_ordering_matches() {
     let (db, _t) = aevumdb();
 
     let now = Utc::now();
-    let a = fixed_event(EV_ID_A, GrowthEventKind::SourceRegistered, None, now - Duration::hours(3));
+    let a = fixed_event(
+        EV_ID_A,
+        GrowthEventKind::SourceRegistered,
+        None,
+        now - Duration::hours(3),
+    );
     let b = fixed_event(EV_ID_B, GrowthEventKind::SourceRegistered, None, now);
-    let c = fixed_event(EV_ID_C, GrowthEventKind::SourceRegistered, None, now - Duration::hours(1));
+    let c = fixed_event(
+        EV_ID_C,
+        GrowthEventKind::SourceRegistered,
+        None,
+        now - Duration::hours(1),
+    );
     for e in [&a, &b, &c] {
         mem.record_event(e.clone()).await.unwrap();
         db.record_event(e.clone()).await.unwrap();
@@ -565,9 +658,24 @@ async fn events_since_asc_ordering_matches() {
     let (db, _t) = aevumdb();
 
     let now = Utc::now();
-    let a = fixed_event(EV_ID_A, GrowthEventKind::SourceRegistered, None, now - Duration::hours(5));
-    let b = fixed_event(EV_ID_B, GrowthEventKind::SourceRegistered, None, now - Duration::hours(3));
-    let c = fixed_event(EV_ID_C, GrowthEventKind::SourceRegistered, None, now - Duration::hours(1));
+    let a = fixed_event(
+        EV_ID_A,
+        GrowthEventKind::SourceRegistered,
+        None,
+        now - Duration::hours(5),
+    );
+    let b = fixed_event(
+        EV_ID_B,
+        GrowthEventKind::SourceRegistered,
+        None,
+        now - Duration::hours(3),
+    );
+    let c = fixed_event(
+        EV_ID_C,
+        GrowthEventKind::SourceRegistered,
+        None,
+        now - Duration::hours(1),
+    );
     for e in [&a, &b, &c] {
         mem.record_event(e.clone()).await.unwrap();
         db.record_event(e.clone()).await.unwrap();
@@ -608,28 +716,62 @@ async fn events_kind_and_topic_filters_match() {
 
     let now = Utc::now();
     let a = fixed_event(EV_ID_A, GrowthEventKind::SourceRegistered, None, now);
-    let b = fixed_event(EV_ID_B, GrowthEventKind::TopicClassified, Some(Topic::Rust), now);
-    let c = fixed_event(EV_ID_C, GrowthEventKind::TopicClassified, Some(Topic::PostQuantum), now);
+    let b = fixed_event(
+        EV_ID_B,
+        GrowthEventKind::TopicClassified,
+        Some(Topic::Rust),
+        now,
+    );
+    let c = fixed_event(
+        EV_ID_C,
+        GrowthEventKind::TopicClassified,
+        Some(Topic::PostQuantum),
+        now,
+    );
     for e in [&a, &b, &c] {
         mem.record_event(e.clone()).await.unwrap();
         db.record_event(e.clone()).await.unwrap();
     }
 
     assert_eq!(
-        proj_events(&mem.get_events_by_kind(GrowthEventKind::SourceRegistered, 10).await.unwrap()),
-        proj_events(&db.get_events_by_kind(GrowthEventKind::SourceRegistered, 10).await.unwrap())
+        proj_events(
+            &mem.get_events_by_kind(GrowthEventKind::SourceRegistered, 10)
+                .await
+                .unwrap()
+        ),
+        proj_events(
+            &db.get_events_by_kind(GrowthEventKind::SourceRegistered, 10)
+                .await
+                .unwrap()
+        )
     );
     assert_eq!(
-        proj_events(&mem.get_events_by_kind(GrowthEventKind::TopicClassified, 10).await.unwrap()),
-        proj_events(&db.get_events_by_kind(GrowthEventKind::TopicClassified, 10).await.unwrap())
+        proj_events(
+            &mem.get_events_by_kind(GrowthEventKind::TopicClassified, 10)
+                .await
+                .unwrap()
+        ),
+        proj_events(
+            &db.get_events_by_kind(GrowthEventKind::TopicClassified, 10)
+                .await
+                .unwrap()
+        )
     );
     assert_eq!(
         proj_events(&mem.get_events_by_topic(Topic::Rust, 10).await.unwrap()),
         proj_events(&db.get_events_by_topic(Topic::Rust, 10).await.unwrap())
     );
     assert_eq!(
-        proj_events(&mem.get_events_by_topic(Topic::PostQuantum, 10).await.unwrap()),
-        proj_events(&db.get_events_by_topic(Topic::PostQuantum, 10).await.unwrap())
+        proj_events(
+            &mem.get_events_by_topic(Topic::PostQuantum, 10)
+                .await
+                .unwrap()
+        ),
+        proj_events(
+            &db.get_events_by_topic(Topic::PostQuantum, 10)
+                .await
+                .unwrap()
+        )
     );
 }
 
@@ -643,9 +785,24 @@ async fn prune_removes_same_events_in_both() {
     let (db, _t) = aevumdb();
 
     let now = Utc::now();
-    let old1 = fixed_event(EV_ID_A, GrowthEventKind::SourceRegistered, None, now - Duration::hours(5));
-    let old2 = fixed_event(EV_ID_B, GrowthEventKind::SourceRegistered, None, now - Duration::hours(3));
-    let young = fixed_event(EV_ID_C, GrowthEventKind::SourceRegistered, None, now - Duration::hours(1));
+    let old1 = fixed_event(
+        EV_ID_A,
+        GrowthEventKind::SourceRegistered,
+        None,
+        now - Duration::hours(5),
+    );
+    let old2 = fixed_event(
+        EV_ID_B,
+        GrowthEventKind::SourceRegistered,
+        None,
+        now - Duration::hours(3),
+    );
+    let young = fixed_event(
+        EV_ID_C,
+        GrowthEventKind::SourceRegistered,
+        None,
+        now - Duration::hours(1),
+    );
     for e in [&old1, &old2, &young] {
         mem.record_event(e.clone()).await.unwrap();
         db.record_event(e.clone()).await.unwrap();
@@ -668,7 +825,12 @@ async fn prune_is_idempotent_in_both() {
     let (db, _t) = aevumdb();
 
     let now = Utc::now();
-    let old = fixed_event(EV_ID_A, GrowthEventKind::SourceRegistered, None, now - Duration::hours(5));
+    let old = fixed_event(
+        EV_ID_A,
+        GrowthEventKind::SourceRegistered,
+        None,
+        now - Duration::hours(5),
+    );
     mem.record_event(old.clone()).await.unwrap();
     db.record_event(old.clone()).await.unwrap();
 
@@ -688,7 +850,11 @@ async fn limit_zero_returns_empty_in_both() {
     let mem = in_memory();
     let (db, _t) = aevumdb();
 
-    let src = fixed_source("https://example.com/a.xml", vec![Topic::Rust], SourceStatus::Active);
+    let src = fixed_source(
+        "https://example.com/a.xml",
+        vec![Topic::Rust],
+        SourceStatus::Active,
+    );
     mem.put_source(&src).await.unwrap();
     db.put_source(&src).await.unwrap();
 
@@ -728,10 +894,7 @@ async fn limit_over_count_returns_all_in_both() {
     let mem = in_memory();
     let (db, _t) = aevumdb();
 
-    for url in [
-        "https://example.com/a.xml",
-        "https://example.com/b.xml",
-    ] {
+    for url in ["https://example.com/a.xml", "https://example.com/b.xml"] {
         let s = fixed_source(url, vec![Topic::Rust], SourceStatus::Active);
         mem.put_source(&s).await.unwrap();
         db.put_source(&s).await.unwrap();

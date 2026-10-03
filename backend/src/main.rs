@@ -1,6 +1,6 @@
 //! Aevum Platform API — entry point.
 
-use actix_web::{middleware::Logger, App, HttpServer};
+use actix_web::{middleware::from_fn, middleware::Logger, App, HttpServer};
 use std::time::Duration;
 use tracing_subscriber::filter::EnvFilter;
 use tracing_subscriber::fmt;
@@ -111,6 +111,9 @@ async fn main() -> std::io::Result<()> {
             .wrap(CsrfMiddleware::new(actix_web::web::Data::new(
                 CsrfConfig::default(),
             )))
+            .wrap(from_fn(
+                aevum_platform_api::http::head::normalize_head_response,
+            ))
             .configure(health::configure)
             .configure(api::auth::configure)
             .configure(api::community::configure)

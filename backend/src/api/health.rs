@@ -1,4 +1,4 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{route, web, HttpResponse, Responder};
 use serde::Serialize;
 
 use crate::state::AppState;
@@ -37,7 +37,7 @@ struct ReadinessResponse {
     storage: StorageInfo,
 }
 
-#[get("/health")]
+#[route("/health", method = "GET", method = "HEAD")]
 async fn health(state: web::Data<AppState>) -> impl Responder {
     let storage_status = state.storage.health();
 
@@ -59,7 +59,7 @@ async fn health(state: web::Data<AppState>) -> impl Responder {
     HttpResponse::Ok().json(response)
 }
 
-#[get("/ready")]
+#[route("/ready", method = "GET", method = "HEAD")]
 async fn ready(state: web::Data<AppState>) -> impl Responder {
     let storage_status = state.storage.health();
     let ready = storage_status.is_healthy();
@@ -81,7 +81,7 @@ async fn ready(state: web::Data<AppState>) -> impl Responder {
     }
 }
 
-#[get("/version")]
+#[route("/version", method = "GET", method = "HEAD")]
 async fn version() -> impl Responder {
     HttpResponse::Ok().json(VersionResponse {
         service: ServiceInfo {

@@ -4,6 +4,7 @@ pub mod community;
 pub mod config;
 pub mod error;
 pub mod growth;
+pub mod http;
 pub mod metrics;
 pub mod state;
 pub mod storage;

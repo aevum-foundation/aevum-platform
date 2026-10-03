@@ -88,11 +88,7 @@ pub(crate) fn publication_by_source_prefix(source_id: SourceId) -> String {
     format!("{}{}:", PUBLICATION_BY_SOURCE_PREFIX, source_id.as_hex())
 }
 
-pub(crate) fn publication_by_topic_key(
-    topic: Topic,
-    inv_ts: &str,
-    id: PublicationId,
-) -> String {
+pub(crate) fn publication_by_topic_key(topic: Topic, inv_ts: &str, id: PublicationId) -> String {
     format!(
         "{}{}:{}:{}",
         PUBLICATION_BY_TOPIC_PREFIX,
@@ -110,10 +106,7 @@ pub(crate) fn publication_by_time_key(inv_ts: &str, id: PublicationId) -> String
     format!("{}{}:{}", PUBLICATION_BY_TIME_PREFIX, inv_ts, id.as_hex())
 }
 
-pub(crate) fn publication_by_external_key(
-    source_id: SourceId,
-    external_id: &str,
-) -> String {
+pub(crate) fn publication_by_external_key(source_id: SourceId, external_id: &str) -> String {
     format!(
         "{}{}:{}",
         PUBLICATION_BY_EXTERNAL_PREFIX,
@@ -160,10 +153,7 @@ impl PublicationStorage for AevumDbGrowthStorage {
         batch.commit().map_err(map_db_error)
     }
 
-    async fn get_publication(
-        &self,
-        id: PublicationId,
-    ) -> Result<Option<Publication>, ApiError> {
+    async fn get_publication(&self, id: PublicationId) -> Result<Option<Publication>, ApiError> {
         let key = publication_key(id);
         match self.db().get(key.as_bytes()).map_err(map_db_error)? {
             None => Ok(None),
@@ -208,10 +198,7 @@ impl PublicationStorage for AevumDbGrowthStorage {
         self.list_publications_via_index(&prefix, limit).await
     }
 
-    async fn list_recent_publications(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<Publication>, ApiError> {
+    async fn list_recent_publications(&self, limit: usize) -> Result<Vec<Publication>, ApiError> {
         if limit == 0 {
             return Ok(Vec::new());
         }
@@ -382,8 +369,7 @@ mod tests {
         let pub_ = make_publication(&source, "ext-1", vec![Topic::Rust], None);
         let primary = publication_key(pub_.id);
         let by_time = publication_by_time_key("00000000000000000000", pub_.id);
-        let by_source =
-            publication_by_source_key(source.id, "00000000000000000000", pub_.id);
+        let by_source = publication_by_source_key(source.id, "00000000000000000000", pub_.id);
         assert!(!by_time.starts_with(&primary));
         assert!(!by_source.starts_with(&primary));
     }
@@ -449,7 +435,11 @@ mod tests {
         assert_eq!(first_run[0].id, second_run[0].id, "stable tie-break");
         assert_eq!(first_run[1].id, second_run[1].id);
         // Deterministic tie-break by publication_id (hex).
-        let expected_first = if a.id.as_hex() < b.id.as_hex() { a.id } else { b.id };
+        let expected_first = if a.id.as_hex() < b.id.as_hex() {
+            a.id
+        } else {
+            b.id
+        };
         assert_eq!(first_run[0].id, expected_first);
     }
 
@@ -457,12 +447,7 @@ mod tests {
     async fn multiple_topics_create_multiple_topic_indexes() {
         let (storage, _temp) = test_storage();
         let source = make_source(Topic::Rust, "https://example.com/feed.xml");
-        let both = make_publication(
-            &source,
-            "both",
-            vec![Topic::Rust, Topic::PostQuantum],
-            None,
-        );
+        let both = make_publication(&source, "both", vec![Topic::Rust, Topic::PostQuantum], None);
 
         storage.put_publication(&both).await.unwrap();
 
@@ -554,9 +539,19 @@ mod tests {
         let s2 = make_source(Topic::PostQuantum, "https://example.com/b.xml");
         let now = Utc::now();
 
-        let p1 = make_publication(&s1, "a-1", vec![Topic::Rust], Some(now - Duration::hours(3)));
+        let p1 = make_publication(
+            &s1,
+            "a-1",
+            vec![Topic::Rust],
+            Some(now - Duration::hours(3)),
+        );
         let p2 = make_publication(&s2, "b-1", vec![Topic::PostQuantum], Some(now));
-        let p3 = make_publication(&s1, "a-2", vec![Topic::Rust], Some(now - Duration::hours(1)));
+        let p3 = make_publication(
+            &s1,
+            "a-2",
+            vec![Topic::Rust],
+            Some(now - Duration::hours(1)),
+        );
 
         storage.put_publication(&p1).await.unwrap();
         storage.put_publication(&p2).await.unwrap();
@@ -594,12 +589,7 @@ mod tests {
         let (storage, _temp) = test_storage();
         let source = make_source(Topic::Rust, "https://example.com/feed.xml");
         for i in 0..5 {
-            let pub_ = make_publication(
-                &source,
-                &format!("ext-{}", i),
-                vec![Topic::Rust],
-                None,
-            );
+            let pub_ = make_publication(&source, &format!("ext-{}", i), vec![Topic::Rust], None);
             storage.put_publication(&pub_).await.unwrap();
         }
         let list = storage
@@ -614,12 +604,7 @@ mod tests {
         let (storage, _temp) = test_storage();
         let source = make_source(Topic::Rust, "https://example.com/feed.xml");
         for i in 0..5 {
-            let pub_ = make_publication(
-                &source,
-                &format!("ext-{}", i),
-                vec![Topic::Rust],
-                None,
-            );
+            let pub_ = make_publication(&source, &format!("ext-{}", i), vec![Topic::Rust], None);
             storage.put_publication(&pub_).await.unwrap();
         }
         let list = storage
@@ -634,12 +619,7 @@ mod tests {
         let (storage, _temp) = test_storage();
         let source = make_source(Topic::Rust, "https://example.com/feed.xml");
         for i in 0..5 {
-            let pub_ = make_publication(
-                &source,
-                &format!("ext-{}", i),
-                vec![Topic::Rust],
-                None,
-            );
+            let pub_ = make_publication(&source, &format!("ext-{}", i), vec![Topic::Rust], None);
             storage.put_publication(&pub_).await.unwrap();
         }
         let list = storage.list_recent_publications(2).await.unwrap();
