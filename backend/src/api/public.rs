@@ -44,7 +44,7 @@
 //! Rendered by `render_cta()`, which reads `PUBLIC_IDENTITY`.
 //! Adding a new channel is a one-line change in `PUBLIC_IDENTITY`.
 
-use actix_web::{get, web, HttpResponse};
+use actix_web::{route, web, HttpResponse};
 use chrono::{DateTime, Utc};
 
 use crate::error::ApiError;
@@ -110,7 +110,7 @@ impl LimitQuery {
 // Handlers
 // ---------------------------------------------------------------------------
 
-#[get("/growth")]
+#[route("/growth", method = "GET", method = "HEAD")]
 pub async fn growth_index(
     service: web::Data<AppGrowthService>,
 ) -> Result<HttpResponse, ApiError> {
@@ -120,7 +120,7 @@ pub async fn growth_index(
     Ok(html_response(body))
 }
 
-#[get("/growth/topics")]
+#[route("/growth/topics", method = "GET", method = "HEAD")]
 pub async fn topics_index(
     service: web::Data<AppGrowthService>,
 ) -> Result<HttpResponse, ApiError> {
@@ -130,7 +130,7 @@ pub async fn topics_index(
     Ok(html_response(body))
 }
 
-#[get("/growth/topics/{topic}")]
+#[route("/growth/topics/{topic}", method = "GET", method = "HEAD")]
 pub async fn topic_page(
     service: web::Data<AppGrowthService>,
     path: web::Path<String>,
@@ -143,7 +143,7 @@ pub async fn topic_page(
     Ok(html_response(body))
 }
 
-#[get("/growth/opportunities")]
+#[route("/growth/opportunities", method = "GET", method = "HEAD")]
 pub async fn opportunities_page(
     service: web::Data<AppGrowthService>,
     query: web::Query<LimitQuery>,
@@ -157,7 +157,7 @@ pub async fn opportunities_page(
     Ok(html_response(body))
 }
 
-#[get("/sitemap.xml")]
+#[route("/sitemap.xml", method = "GET", method = "HEAD")]
 pub async fn sitemap(
     service: web::Data<AppGrowthService>,
 ) -> Result<HttpResponse, ApiError> {
@@ -169,7 +169,7 @@ pub async fn sitemap(
         .body(body))
 }
 
-#[get("/robots.txt")]
+#[route("/robots.txt", method = "GET", method = "HEAD")]
 pub async fn robots() -> HttpResponse {
     let body = render_robots();
     HttpResponse::Ok()
