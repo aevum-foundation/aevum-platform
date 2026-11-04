@@ -202,7 +202,9 @@ impl ChatStorage for InMemoryChatStorage {
             return Err(ApiError::Conflict);
         }
 
-        inner.conversations.insert(conversation.id, conversation.clone());
+        inner
+            .conversations
+            .insert(conversation.id, conversation.clone());
         inner
             .messages_by_conversation
             .insert(conversation.id, Vec::new());

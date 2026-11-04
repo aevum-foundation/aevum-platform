@@ -38,11 +38,7 @@ fn fixture(name: &str) -> String {
 fn rust_blog_atom_parses() {
     let xml = fixture("rust_blog_feed.xml");
     let v = parse(&xml).expect("rust blog atom must parse");
-    assert!(
-        v.len() >= 5,
-        "expected at least 5 entries, got {}",
-        v.len()
-    );
+    assert!(v.len() >= 5, "expected at least 5 entries, got {}", v.len());
     for p in &v {
         assert!(!p.title.is_empty(), "title must not be empty");
         assert!(!p.external_id.is_empty(), "external_id must not be empty");
@@ -61,11 +57,7 @@ fn rust_blog_atom_parses() {
 fn eprint_rss_parses() {
     let xml = fixture("eprint_feed.xml");
     let v = parse(&xml).expect("eprint rss must parse");
-    assert!(
-        v.len() >= 20,
-        "expected at least 20 items, got {}",
-        v.len()
-    );
+    assert!(v.len() >= 20, "expected at least 20 items, got {}", v.len());
     for p in &v {
         assert!(!p.title.is_empty());
         assert!(!p.external_id.is_empty());
@@ -93,7 +85,10 @@ fn atom_minimal_uses_updated_when_published_missing() {
     assert_eq!(v.len(), 1);
     assert_eq!(v[0].title, "Minimal Atom");
     assert_eq!(v[0].external_id, "https://example.com/1");
-    assert!(v[0].published_at.is_some(), "must use <updated> as fallback");
+    assert!(
+        v[0].published_at.is_some(),
+        "must use <updated> as fallback"
+    );
 }
 
 #[test]

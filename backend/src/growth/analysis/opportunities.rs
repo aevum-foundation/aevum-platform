@@ -79,7 +79,7 @@
 
 use chrono::{DateTime, Utc};
 
-use crate::growth::analysis::trends::{ACCELERATION_THRESHOLD_BP, BP_ONE};
+use crate::growth::analysis::trends::ACCELERATION_THRESHOLD_BP;
 use crate::growth::models::{
     Opportunity, OpportunityId, OpportunityKind, PublicationId, Topic, TopicTrend,
 };

@@ -7,9 +7,8 @@ use uuid::Uuid;
 
 use crate::chat::models::{
     Conversation, ConversationId, CreateConversationRequest, CreateMessageRequest, Message,
-    MessageId, MessageRole, MessageStatus, UpdateConversationRequest,
-    DEFAULT_PAGE_SIZE, MAX_CONTENT_LEN, MAX_IDEMPOTENCY_KEY_LEN, MAX_PAGE_SIZE, MAX_TITLE_LEN,
-    MIN_TITLE_LEN,
+    MessageId, MessageRole, MessageStatus, UpdateConversationRequest, DEFAULT_PAGE_SIZE,
+    MAX_CONTENT_LEN, MAX_IDEMPOTENCY_KEY_LEN, MAX_PAGE_SIZE, MAX_TITLE_LEN, MIN_TITLE_LEN,
 };
 use crate::chat::storage::{ChatStorage, Cursor};
 use crate::error::ApiError;
@@ -143,11 +142,7 @@ impl ChatService {
         self.storage.add_message(&message).await
     }
 
-    pub async fn get_message(
-        &self,
-        owner_id: Uuid,
-        id: MessageId,
-    ) -> Result<Message, ApiError> {
+    pub async fn get_message(&self, owner_id: Uuid, id: MessageId) -> Result<Message, ApiError> {
         self.storage
             .get_message(&id, &owner_id)
             .await?
@@ -223,7 +218,10 @@ fn validate_idempotency_key(raw: Option<String>) -> Result<Option<String>, ApiEr
                     message: "Idempotency key is too long",
                 });
             }
-            if !trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+            if !trimmed
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+            {
                 return Err(ApiError::ValidationFailed {
                     code: "chat.idempotency_key.invalid_chars",
                     message: "Idempotency key contains invalid characters",

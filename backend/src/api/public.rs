@@ -49,9 +49,7 @@ use chrono::{DateTime, Utc};
 
 use crate::error::ApiError;
 use crate::growth::api::AppGrowthService;
-use crate::growth::contracts::{
-    OpportunityResponse, TopicReportResponse, TopicSummaryResponse,
-};
+use crate::growth::contracts::{OpportunityResponse, TopicReportResponse, TopicSummaryResponse};
 use crate::growth::models::Topic;
 
 // ---------------------------------------------------------------------------
@@ -111,9 +109,7 @@ impl LimitQuery {
 // ---------------------------------------------------------------------------
 
 #[route("/growth", method = "GET", method = "HEAD")]
-pub async fn growth_index(
-    service: web::Data<AppGrowthService>,
-) -> Result<HttpResponse, ApiError> {
+pub async fn growth_index(service: web::Data<AppGrowthService>) -> Result<HttpResponse, ApiError> {
     let topics = service.list_topics().await?;
     let base = public_url();
     let body = render_index_page(&base, &topics);
@@ -121,9 +117,7 @@ pub async fn growth_index(
 }
 
 #[route("/growth/topics", method = "GET", method = "HEAD")]
-pub async fn topics_index(
-    service: web::Data<AppGrowthService>,
-) -> Result<HttpResponse, ApiError> {
+pub async fn topics_index(service: web::Data<AppGrowthService>) -> Result<HttpResponse, ApiError> {
     let topics = service.list_topics().await?;
     let base = public_url();
     let body = render_topics_page(&base, &topics);
@@ -158,9 +152,7 @@ pub async fn opportunities_page(
 }
 
 #[route("/sitemap.xml", method = "GET", method = "HEAD")]
-pub async fn sitemap(
-    service: web::Data<AppGrowthService>,
-) -> Result<HttpResponse, ApiError> {
+pub async fn sitemap(service: web::Data<AppGrowthService>) -> Result<HttpResponse, ApiError> {
     let topics = service.list_topics().await?;
     let base = public_url();
     let body = render_sitemap(&base, &topics);
@@ -543,7 +535,9 @@ fn render_topic_page(base: &str, report: &TopicReportResponse) -> String {
     // ─── Signals ───
     let mut signals = String::new();
     if report.opportunities.is_empty() {
-        signals.push_str(r#"<p style="color: var(--color-text-muted);">No active signals for this topic.</p>"#);
+        signals.push_str(
+            r#"<p style="color: var(--color-text-muted);">No active signals for this topic.</p>"#,
+        );
     } else {
         signals.push_str(r#"<div style="display: grid; gap: 12px; margin-top: 16px;">"#);
         for opp in &report.opportunities {

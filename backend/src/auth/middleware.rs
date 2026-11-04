@@ -19,8 +19,7 @@ use actix_web::{
 use futures_util::future::{ready, LocalBoxFuture, Ready};
 
 use crate::auth::{
-    authenticator::Authenticator, contracts::SESSION_COOKIE_NAME, models::User,
-    password::SessionToken,
+    authenticator::Authenticator, contracts::SESSION_COOKIE_NAME, password::SessionToken,
 };
 
 #[derive(Clone)]
@@ -78,8 +77,6 @@ where
         let service = Rc::clone(&self.service);
 
         Box::pin(async move {
-            let mut req = req;
-
             let token = req
                 .cookie(SESSION_COOKIE_NAME)
                 .map(|cookie| cookie.value().to_owned());
