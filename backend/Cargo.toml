@@ -21,7 +21,9 @@ rand = "0.8"
 base64 = "0.22"
 sha2 = "0.10"
 futures-util = "0.3"
-aevum-db = { path = "/root/aevum-db/crates/aevum-db" }
+# Sibling checkout: <parent>/aevum-platform and <parent>/aevum-db.
+# On the server this resolves to /root/aevum-db/crates/aevum-db.
+aevum-db = { path = "../../aevum-db/crates/aevum-db" }
 tempfile = "3.8"
 async-trait = "0.1"
 subtle = "2.6"
