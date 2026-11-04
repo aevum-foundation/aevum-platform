@@ -1401,10 +1401,10 @@ html {
     left: 0;
     z-index: 1000;
     padding: 10px 20px;
-    background: var(--color-gold-primary);
+    background: var(--color-accent-gold);
     color: var(--color-bg-deep);
     font-weight: 600;
-    font-size: var(--font-size-sm);
+    font-size: 0.875rem;
     text-decoration: none;
     border-radius: 0 0 var(--radius-md) 0;
     transition: top var(--transition-fast);
