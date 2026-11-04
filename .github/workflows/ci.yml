@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    # Weekly security audit of Cargo.lock (Monday 03:00 UTC).
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend checks
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      - name: HTML validation (html-validate)
+        run: npx --yes html-validate@8 frontend/*.html frontend/learn/*.html frontend/components/*.html
+
+      - name: XML well-formedness (sitemap.xml)
+        run: |
+          python3 -c "import xml.etree.ElementTree as E; E.parse('frontend/sitemap.xml'); print('OK sitemap.xml')"
+
+      - name: Undefined CSS custom properties
+        run: python3 .github/scripts/check_css_tokens.py
+
+      - name: CSP readiness (no inline scripts or handlers)
+        run: python3 .github/scripts/check_inline_scripts.py
+
+  backend:
+    name: Backend (fmt, clippy, test)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # aevum-db is a private repository. The job needs a read-only token
+    # in the AEVUM_DB_READ_TOKEN secret (fine-grained PAT, Contents: read,
+    # aevum-foundation/aevum-db only). Without it (e.g. PRs from forks)
+    # the job is skipped instead of failing.
+    env:
+      HAS_DB_TOKEN: ${{ secrets.AEVUM_DB_READ_TOKEN != '' }}
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Skip notice
+        if: env.HAS_DB_TOKEN != 'true'
+        run: echo "::notice::AEVUM_DB_READ_TOKEN is not set; backend checks skipped."
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.HAS_DB_TOKEN == 'true'
+        with:
+          path: aevum-platform
+          persist-credentials: false
+
+      # Sibling layout required by backend/Cargo.toml:
+      #   $GITHUB_WORKSPACE/aevum-platform/backend/../../aevum-db
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.HAS_DB_TOKEN == 'true'
+        with:
+          repository: aevum-foundation/aevum-db
+          token: ${{ secrets.AEVUM_DB_READ_TOKEN }}
+          path: aevum-db
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        if: env.HAS_DB_TOKEN == 'true'
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        if: env.HAS_DB_TOKEN == 'true'
+        with:
+          workspaces: aevum-platform/backend
+
+      - name: cargo fmt --check
+        if: env.HAS_DB_TOKEN == 'true'
+        working-directory: aevum-platform/backend
+        run: cargo fmt --check
+
+      - name: cargo clippy
+        if: env.HAS_DB_TOKEN == 'true'
+        working-directory: aevum-platform/backend
+        # Report only. Existing warnings are tracked separately; switch to
+        # `-- -D warnings` once the backlog is cleared.
+        run: cargo clippy --all-targets --locked
+
+      - name: cargo test
+        if: env.HAS_DB_TOKEN == 'true'
+        working-directory: aevum-platform/backend
+        run: cargo test --locked
+
+  audit:
+    name: Security audit (RustSec)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked --version 0.22.2
+
+      # Reads only Cargo.lock; does not need the private aevum-db sources.
+      # Ignored advisories (review on every actix-web/actix-http release):
+      #   RUSTSEC-2026-0258  h2 0.3.x via actix-http 3.x, no patched 0.3
+      #                      release. Backend listens on 127.0.0.1 only and
+      #                      Apache proxies over HTTP/1.1.
+      - name: cargo audit
+        run: cargo audit --file backend/Cargo.lock --ignore RUSTSEC-2026-0258
