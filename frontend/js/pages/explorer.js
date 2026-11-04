@@ -230,8 +230,8 @@ export async function initExplorerPage() {
             renderDetail(type, data)
         );
 
+        detailView.hidden = false;
         detailView.classList.add('active');
-        detailView.setAttribute('aria-hidden', 'false');
 
         window.scrollTo({
             top: 0,
@@ -241,7 +241,7 @@ export async function initExplorerPage() {
 
     function hideDetail({ scroll = false } = {}) {
         detailView.classList.remove('active');
-        detailView.setAttribute('aria-hidden', 'true');
+        detailView.hidden = true;
         detailContent.replaceChildren();
 
         if (scroll) {
