@@ -33,7 +33,7 @@ tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 metrics = "0.23"
 clap = { version = "4", features = ["derive"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "gzip"] }
-quick-xml = "0.39"
+quick-xml = "0.41"
 url = { version = "2", features = ["serde"] }
 
 [profile.release]

@@ -280,7 +280,7 @@ pub fn parse(xml: &str) -> Result<Vec<ParsedPublication>, ApiError> {
             }
             Event::Text(t) => {
                 let text = t
-                    .xml_content()
+                    .xml11_content()
                     .map_err(|e| log_and(FeedError::Encoding, format!("text: {}", e)))?;
                 handle_text(&text, &mut state, &mut current);
             }
