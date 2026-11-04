@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/img/aevum-logo.svg" type="image/svg+xml">
 
     <meta
         name="description"
@@ -49,6 +50,35 @@
         href="https://cdnjs.cloudflare.com"
         crossorigin
     >
+
+    <script type="application/ld+json">
+{
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "Organization",
+                "@id": "https://aevumchain.com/#organization",
+                "name": "Aevum",
+                "url": "https://aevumchain.com/",
+                "logo": "https://aevumchain.com/img/aevum-logo.svg",
+                "sameAs": [
+                    "https://github.com/aevum-foundation",
+                    "https://t.me/aevumchain"
+                ]
+            },
+            {
+                "@type": "WebSite",
+                "@id": "https://aevumchain.com/#website",
+                "name": "Aevum",
+                "url": "https://aevumchain.com/",
+                "publisher": {
+                    "@id": "https://aevumchain.com/#organization"
+                },
+                "inLanguage": "en"
+            }
+        ]
+    }
+    </script>
 
     <!-- ========================================================
          THEME
