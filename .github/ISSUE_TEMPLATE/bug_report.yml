@@ -1,0 +1,33 @@
+name: Bug report
+description: Something on aevumchain.com or in the platform does not work as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open https://aevumchain.com/...
+        2. Click ...
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Page, endpoint or component
+      placeholder: /docs.html, /api/growth/topics, backend/src/...
+  - type: input
+    id: env
+    attributes:
+      label: Browser / OS / device
+      placeholder: Firefox 140, Android 15, iPhone 13 ...
+  - type: markdown
+    attributes:
+      value: "Security issues: do not open a public issue. Follow SECURITY.md."

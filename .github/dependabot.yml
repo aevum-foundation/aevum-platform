@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Keeps the SHA-pinned actions in .github/workflows up to date.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+    labels: [infra]
+
+  # Cargo is not listed: backend/Cargo.toml has a path dependency on the
+  # private aevum-db repository, which Dependabot cannot resolve.
+  # Rust dependencies are covered by the weekly `cargo audit` job in ci.yml.
