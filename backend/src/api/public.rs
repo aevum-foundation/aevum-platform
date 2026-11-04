@@ -24,6 +24,7 @@
 //! - `/js/theme.js`         — theme toggle
 //! - `/js/components.js`    — loads header.html and footer.html
 //! - `/js/navigation.js`    — side nav
+//! - `/js/entries/page.js`  — boot entry (boot + initNav), no inline JS
 //!
 //! The header and footer are injected by `boot()` from
 //! `/js/components.js`, matching the pattern used by every other
@@ -302,13 +303,9 @@ fn html_footer() -> String {
 
 <div id="footer-container"></div>
 
-<script type="module">
-    import { boot } from '/js/components.js';
-    import { initNav } from '/js/navigation.js';
-
-    await boot();
-    await initNav();
-</script>
+<!-- Same boot sequence as static pages; external module so the page
+     works under a strict Content-Security-Policy (no inline scripts). -->
+<script type="module" src="/js/entries/page.js"></script>
 
 </body>
 </html>
@@ -797,7 +794,10 @@ mod tests {
         assert!(html.contains("Follow Aevum Intelligence"));
         assert!(html.contains("github.com/aevum-foundation"));
         assert!(html.contains("/css/theme.css"));
-        assert!(html.contains("/js/components.js"));
+        // Boot sequence (components.js + navigation.js) is loaded through
+        // the shared page entry module, not an inline script.
+        assert!(html.contains(r#"<script type="module" src="/js/entries/page.js"></script>"#));
+        assert!(!html.contains("<script type=\"module\">"));
     }
 
     #[test]

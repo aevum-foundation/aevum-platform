@@ -351,3 +351,11 @@
     .repos-entry { transition: none; }
     .repos-entry:hover { transform: none; }
 }
+
+/* Former inline style on the CTA button row (moved for strict CSP). */
+.repositories-cta-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
