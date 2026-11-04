@@ -1,0 +1,29 @@
+# ---------------------------------------------------------------
+# www.aevumchain.com -> https://aevumchain.com (301)
+#
+# Use ONLY if `apachectl -S` shows no working vhost for
+# www.aevumchain.com on *:443. Requires a certificate that covers
+# www.aevumchain.com (see deploy/README.md, section www).
+#
+# Install:  /etc/apache2/sites-available/aevumchain-www.conf
+# Enable:   a2enmod rewrite ssl && a2ensite aevumchain-www
+# Revert:   a2dissite aevumchain-www && systemctl reload apache2
+# ---------------------------------------------------------------
+
+<VirtualHost *:80>
+    ServerName www.aevumchain.com
+    Redirect permanent / https://aevumchain.com/
+</VirtualHost>
+
+<IfModule mod_ssl.c>
+<VirtualHost *:443>
+    ServerName www.aevumchain.com
+    Redirect permanent / https://aevumchain.com/
+
+    # Replace <CERT_NAME> with the name from `certbot certificates`
+    # whose Domains list includes www.aevumchain.com.
+    SSLCertificateFile    /etc/letsencrypt/live/<CERT_NAME>/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/<CERT_NAME>/privkey.pem
+    Include /etc/letsencrypt/options-ssl-apache.conf
+</VirtualHost>
+</IfModule>
