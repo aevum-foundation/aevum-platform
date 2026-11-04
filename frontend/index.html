@@ -235,15 +235,7 @@
          AEVUM COMPONENT LOADER
          ======================================================== -->
 
-    <script type="module">
-        import { boot } from '/js/components.js';
-        import { initNav } from '/js/navigation.js';
-        import { initHomePage } from '/js/pages/home.js';
-
-        await boot();
-        await initNav();
-        await initHomePage();
-    </script>
+    <script type="module" src="/js/entries/home.js"></script>
 
 </body>
 </html>

@@ -15,3 +15,12 @@ function toggleTheme() {
         btn.setAttribute('aria-pressed', next === 'light' ? 'true' : 'false');
     });
 }
+
+// Delegated handler instead of inline onclick="toggleTheme()" in the header
+// component (inline handlers are blocked by a strict Content-Security-Policy).
+// Works for buttons injected later by js/components.js.
+document.addEventListener('click', function (event) {
+    if (event.target.closest && event.target.closest('.theme-toggle')) {
+        toggleTheme();
+    }
+});
