@@ -1,0 +1,67 @@
+# ---------------------------------------------------------------
+# Aevum Platform API (backend) — systemd unit
+#
+# Phase E1, intelligence-integration-v1.md §5.9:
+#   User: root (for v1), Restart: on-failure,
+#   Environment: AEVUM_GROWTH_DB, AEVUM_INTELLIGENCE_REFRESH_INTERVAL_SECS,
+#   no nohup, no manual shell startup.
+# Migration to a dedicated `aevum` user is deferred (§9.7).
+#
+# Install:  /etc/systemd/system/aevum-platform-api.service
+# Runbook:  deploy/systemd/README.md
+# ---------------------------------------------------------------
+
+[Unit]
+Description=Aevum Platform API (aevumchain.com backend)
+Documentation=https://github.com/aevum-foundation/aevum-platform/blob/master/deploy/systemd/README.md
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/aevum-platform/backend
+ExecStart=/root/aevum-platform/backend/target/release/aevum-platform-api
+
+Environment=AEVUM_HOST=127.0.0.1
+Environment=AEVUM_PORT=8080
+Environment=AEVUM_ENV=production
+Environment=AEVUM_PUBLIC_URL=https://aevumchain.com
+Environment=AEVUM_GROWTH_DB=/root/aevum-platform/backend/data/growth
+# Read by the in-process ingest scheduler (§5.10) once it lands.
+Environment=AEVUM_INTELLIGENCE_REFRESH_INTERVAL_SECS=3600
+Environment=RUST_LOG=info
+# Optional host-local overrides (not in git). Missing file is fine.
+EnvironmentFile=-/etc/aevum/platform-api.env
+
+Restart=on-failure
+RestartSec=5
+# main.rs handles SIGTERM with a graceful actix shutdown.
+KillSignal=SIGTERM
+TimeoutStopSec=30
+LimitNOFILE=65536
+
+# --- Sandboxing compatible with User=root and data under /root ---
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target
