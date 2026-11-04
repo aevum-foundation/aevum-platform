@@ -16,8 +16,7 @@ use uuid::Uuid;
 
 use aevum_platform_api::chat::{
     ChatService, CreateConversationRequest, CreateMessageRequest, InMemoryChatStorage,
-    UpdateConversationRequest,
-    MAX_CONTENT_LEN, MAX_TITLE_LEN,
+    UpdateConversationRequest, MAX_CONTENT_LEN, MAX_TITLE_LEN,
 };
 use aevum_platform_api::error::ApiError;
 
@@ -34,15 +33,14 @@ async fn mk_conv(
     owner: Uuid,
     title: &str,
 ) -> aevum_platform_api::chat::Conversation {
-    svc
-        .create_conversation(
-            owner,
-            CreateConversationRequest {
-                title: title.into(),
-            },
-        )
-        .await
-        .expect("create_conversation")
+    svc.create_conversation(
+        owner,
+        CreateConversationRequest {
+            title: title.into(),
+        },
+    )
+    .await
+    .expect("create_conversation")
 }
 
 async fn mk_msg(
@@ -52,17 +50,16 @@ async fn mk_msg(
     content: &str,
     idempotency_key: Option<&str>,
 ) -> aevum_platform_api::chat::Message {
-    svc
-        .add_user_message(
-            owner,
-            conv_id,
-            CreateMessageRequest {
-                content: content.into(),
-                idempotency_key: idempotency_key.map(|s| s.to_string()),
-            },
-        )
-        .await
-        .expect("add_user_message")
+    svc.add_user_message(
+        owner,
+        conv_id,
+        CreateMessageRequest {
+            content: content.into(),
+            idempotency_key: idempotency_key.map(|s| s.to_string()),
+        },
+    )
+    .await
+    .expect("add_user_message")
 }
 
 // ─────────────────────────────────────────────
@@ -448,16 +445,15 @@ async fn concurrent_same_key_only_one_message_stored() {
     for _ in 0..8 {
         let svc = svc.clone();
         handles.push(tokio::spawn(async move {
-            svc
-                .add_user_message(
-                    owner,
-                    conv_id,
-                    CreateMessageRequest {
-                        content: "concurrent".into(),
-                        idempotency_key: Some("race-key".into()),
-                    },
-                )
-                .await
+            svc.add_user_message(
+                owner,
+                conv_id,
+                CreateMessageRequest {
+                    content: "concurrent".into(),
+                    idempotency_key: Some("race-key".into()),
+                },
+            )
+            .await
         }));
     }
 
@@ -502,16 +498,15 @@ async fn concurrent_different_keys_all_stored() {
     for i in 0..8u32 {
         let svc = svc.clone();
         handles.push(tokio::spawn(async move {
-            svc
-                .add_user_message(
-                    owner,
-                    conv_id,
-                    CreateMessageRequest {
-                        content: format!("msg-{}", i),
-                        idempotency_key: Some(format!("key-{}", i)),
-                    },
-                )
-                .await
+            svc.add_user_message(
+                owner,
+                conv_id,
+                CreateMessageRequest {
+                    content: format!("msg-{}", i),
+                    idempotency_key: Some(format!("key-{}", i)),
+                },
+            )
+            .await
         }));
     }
 
@@ -700,10 +695,7 @@ async fn title_above_max_length_rejected() {
 
     let title = "a".repeat(MAX_TITLE_LEN + 1);
     let result = svc
-        .create_conversation(
-            owner,
-            CreateConversationRequest { title },
-        )
+        .create_conversation(owner, CreateConversationRequest { title })
         .await;
 
     assert!(matches!(result, Err(ApiError::ValidationFailed { .. })));

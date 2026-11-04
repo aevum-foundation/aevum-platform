@@ -25,13 +25,10 @@ pub mod service;
 pub mod storage;
 
 pub use models::{
-    Conversation, ConversationId,
-    CreateConversationRequest, CreateMessageRequest,
-    ListConversationsQuery, ListMessagesQuery,
-    Message, MessageId, MessageRole, MessageStatus,
-    UpdateConversationRequest,
-    DEFAULT_PAGE_SIZE, MAX_CONTENT_LEN, MAX_IDEMPOTENCY_KEY_LEN, MAX_PAGE_SIZE,
-    MAX_TITLE_LEN, MIN_TITLE_LEN,
+    Conversation, ConversationId, CreateConversationRequest, CreateMessageRequest,
+    ListConversationsQuery, ListMessagesQuery, Message, MessageId, MessageRole, MessageStatus,
+    UpdateConversationRequest, DEFAULT_PAGE_SIZE, MAX_CONTENT_LEN, MAX_IDEMPOTENCY_KEY_LEN,
+    MAX_PAGE_SIZE, MAX_TITLE_LEN, MIN_TITLE_LEN,
 };
 pub use service::ChatService;
 pub use storage::{ChatStorage, InMemoryChatStorage};

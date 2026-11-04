@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use std::sync::Arc;
 
 use crate::config::Config;
-use crate::storage::{SharedStorage, Storage};
+use crate::storage::SharedStorage;
 
 #[derive(Clone)]
 pub struct AppState {

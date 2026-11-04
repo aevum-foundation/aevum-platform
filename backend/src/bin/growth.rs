@@ -270,11 +270,7 @@ async fn cmd_ingest(
         // Exit non-zero for automation (systemd, cron, CI, Docker
         // health). Individual source failures do NOT stop the run,
         // but they DO make the process fail.
-        return Err(format!(
-            "ingestion completed with {} source failure(s)",
-            failures
-        )
-        .into());
+        return Err(format!("ingestion completed with {} source failure(s)", failures).into());
     }
     Ok(())
 }

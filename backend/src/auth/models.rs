@@ -7,7 +7,7 @@ use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::auth::csrf::CsrfTokenHash;
-use crate::auth::password::{PasswordHasher, SessionToken};
+use crate::auth::password::SessionToken;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
